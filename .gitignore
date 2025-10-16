@@ -1,0 +1,75 @@
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# AI and Documentation Files
+ROLE.md
+PROJECT.md
+AGENTS.md
+
+# Reference Directory
+reference/
+
+# Go Binary Output
+snag
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go Test Binary
+*.test
+
+# Go Coverage Files
+*.out
+coverage.txt
+coverage.html
+
+# Go Workspace Files
+go.work
+go.work.sum
+
+# Go Vendor Directory
+vendor/
+
+# Go Build Cache
+.cache/
+
+# Go Module Download Cache
+# Note: go.sum should be committed
+go.sum.bak
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+*.bak
+*.log
+
+# Distribution Files
+dist/
+build/
+release/
+
+# Debugging
+__debug_bin
+debug
+*.pprof
