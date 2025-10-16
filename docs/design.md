@@ -26,6 +26,29 @@ snag --tab 3
 
 Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), `mdl` (cryptic), `wg`/`pg` (too short), `websnap`/`pageget` (too long)
 
+## Design Decisions Summary
+
+**All 13 design decisions finalized ✅**
+
+| # | Decision | Choice |
+|---|----------|--------|
+| 1 | CLI Arguments | 16 MVP arguments (position independent) |
+| 2 | Output Formats | Markdown (default), HTML |
+| 3 | Argument Parsing | Position independent (standard Go CLI behavior) |
+| 4 | Platform Support | macOS (arm64/amd64), Linux (amd64/arm64) - no Windows |
+| 5 | Config File | Not for MVP (post-MVP feature) |
+| 6 | HTML→Markdown | `html-to-markdown/v2` (embedded library) |
+| 7 | License Attribution | `LICENSES/` directory |
+| 8 | CLI Framework | `urfave/cli/v2` |
+| 9 | CDP Library | `rod` |
+| 10 | Browser Discovery | rod's `launcher.LookPath()` (Chromium-based only) |
+| 11 | Logging Strategy | Custom logger (4 levels, colors, emojis) |
+| 12 | Error Handling | Exit 0/1, sentinel errors, clear messages |
+| 13 | Project Structure | Flat structure at root |
+| 14 | Testing Strategy | Integration tests with real browser |
+
+See detailed rationale in [Design Decisions Made](#design-decisions-made) section below.
+
 ## Technology Stack
 
 **Language: Go**
@@ -33,9 +56,9 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 Rationale:
 
 - Single binary distribution (no runtime dependencies)
-- Excellent cross-platform support (macOS, Linux, Windows)
-- Native Chrome DevTools Protocol libraries (`chromedp` or `rod`)
-- HTML to Markdown conversion libraries (`goldmark`, `gomarkdown`)
+- Excellent cross-platform support (macOS, Linux)
+- Native Chrome DevTools Protocol library (`rod`)
+- HTML to Markdown conversion library (`html-to-markdown`)
 - Simple Homebrew formula (just binary distribution)
 - ~5MB binary size
 - GitHub Actions for multi-platform builds
@@ -263,18 +286,15 @@ Each feature below will be a separate project/enhancement after MVP release:
 
 **Chrome DevTools Protocol:**
 
-- `chromedp` - High-level CDP library (recommended for simplicity)
-- `rod` - Alternative, more control, steeper learning curve
+- `github.com/go-rod/rod` - Simpler API, better resource efficiency, stable architecture
 
 **HTML to Markdown:**
 
-- `github.com/JohannesKaufmann/html-to-markdown` - Popular, well-maintained
-- `github.com/gomarkdown/markdown` - Alternative
+- `github.com/JohannesKaufmann/html-to-markdown/v2` - Well-maintained, proven output quality, CommonMark support
 
 **CLI Framework:**
 
-- `github.com/spf13/cobra` - Industry standard
-- `github.com/urfave/cli` - Simpler alternative
+- `github.com/urfave/cli/v2` - Smaller binary size, simpler architecture, dynamic autocompletion
 
 ### Chrome Discovery
 
@@ -343,7 +363,7 @@ curl -L https://github.com/grantcarthew/snag/releases/latest/download/snag-linux
 
 ### GitHub Actions Release Workflow
 
-- Build for multiple platforms: darwin/arm64, darwin/amd64, linux/amd64, linux/arm64, windows/amd64
+- Build for multiple platforms: darwin/arm64, darwin/amd64, linux/amd64, linux/arm64
 - Create GitHub release with binaries
 - Auto-generate checksums
 - Update Homebrew tap automatically
@@ -413,9 +433,9 @@ $ snag https://example.com
 
 **Migration Path:**
 
-1. Port Node.js logic to Go using `chromedp`
-2. Implement same CLI interface
-3. Add Markdown conversion
+1. Port Node.js logic to Go using `rod`
+2. Implement same CLI interface with `urfave/cli`
+3. Add Markdown conversion with `html-to-markdown`
 4. Test feature parity
 5. Distribute as binary
 
@@ -483,28 +503,408 @@ $ snag https://example.com
 - **Examples**: Both `snag -v example.com` and `snag example.com -v` work
 - **Status**: Complete
 
+### 4. Platform Support ✅
+
+- **Decision**: MVP targets macOS and Linux only; Windows is post-MVP
+- **MVP Platforms**:
+  - darwin/arm64 (macOS Apple Silicon)
+  - darwin/amd64 (macOS Intel)
+  - linux/amd64 (Linux 64-bit)
+  - linux/arm64 (Linux ARM - Raspberry Pi, servers)
+- **Post-MVP**: Windows support (requires Windows-specific path handling)
+- **Rationale**:
+  - Primary development/use on macOS and Linux
+  - Windows adds complexity (path conventions, file handling)
+  - Can add later without breaking existing users
+- **Status**: Complete
+
+### 5. Config File Support ✅
+
+- **Decision**: No config file support for MVP; post-MVP feature
+- **Post-MVP Consideration**: `.snagrc` file for default preferences
+- **Rationale**:
+  - CLI flags are sufficient for core functionality
+  - Most users will use defaults (30s timeout, markdown format, auto-detect Chromium)
+  - Power users can use shell aliases: `alias snag='snag --verbose --timeout 60'`
+  - Adds complexity (file parsing, precedence: flags > env > config > defaults)
+  - Can add in v1.1.0+ if users request it
+- **Status**: Complete
+
+### 6. HTML→Markdown Conversion ✅
+
+- **Decision**: Embed `github.com/JohannesKaufmann/html-to-markdown/v2` Go library
+- **Library Choice**: `html-to-markdown` v2 (MIT license)
+- **Rationale**:
+  - Current `html2markdown` CLI is a wrapper around this exact library
+  - Proven output quality (already using it via CLI)
+  - No external dependencies (single binary)
+  - Simple API (~40 lines for conversion)
+  - Well-maintained, modern v2 with plugin support
+  - Supports CommonMark, tables, strikethrough
+- **Implementation**:
+  ```go
+  import htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
+  markdown, err := htmltomarkdown.ConvertString(htmlContent)
+  ```
+- **Status**: Complete
+
+### 7. License Attribution ✅
+
+- **Decision**: Use `LICENSES/` directory for third-party license attribution
+- **Approach**:
+  - Create `LICENSES/` directory in repository
+  - Include each dependency's license as separate file (e.g., `LICENSES/html-to-markdown.txt`)
+  - Visible in GitHub, included in source releases
+  - Complies with MIT license requirements (attribution for html-to-markdown)
+- **Post-MVP**: Consider `snag --licenses` command to print embedded licenses
+- **Automation**: Use `go-licenses` tool during build/release process
+- **Status**: Complete
+
+### 8. CLI Framework Choice ✅
+
+- **Decision**: Use `github.com/urfave/cli` for CLI framework
+- **Library**: urfave/cli v2 (MIT license)
+- **Rationale**:
+  - Smaller binary size compared to Cobra (important for single-binary tool)
+  - Simpler, less boilerplate code
+  - Better dynamic bash autocompletion (can autocomplete argument values)
+  - Still supports subcommands for Phase 2 (--list-tabs, --tab)
+  - Declarative, clean API
+  - Widely used (23.6k GitHub stars), well-maintained
+  - Less globals-heavy than Cobra's architectural pattern
+- **Alternatives Considered**:
+  - Cobra: More feature-rich but larger binaries, more dependencies
+  - Coral: Cobra fork with fewer dependencies but less mature (431 stars)
+  - Standard library flag package: Too basic, no subcommand support
+- **Reference**: `reference/urfave-cli/`
+- **Status**: Complete
+
+### 9. CDP Library Choice ✅
+
+- **Decision**: Use `github.com/go-rod/rod` for Chrome DevTools Protocol
+- **Library**: rod (MIT license)
+- **Rationale**:
+  - Simpler, more intuitive API compared to chromedp
+  - Better resource efficiency (uses less CPU/memory)
+  - More stable architecture with consistent CDP versioning
+  - Auto-wait elements feature reduces error handling complexity
+  - Chained context design for intuitive timeout/cancel
+  - Debugging-friendly with auto input tracing
+  - API more closely resembles Puppeteer (easier porting)
+  - Perfect fit for passive content fetching use case
+- **Alternatives Considered**:
+  - chromedp: Faster raw speed but steeper learning curve, more resource usage
+  - Direct CDP: Too low-level, too much work
+- **Reference**: `reference/rod/`
+- **Status**: Complete
+
+### 10. Chrome/Chromium Discovery ✅
+
+- **Decision**: Use rod's built-in `launcher.LookPath()` for browser discovery
+- **Approach**:
+  - **Three-tier strategy**:
+    1. Try connecting to existing browser instance (port 9222)
+    2. If not running, use `launcher.LookPath()` to find system browser
+    3. Launch browser in appropriate mode (headless/visible)
+  - No auto-download (users should have browser installed)
+  - No config file needed (rod handles discovery automatically)
+  - No environment variable needed (rod's paths are comprehensive)
+- **Supported Browsers** (Chromium-based only):
+  - Google Chrome
+  - Chromium
+  - Microsoft Edge
+  - Brave Browser
+  - Chrome Canary
+- **Platform Coverage**:
+  - macOS: `/Applications/*.app`, `/usr/bin/*`
+  - Linux: `/usr/bin/*`, system PATH
+- **Firefox NOT Supported**:
+  - Firefox deprecated CDP support (end of 2024)
+  - Firefox moved to WebDriver BiDi protocol
+  - rod is CDP-only, no Firefox compatibility
+- **Rationale**:
+  - rod's `LookPath()` is comprehensive and battle-tested
+  - Covers all major Chromium browsers and installation paths
+  - Cross-platform support built-in
+  - Zero maintenance - rod team keeps paths updated
+  - Clear error message if no browser found
+- **Implementation Pattern**:
+  ```go
+  // Try connect to existing browser first
+  browser := rod.New().ControlURL("ws://localhost:9222")
+  if err := browser.Connect(); err == nil {
+      // Connected to existing browser
+  } else {
+      // Launch new browser
+      path, exists := launcher.LookPath()
+      if !exists {
+          return errors.New("no Chromium-based browser found")
+      }
+      url := launcher.New().Bin(path).Headless(!visible).MustLaunch()
+      browser = rod.New().ControlURL(url).MustConnect()
+  }
+  ```
+- **Reference**: `reference/rod/lib/launcher/browser.go:202-251`
+- **Status**: Complete
+
+### 11. Logging & Output Strategy ✅
+
+- **Decision**: Simple custom logger with colored output, no external dependencies
+- **Output Routing**:
+  - **stdout**: Content only (HTML/Markdown) - enables piping
+  - **stderr**: All logs, warnings, errors, progress indicators
+- **Log Levels**:
+  - **Quiet** (`--quiet`): Only fatal errors to stderr
+  - **Normal** (default): Key operations with emoji indicators
+  - **Verbose** (`--verbose`): Detailed operation logs
+  - **Debug** (`--debug`): Everything + CDP messages, timing info
+- **Color Support**:
+  - Auto-detect TTY: `isatty.IsTerminal(os.Stderr.Fd())`
+  - Respect `NO_COLOR` environment variable
+  - Colors: ✓ Green (success), ⚠ Yellow (warnings), ✗ Red (errors), Cyan (info)
+- **Emoji Usage**:
+  - Use emojis by default (✓ ⚠ ✗) when colors enabled
+  - No detection needed - modern terminals support UTF-8
+  - Degrades gracefully on ancient terminals
+- **Format Examples**:
+
+  ```
+  Normal mode:
+  Connecting to Chrome on port 9222...
+  ✓ Connected to existing Chrome instance
+  Fetching https://example.com...
+  ✓ Success (12.5 KB)
+
+  Verbose mode:
+  Connecting to Chrome on port 9222...
+  ✓ Connected to existing Chrome instance
+  Navigating to https://example.com...
+  Waiting for page load (timeout: 30s)...
+  ✓ Page loaded (2.3s)
+  Extracting HTML content...
+  ✓ Extracted 45.2 KB HTML
+  Converting to Markdown...
+  ✓ Converted to 12.5 KB Markdown
+  ✓ Success
+
+  Quiet mode:
+  (no output unless fatal error)
+  ```
+
+- **No Timestamps**: CLI tools are short-lived, timestamps add noise
+- **Progress Indicators**: For operations > 1 second, show elapsed time
+- **Why Custom Logger**:
+  - Standard `log` package too basic (always adds timestamps, no levels)
+  - `log/slog` too verbose/structured for CLI (designed for JSON logging)
+  - Custom logger: ~100 lines, exactly what we need
+  - Zero external dependencies (no Zap/Zerolog needed)
+- **Implementation Pattern**:
+
+  ```go
+  type Logger struct {
+      level  LogLevel
+      color  bool
+      writer io.Writer  // os.Stderr
+  }
+
+  func (l *Logger) Success(msg string) {
+      if l.level >= LevelNormal {
+          prefix := "✓"
+          if l.color {
+              prefix = green + "✓" + reset
+          }
+          fmt.Fprintf(l.writer, "%s %s\n", prefix, msg)
+      }
+  }
+  ```
+
+- **Reference**: `reference/get-webpage/bash_modules/terminal.sh` (current implementation)
+- **Status**: Complete
+
+### 12. Error Handling & Exit Codes ✅
+
+- **Decision**: Simple exit codes (0/1) with clear error messages, sentinel errors for internal logic
+- **Exit Codes**:
+  - **0**: Success (content fetched and output)
+  - **1**: Any error (network, browser, auth, timeout, validation, conversion)
+- **Rationale**:
+  - Modern CLI best practice: keep it simple (gh, kubectl use 0/1)
+  - Multiple exit codes are hard to document/discover
+  - Error messages more useful than exit code numbers
+  - Most scripts just check `$? != 0` (worked or didn't work)
+  - Complexity without benefit
+- **Sentinel Errors** (for internal logic/testing, not exit codes):
+  ```go
+  var (
+      ErrBrowserNotFound    = errors.New("no Chromium-based browser found")
+      ErrPageLoadTimeout    = errors.New("page load timeout exceeded")
+      ErrAuthRequired       = errors.New("authentication required")
+      ErrInvalidURL         = errors.New("invalid URL")
+      ErrConversionFailed   = errors.New("HTML to Markdown conversion failed")
+  )
+  ```
+- **Error Wrapping** (for context):
+  ```go
+  if err := page.Navigate(url); err != nil {
+      return fmt.Errorf("failed to navigate to %s: %w", url, err)
+  }
+  ```
+- **Error Messages** (clear + actionable):
+
+  ```
+  ✗ Authentication required for https://private.example.com
+    Try: snag https://private.example.com --force-visible
+
+  ✗ Page load timeout exceeded (5s)
+    The page took too long to load. Try increasing timeout with --timeout
+
+  ✗ No Chromium-based browser found
+    Install Chrome, Chromium, Edge, or Brave to use snag
+  ```
+
+- **Main Function Pattern**:
+  ```go
+  func main() {
+      if err := run(); err != nil {
+          logger.Error(err.Error())
+          os.Exit(1)
+      }
+      // Success (implicit exit 0)
+  }
+  ```
+- **No Panic**: For expected errors, only truly unrecoverable situations
+- **Benefits**:
+  - Simple for users and scripts
+  - Error messages do the heavy lifting
+  - No documentation burden for exit codes
+  - Go idiomatic (standard error handling patterns)
+  - Easy to test (check for specific sentinel errors)
+- **Status**: Complete
+
+### 13. Project Structure ✅
+
+- **Decision**: Start with flat structure at repository root, refactor later if needed
+- **Structure**:
+  ```
+  snag/
+  ├── main.go              # CLI entry point (urfave/cli setup)
+  ├── browser.go           # Browser management (rod)
+  ├── fetch.go             # Page fetching logic
+  ├── convert.go           # HTML to Markdown conversion
+  ├── logger.go            # Custom logger
+  ├── errors.go            # Sentinel errors
+  ├── testdata/            # Test fixtures
+  │   ├── simple.html
+  │   └── auth-page.html
+  ├── integration_test.go  # Real browser tests
+  ├── go.mod
+  ├── go.sum
+  ├── LICENSE
+  └── README.md
+  ```
+- **Build Command**:
+  ```bash
+  go build -o snag
+  ```
+- **Why Flat Structure**:
+  - Simple and easy to navigate
+  - Perfect for focused single-binary CLI
+  - No over-engineering for MVP (<2000 lines expected)
+  - Simpler Homebrew formula (`go build` vs `go build ./cmd/snag`)
+  - Easy to refactor to `internal/` packages later if needed
+  - Matches Go philosophy: "start simple, refactor as needed"
+- **When to Refactor to internal/**:
+  - Code grows beyond ~2000 lines
+  - Phase 2/3 adds significant complexity
+  - Multiple contributors need clear boundaries
+  - Want to prevent external imports
+- **No pkg/ Directory**: Not building a reusable library
+- **Distribution Benefits**:
+  - ✅ Simpler build commands
+  - ✅ Clearer for contributors (main.go in root)
+  - ✅ Less boilerplate in Homebrew formula
+  - ✅ Standard for single-binary tools
+- **Status**: Complete
+
+### 14. Testing Strategy ✅
+
+- **Decision**: Integration tests with real Chrome/Chromium browser
+- **Test Approach**:
+  - **Integration tests**: Real browser via rod
+  - **Test fixtures**: HTML files in `testdata/`
+  - **Test server**: Local HTTP server for controlled tests
+  - **Real websites**: Test against public sites (example.com, etc.)
+- **Test Coverage**:
+  - Normal page fetch (HTML → Markdown conversion)
+  - Authentication detection (401, 403, login forms)
+  - Page load timeout handling
+  - Invalid URLs and error conditions
+  - Browser connection modes (connect, headless, visible)
+  - Output formats (markdown, html)
+  - CLI flag handling (--timeout, --wait-for, etc.)
+- **Test Structure**:
+
+  ```go
+  func TestFetchPage(t *testing.T) {
+      // Start local test HTTP server
+      // Launch real Chrome with rod
+      // Fetch page
+      // Assert Markdown output
+      // Cleanup
+  }
+
+  func TestAuthDetection(t *testing.T) {
+      // Serve page with 401 status
+      // Attempt fetch
+      // Assert ErrAuthRequired
+  }
+  ```
+
+- **Why Real Browser**:
+  - Tests actual CDP integration
+  - Validates JavaScript execution
+  - Catches real-world issues
+  - Tests browser detection/connection
+  - No mocking complexity
+- **Test Data**: `testdata/` directory for HTML fixtures
+- **CI/CD Considerations**:
+  - Install Chrome/Chromium in CI environment
+  - Run tests in headless mode
+  - GitHub Actions has Chrome pre-installed
+- **Rationale**:
+  - Blackbox testing matches user experience
+  - Real browser catches integration issues early
+  - Simple test setup (no complex mocking)
+  - Validates end-to-end flow
+- **Status**: Complete
+
 ## Open Questions
 
-1. **Tab management priority**: How important is `--list-tabs` and `--tab` for MVP? → Post-MVP (Phase 2)
-2. **Markdown library**: Which Go library produces cleanest output? → Pending
-3. **Chrome bundling**: Should we consider bundling Chromium? → No (too large)
-4. **Windows support**: Priority for initial release? → Probably later (darwin + linux first)
-5. **Config file**: Support `.snagrc` for defaults? → Future consideration (post-MVP)
-6. **CDP Library**: chromedp vs rod? → Pending
-7. **HTML→Markdown**: Embed library vs shell out? → Pending
-8. **Testing Strategy**: Unit vs integration, mocks vs real browser → Pending (see NOTES.md)
+**All design decisions complete!**
+
+Resolved items:
+
+1. **Tab management priority**: Post-MVP (Phase 2)
+2. **Chrome bundling**: No (too large)
 
 ## Next Steps
 
-1. Initialize Go module in repository
-2. Set up basic CLI structure with Cobra
-3. Implement Chrome detection and connection
-4. Port page fetch logic from Node.js to chromedp
-5. Add HTML to Markdown conversion
-6. Create Homebrew tap repository
-7. Set up GitHub Actions for releases
-8. Write comprehensive README
-9. Tag v1.0.0 release
+**Implementation Phase:**
+
+1. Initialize Go module (`go mod init github.com/grantcarthew/snag`)
+2. Create flat project structure (main.go, browser.go, fetch.go, convert.go, logger.go, errors.go)
+3. Implement CLI framework with `urfave/cli` and 16 MVP arguments
+4. Implement custom logger with 4 levels and color support
+5. Implement browser detection and connection using `rod` and `launcher.LookPath()`
+6. Implement page fetch logic with authentication detection
+7. Implement HTML to Markdown conversion using `html-to-markdown/v2`
+8. Add error handling with sentinel errors (exit 0/1)
+9. Write integration tests with real Chrome browser
+10. Create `testdata/` fixtures for testing
+11. Write comprehensive README with usage examples
+12. Set up GitHub Actions for multi-platform builds (darwin/arm64, darwin/amd64, linux/amd64, linux/arm64)
+13. Create Homebrew tap repository and formula
+14. Tag v1.0.0 release
 
 ## References
 
