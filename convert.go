@@ -36,12 +36,12 @@ func (cc *ContentConverter) Process(html string, outputFile string) error {
 	var err error
 
 	switch cc.format {
-	case "html":
+	case FormatHTML:
 		// Pass through HTML as-is
 		content = html
 		logger.Verbose("Output format: HTML (passthrough)")
 
-	case "markdown":
+	case FormatMarkdown:
 		// Convert HTML to Markdown
 		logger.Verbose("Converting HTML to Markdown...")
 		content, err = cc.convertToMarkdown(html)

@@ -15,9 +15,21 @@ import (
 
 const (
 	version = "1.0.0"
+
+	// Output format constants
+	FormatMarkdown = "markdown"
+	FormatHTML     = "html"
 )
 
-var logger *Logger
+var (
+	logger *Logger
+
+	// Valid output formats
+	validFormats = map[string]bool{
+		FormatMarkdown: true,
+		FormatHTML:     true,
+	}
+)
 
 func main() {
 	app := &cli.App{
@@ -44,7 +56,7 @@ func main() {
 			&cli.StringFlag{
 				Name:  "format",
 				Usage: "Output format: markdown (default) | html",
-				Value: "markdown",
+				Value: FormatMarkdown,
 			},
 
 			// Page Loading
@@ -171,9 +183,12 @@ func run(c *cli.Context) error {
 	}
 
 	// Validate format
-	if config.Format != "markdown" && config.Format != "html" {
+	if !validFormats[config.Format] {
 		logger.Error("Invalid format: %s", config.Format)
-		logger.ErrorWithSuggestion("Format must be 'markdown' or 'html'", "snag <url> --format markdown")
+		logger.ErrorWithSuggestion(
+			fmt.Sprintf("Format must be '%s' or '%s'", FormatMarkdown, FormatHTML),
+			fmt.Sprintf("snag <url> --format %s", FormatMarkdown),
+		)
 		return fmt.Errorf("invalid format: %s", config.Format)
 	}
 
