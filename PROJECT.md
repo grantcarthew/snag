@@ -61,7 +61,7 @@ if errors.As(err, &timeoutErr) && timeoutErr.Timeout() {
 
 ### 3. No Build-time Version Injection
 
-**Status**: ⏳ Not yet addressed
+**Status**: ⏭️ Deferred to GitHub workflows
 
 **Location**: main.go:16-18
 
@@ -103,7 +103,7 @@ go build -ldflags="-X main.version=1.0.0 -X main.commit=$(git rev-parse HEAD) -X
 
 ### 4. Memory Concerns for Large Pages
 
-**Status**: ⏳ Not yet addressed
+**Status**: ❌ Won't do - unrealistic use case
 
 **Locations**:
 - fetch.go:92 - HTML loaded entirely into memory
@@ -147,7 +147,7 @@ Implement streaming conversion (complex):
 
 ### 5. No Context Usage
 
-**Status**: ⏳ Not yet addressed
+**Status**: ❌ Won't do - unnecessary for CLI tool
 
 **Location**: All files
 
@@ -185,7 +185,7 @@ func (pf *PageFetcher) Fetch(ctx context.Context, opts FetchOptions) (string, er
 
 ### 6. Inconsistent Error Wrapping
 
-**Status**: ⏳ Not yet addressed
+**Status**: ✅ Fixed
 
 **Locations**: Multiple files
 
