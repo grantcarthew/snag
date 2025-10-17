@@ -13,6 +13,11 @@ import (
 	"github.com/JohannesKaufmann/html-to-markdown/v2"
 )
 
+const (
+	DefaultFileMode = 0644   // Owner RW, Group R, Other R
+	BytesPerKB      = 1024.0 // Bytes in a kilobyte
+)
+
 // ContentConverter handles HTML to Markdown conversion and output
 type ContentConverter struct {
 	format string
@@ -95,13 +100,13 @@ func (cc *ContentConverter) writeToFile(content string, filename string) error {
 	}
 
 	// Write to file
-	err := os.WriteFile(filename, []byte(content), 0644)
+	err := os.WriteFile(filename, []byte(content), DefaultFileMode)
 	if err != nil {
 		return fmt.Errorf("failed to write to file %s: %w", filename, err)
 	}
 
 	// Calculate size in KB
-	sizeKB := float64(len(content)) / 1024.0
+	sizeKB := float64(len(content)) / BytesPerKB
 	logger.Success("Saved to %s (%.1f KB)", filename, sizeKB)
 
 	return nil

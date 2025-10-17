@@ -193,9 +193,10 @@ func (bm *BrowserManager) NewPage() (*rod.Page, error) {
 }
 
 // Close closes the browser if it was launched by us
-func (bm *BrowserManager) Close() error {
+// Cleanup is best-effort and does not return errors
+func (bm *BrowserManager) Close() {
 	if bm.browser == nil {
-		return nil
+		return
 	}
 
 	// Only close browser if we launched it
@@ -203,7 +204,6 @@ func (bm *BrowserManager) Close() error {
 		logger.Verbose("Closing browser...")
 		if err := bm.browser.Close(); err != nil {
 			logger.Warning("Failed to close browser: %v", err)
-			return err
 		}
 
 		// Cleanup launcher
@@ -213,23 +213,19 @@ func (bm *BrowserManager) Close() error {
 	} else {
 		logger.Verbose("Leaving existing browser instance running")
 	}
-
-	return nil
 }
 
 // ClosePage closes a specific page
-func (bm *BrowserManager) ClosePage(page *rod.Page) error {
+// Cleanup is best-effort and does not return errors
+func (bm *BrowserManager) ClosePage(page *rod.Page) {
 	if page == nil {
-		return nil
+		return
 	}
 
 	logger.Verbose("Closing page...")
 	if err := page.Close(); err != nil {
 		logger.Warning("Failed to close page: %v", err)
-		return err
 	}
-
-	return nil
 }
 
 // WasLaunched returns true if the browser was launched by this manager
