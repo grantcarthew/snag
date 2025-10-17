@@ -94,11 +94,18 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 
 // connectToExisting attempts to connect to an existing Chrome instance
 func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
-	controlURL := fmt.Sprintf("ws://localhost:%d", bm.port)
+	// Query the browser for its WebSocket debugger URL
+	baseURL := fmt.Sprintf("http://127.0.0.1:%d", bm.port)
+
+	// Use launcher's ResolveURL to get the WebSocket URL from the HTTP endpoint
+	wsURL, err := launcher.ResolveURL(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrBrowserConnection, err)
+	}
 
 	// Create browser instance and connect with timeout
 	// We need to assign the result because Timeout() creates a new instance
-	browser := rod.New().ControlURL(controlURL).Timeout(ConnectTimeout)
+	browser := rod.New().ControlURL(wsURL).Timeout(ConnectTimeout)
 
 	// Try to connect
 	if err := browser.Connect(); err != nil {
