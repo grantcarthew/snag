@@ -2,8 +2,8 @@
 
 **Review Date**: 2025-10-17
 **Reviewer**: Claude Code (Comprehensive Go Code Review)
-**Total Issues**: 31
-**Progress**: 5 completed, 2 skipped/deferred, 24 remaining
+**Total Issues**: 32
+**Progress**: 6 completed, 2 skipped/deferred, 24 remaining
 
 ## Status Legend
 
@@ -209,9 +209,93 @@ Use global `browserManager` variable (matching logger pattern) with signal handl
 
 ---
 
+### 6. Context Deadline Exceeded on Page Operations ✅ **COMPLETED**
+
+**Status**: ✅ Fixed (2025-10-17)
+
+**Location**: browser.go:89-104, 139-153; fetch.go:47
+
+**Problem**:
+Operations were getting "context deadline exceeded" errors during HTML extraction and browser cleanup, even though navigation succeeded:
+
+```bash
+$ snag https://gitlab.com
+✓ Chrome launched in headless mode
+Fetching https://gitlab.com...
+⚠ Failed to close browser: context deadline exceeded
+Error: failed to extract HTML: context deadline exceeded
+```
+
+**Root Cause**:
+Rod's `.Timeout()` method creates a shallow clone with a timeout context that affects ALL subsequent operations:
+
+```go
+// WRONG: Timeout applies to ALL operations on this browser/page
+browser := rod.New().ControlURL(url).Timeout(30 * time.Second)
+browser.Connect()  // Has timeout
+// Later...
+page.HTML()  // STILL has timeout! Fails if Navigate + HTML > 30s
+browser.Close()  // STILL has timeout! May fail
+```
+
+The timeout was being inherited by:
+- All pages created from the browser
+- HTML extraction, auth detection, and other operations after navigation
+- Browser and page close operations
+
+**Impact**:
+- Slow-loading sites (like gitlab.com from certain networks) would fail
+- Operations that succeeded would still error during cleanup
+- Users saw confusing "context deadline exceeded" instead of clear timeout messages
+
+**Resolution**:
+
+**1. Browser timeout isolation (browser.go:95-104, 144-153)**:
+Apply timeout only to `Connect()`, then cancel it for future operations:
+
+```go
+// Create browser and connect with timeout
+browser := rod.New().ControlURL(controlURL).Timeout(5 * time.Second)
+
+// Try to connect
+if err := browser.Connect(); err != nil {
+    return nil, fmt.Errorf("%w: %v", ErrBrowserConnection, err)
+}
+
+// Return browser WITHOUT timeout for future operations
+// CancelTimeout() removes the timeout context
+return browser.CancelTimeout(), nil
+```
+
+**2. Page timeout isolation (fetch.go:47)**:
+Apply timeout only to `Navigate()`, use original page for other operations:
+
+```go
+// Apply timeout only to navigation - creates a clone with timeout
+err := pf.page.Timeout(pf.timeout).Navigate(opts.URL)
+
+// Use original pf.page for subsequent operations (no timeout)
+html, err := pf.page.HTML()  // Won't inherit navigation timeout
+```
+
+**Benefits**:
+- ✅ Timeout applies only to connection/navigation (intended behavior)
+- ✅ HTML extraction, auth detection work without timeout constraints
+- ✅ Browser/page close operations don't timeout
+- ✅ Slow sites like gitlab.com work correctly
+- ✅ Clear error messages when actual timeouts occur
+
+**Files Modified**:
+- browser.go: Lines 95-104 (connectToExisting), 144-153 (launchBrowser)
+- fetch.go: Line 47 (Navigate with isolated timeout)
+
+**Reference**: [Rod documentation on Context and Timeout](https://github.com/go-rod/go-rod.github.io/blob/main/context-and-timeout.md)
+
+---
+
 ## ⚠️ Important Issues (5)
 
-### 6. No URL Validation ✅ **COMPLETED**
+### 7. No URL Validation ✅ **COMPLETED**
 
 **Status**: ✅ Fixed (2025-10-17)
 
@@ -302,7 +386,7 @@ $ snag ftp://example.com
 
 ---
 
-### 7. Hard-coded Timeouts Throughout ⏳ **PENDING**
+### 8. Hard-coded Timeouts Throughout ⏳ **PENDING**
 
 **Status**: ⏳ Not yet addressed
 
@@ -353,7 +437,7 @@ const (
 
 ---
 
-### 8. Fragile Error Detection ⏳ **PENDING**
+### 9. Fragile Error Detection ⏳ **PENDING**
 
 **Status**: ⏳ Not yet addressed
 
@@ -397,7 +481,7 @@ if errors.As(err, &timeoutErr) && timeoutErr.Timeout() {
 
 ---
 
-### 9. File Overwrite Without Warning ✅ **COMPLETED**
+### 10. File Overwrite Without Warning ✅ **COMPLETED**
 
 **Status**: ✅ Fixed (2025-10-17)
 
@@ -438,7 +522,7 @@ err := os.WriteFile(filename, []byte(content), 0644)
 
 ---
 
-### 10. Memory Concerns for Large Pages ⏳ **PENDING**
+### 11. Memory Concerns for Large Pages ⏳ **PENDING**
 
 **Status**: ⏳ Not yet addressed
 
@@ -1458,20 +1542,22 @@ if !exists {
 3. ✅ Lost Error Messages in main() - **FIXED**
 4. ⏭️ Global Mutable Logger - **SKIPPED** (standard practice for CLI)
 5. ⏭️ No Signal Handling - **DEFERRED** (see SIGINT.md)
+6. ✅ Context Deadline Exceeded on Page Operations - **FIXED**
 14. No Tests (Phase 7 planned)
 
 ### High Priority (Should Fix Soon)
 
-6. ✅ No URL Validation - **FIXED**
-7. ✅ File Overwrite Without Warning - **FIXED**
-8. Fragile Error Detection
+7. ✅ No URL Validation - **FIXED**
+8. Hard-coded Timeouts
+9. Fragile Error Detection
+10. ✅ File Overwrite Without Warning - **FIXED**
 20. No Build-time Version Injection
 
 ### Medium Priority (Consider for v1.0)
 
-10. Hard-coded Timeouts
-11. Logger Should Be Interface
-12. Path Traversal in File Output
+11. Memory Concerns for Large Pages
+12. Logger Should Be Interface
+13. Path Traversal in File Output
 
 ### Low Priority (Post-v1.0)
 
@@ -1498,8 +1584,9 @@ if !exists {
 8. User-friendly CLI design
 9. URL validation with auto-scheme addition (user-friendly)
 10. File operations follow Unix conventions (silent by default, verbose feedback available)
+11. Proper timeout isolation using Rod's CancelTimeout() pattern
 
 ---
 
-**Document Version**: 1.2
+**Document Version**: 1.3
 **Last Updated**: 2025-10-17
