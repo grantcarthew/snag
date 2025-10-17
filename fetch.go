@@ -60,7 +60,7 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 
 	// Wait for page to be stable (use original page - no timeout constraint)
 	logger.Verbose("Waiting for page to stabilize...")
-	err = pf.page.WaitStable(3 * time.Second)
+	err = pf.page.WaitStable(StabilizeTimeout)
 	if err != nil {
 		logger.Warning("Page did not stabilize: %v", err)
 	}
