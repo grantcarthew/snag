@@ -1,447 +1,71 @@
-# snag - Code Review Issues
+# snag - Code Review Issues (Active)
 
 **Review Date**: 2025-10-17
 **Reviewer**: Claude Code (Comprehensive Go Code Review)
-**Total Issues**: 32
-**Progress**: 7 completed, 2 skipped/deferred, 23 remaining
+**Total Issues**: 23 pending
+**Completed**: See docs/projects/2025-10-17-code-review-issues-phase-1.md (7 completed, 2 deferred)
 
 ## Status Legend
 
-- ✅ **Completed** - Issue resolved
-- 🔧 **In Progress** - Currently being worked on
 - ⏳ **Pending** - Not yet started
+- 🔧 **In Progress** - Currently being worked on
 - ⏭️ **Deferred** - Postponed to post-v1.0
-- ⏭️ **Not Doing** - Skipped by design decision
 
 ---
 
-## 🔴 Critical Issues (5)
+## 🔴 Critical Issues (1)
 
-### 1. Duplicate BrowserOptions Passing ✅ **COMPLETED**
+### 1. No Tests
 
-**Status**: ✅ Fixed (2025-10-17)
+**Status**: ⏳ Not yet addressed (Phase 7 in original PROJECT.md)
 
-**Location**: main.go:181-194, browser.go:45
-
-**Problem**:
-Options were passed to both `NewBrowserManager()` constructor AND `Connect()` method, creating redundancy and confusion. The stored fields in BrowserManager were never actually used.
-
-```go
-// Before (redundant):
-bm := NewBrowserManager(BrowserOptions{...})
-_, err := bm.Connect(BrowserOptions{...})  // Same options again!
-```
-
-**Impact**: API design confusion, duplicate code, potential for inconsistent options.
-
-**Resolution**:
-- Added `forceHeadless`, `forceVisible`, `openBrowser` fields to BrowserManager struct
-- Updated constructor to store all options
-- Removed `opts` parameter from `Connect()` method
-- Updated `Connect()` to use stored struct fields
-- Updated main.go to only pass options once
-
-```go
-// After (clean):
-bm := NewBrowserManager(BrowserOptions{...})
-_, err := bm.Connect()  // Uses stored options
-```
-
-**Files Modified**:
-- browser.go: Lines 19-28, 40-47, 51-65
-- main.go: Line 189
-
----
-
-### 2. Unused Variable in Auth Detection ✅ **COMPLETED**
-
-**Status**: ✅ Fixed (2025-10-17)
-
-**Location**: fetch.go:106, 159
+**Location**: Entire project
 
 **Problem**:
+Zero test files. No unit tests, no integration tests.
+
+**Missing Coverage**:
+- ❌ Browser connection logic
+- ❌ Page fetching
+- ❌ Auth detection
+- ❌ Format conversion
+- ❌ Error handling
+- ❌ CLI flag parsing
+- ❌ File output
+
+**Should Have**:
+
+**Unit Tests**:
 ```go
-// Line 106
-info, err := proto.NetworkGetResponseBody{}.Call(pf.page)
-if err != nil {
-    logger.Debug("Could not get response body for auth detection: %v", err)
-}
-// ... never used ...
-_ = info // Line 159: Suppress unused variable warning
+// browser_test.go
+func TestBrowserConnection(t *testing.T)
+func TestBrowserLaunch(t *testing.T)
+
+// fetch_test.go
+func TestAuthDetection(t *testing.T)
+func TestPageFetch(t *testing.T)
+
+// convert_test.go
+func TestMarkdownConversion(t *testing.T)
+func TestHTMLPassthrough(t *testing.go)
 ```
 
-**Why It's Bad**:
-1. Variable is fetched but never used
-2. Comment suggests incomplete implementation
-3. Auth detection doesn't actually use this data
-4. Dead code that serves no purpose
-
-**Current Auth Detection Methods**:
-- JavaScript eval for HTTP status codes (401, 403)
-- Password input detection
-- Login form pattern matching
-
-**Resolution**:
-- Removed unused `proto.NetworkGetResponseBody{}` call (lines 106-110)
-- Removed unused variable suppression (line 159)
-- Removed unused `proto` import from fetch.go
-- Code compiles and auth detection remains fully functional
-
-**Files Modified**:
-- fetch.go: Lines 9-15 (removed import), 103-105 (removed dead code), 151-153 (removed suppression)
-
----
-
-### 3. Lost Error Messages in main() ✅ **COMPLETED**
-
-**Status**: ✅ Fixed (2025-10-17)
-
-**Location**: main.go:112-114
-
-**Problem**:
+**Integration Tests**:
 ```go
-if err := app.Run(os.Args); err != nil {
-    os.Exit(1)  // Error is lost! Never logged.
-}
+// integration_test.go
+func TestFetchRealPage(t *testing.T)
+func TestAuthWorkflow(t *testing.T)
 ```
-
-**Why It's Bad**:
-- Errors from `app.Run()` are silently swallowed
-- User sees exit code 1 but no error message
-- Makes debugging impossible
-- Violates principle of clear error communication
-
-**Impact**: User confusion, poor debugging experience.
-
-**Resolution**:
-- Added error message output to stderr before exit
-- Users now see clear error messages when app fails
-- Exit code 1 retained for proper shell integration
-
-**Fix Applied**:
-```go
-if err := app.Run(os.Args); err != nil {
-    fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-    os.Exit(1)
-}
-```
-
-**Files Modified**:
-- main.go: Line 113 (added error output)
-
-**Note**: Uses `fmt.Fprintf` instead of logger because logger is not initialized until `run()` is called.
-
----
-
-### 4. Global Mutable Logger ⏭️ **NOT DOING**
-
-**Status**: ⏭️ Skipped - Standard practice for CLI tools
-
-**Location**: main.go:20
-
-**Problem**:
-```go
-var logger *Logger  // Package-level global variable
-```
-
-**Why It's Bad**:
-1. Makes testing difficult (can't inject mock logger)
-2. Potential for race conditions if snag becomes a library
-3. Violates dependency injection principles
-4. Hidden dependency - functions use logger without declaring it
-
-**Impact**:
-- Hard to test individual functions
-- Coupling between all components
-- Can't use different loggers in different contexts
-
-**Fix Options**:
-1. Pass logger as parameter to functions that need it
-2. Store logger in a context struct
-3. Use dependency injection pattern
-
-**Example Fix**:
-```go
-// Option 1: Pass as parameter
-func snag(config *Config, logger *Logger) error {
-    bm := NewBrowserManager(opts, logger)
-    // ...
-}
-
-// Option 2: Context struct
-type Snag struct {
-    logger  *Logger
-    browser *BrowserManager
-}
-```
-
-**Complexity**: HIGH - Would require refactoring all files.
-
-**Recommendation**: Defer to post-v1.0 (low priority for CLI tool).
-
----
-
-### 5. No Signal Handling ⏭️ **DEFERRED**
-
-**Status**: ⏭️ Deferred to post-v1.0 (documented in SIGINT.md)
-
-**Location**: All files (missing feature)
-
-**Problem**:
-No handling for SIGINT (Ctrl+C) or SIGTERM signals.
-
-**Why It's Bad**:
-- User presses Ctrl+C → program exits immediately
-- Browser process may be left running
-- Page may not be closed
-- Cleanup defers do NOT execute on signals
-
-**Impact**: Orphaned browser processes, resource leaks.
-
-**Recommendation**:
-Use global `browserManager` variable (matching logger pattern) with signal handler. Full implementation plan documented in **SIGINT.md**.
 
 **Complexity**: MEDIUM
 
-**Priority**: HIGH - Should fix before stable release
-
-**Reference**: See SIGINT.md for complete analysis and implementation options
+**Priority**: HIGH - Critical for v1.0
 
 ---
 
-### 6. Context Deadline Exceeded on Page Operations ✅ **COMPLETED**
+## ⚠️ Important Issues (3)
 
-**Status**: ✅ Fixed (2025-10-17)
-
-**Location**: browser.go:89-104, 139-153; fetch.go:47
-
-**Problem**:
-Operations were getting "context deadline exceeded" errors during HTML extraction and browser cleanup, even though navigation succeeded:
-
-```bash
-$ snag https://gitlab.com
-✓ Chrome launched in headless mode
-Fetching https://gitlab.com...
-⚠ Failed to close browser: context deadline exceeded
-Error: failed to extract HTML: context deadline exceeded
-```
-
-**Root Cause**:
-Rod's `.Timeout()` method creates a shallow clone with a timeout context that affects ALL subsequent operations:
-
-```go
-// WRONG: Timeout applies to ALL operations on this browser/page
-browser := rod.New().ControlURL(url).Timeout(30 * time.Second)
-browser.Connect()  // Has timeout
-// Later...
-page.HTML()  // STILL has timeout! Fails if Navigate + HTML > 30s
-browser.Close()  // STILL has timeout! May fail
-```
-
-The timeout was being inherited by:
-- All pages created from the browser
-- HTML extraction, auth detection, and other operations after navigation
-- Browser and page close operations
-
-**Impact**:
-- Slow-loading sites (like gitlab.com from certain networks) would fail
-- Operations that succeeded would still error during cleanup
-- Users saw confusing "context deadline exceeded" instead of clear timeout messages
-
-**Resolution**:
-
-**1. Browser timeout isolation (browser.go:95-104, 144-153)**:
-Apply timeout only to `Connect()`, then cancel it for future operations:
-
-```go
-// Create browser and connect with timeout
-browser := rod.New().ControlURL(controlURL).Timeout(5 * time.Second)
-
-// Try to connect
-if err := browser.Connect(); err != nil {
-    return nil, fmt.Errorf("%w: %v", ErrBrowserConnection, err)
-}
-
-// Return browser WITHOUT timeout for future operations
-// CancelTimeout() removes the timeout context
-return browser.CancelTimeout(), nil
-```
-
-**2. Page timeout isolation (fetch.go:47)**:
-Apply timeout only to `Navigate()`, use original page for other operations:
-
-```go
-// Apply timeout only to navigation - creates a clone with timeout
-err := pf.page.Timeout(pf.timeout).Navigate(opts.URL)
-
-// Use original pf.page for subsequent operations (no timeout)
-html, err := pf.page.HTML()  // Won't inherit navigation timeout
-```
-
-**Benefits**:
-- ✅ Timeout applies only to connection/navigation (intended behavior)
-- ✅ HTML extraction, auth detection work without timeout constraints
-- ✅ Browser/page close operations don't timeout
-- ✅ Slow sites like gitlab.com work correctly
-- ✅ Clear error messages when actual timeouts occur
-
-**Files Modified**:
-- browser.go: Lines 95-104 (connectToExisting), 144-153 (launchBrowser)
-- fetch.go: Line 47 (Navigate with isolated timeout)
-
-**Reference**: [Rod documentation on Context and Timeout](https://github.com/go-rod/go-rod.github.io/blob/main/context-and-timeout.md)
-
----
-
-## ⚠️ Important Issues (5)
-
-### 7. No URL Validation ✅ **COMPLETED**
-
-**Status**: ✅ Fixed (2025-10-17)
-
-**Location**: main.go:149 (original), validate.go (new)
-
-**Problem**:
-```go
-url := c.Args().First()  // No validation!
-```
-
-**Why It's Bad**:
-- Accepts any string as URL
-- No check for valid scheme (http://, https://)
-- No check for malformed URLs
-- May cause confusing errors later
-
-**Examples of Bad Input**:
-- `snag example.com` (no scheme - now auto-adds https://)
-- `snag "bad url with spaces"` (invalid characters)
-- `snag ftp://example.com` (unsupported scheme)
-
-**Resolution**:
-- Created new `validate.go` module with `validateURL()` function
-- Auto-adds `https://` if no scheme is present (user-friendly)
-- Validates URL using `net/url.Parse()`
-- Supports `http://`, `https://`, and `file://` schemes
-- Validates host exists (except for file:// URLs)
-- Provides clear error messages with examples
-- Keeps main.go clean and focused
-
-**Implementation**:
-```go
-// validate.go
-func validateURL(urlStr string) (string, error) {
-    // Add https:// if no scheme present
-    if !strings.Contains(urlStr, "://") {
-        urlStr = "https://" + urlStr
-    }
-
-    // Parse and validate
-    parsedURL, err := url.Parse(urlStr)
-    if err != nil {
-        return "", ErrInvalidURL
-    }
-
-    // Check supported schemes
-    validSchemes := map[string]bool{
-        "http":  true,
-        "https": true,
-        "file":  true,
-    }
-
-    if !validSchemes[parsedURL.Scheme] {
-        return "", ErrInvalidURL
-    }
-
-    // Validate host (except file://)
-    if parsedURL.Scheme != "file" && parsedURL.Host == "" {
-        return "", ErrInvalidURL
-    }
-
-    return urlStr, nil
-}
-```
-
-**Files Modified**:
-- validate.go: New file (15-58)
-- main.go: Updated to call validateURL() (149-157)
-
-**User Experience**:
-```bash
-# Auto-adds https://
-$ snag example.com
-→ Uses: https://example.com ✓
-
-# Invalid characters
-$ snag "bad url with spaces"
-✗ Invalid URL: https://bad url with spaces
-✗ URL parsing failed: invalid character " " in host name
-  Try: snag https://example.com
-
-# Unsupported scheme
-$ snag ftp://example.com
-✗ Unsupported URL scheme: ftp
-✗ URL must use http://, https://, or file://
-  Try: snag https://example.com
-```
-
----
-
-### 8. Hard-coded Timeouts Throughout ✅ **COMPLETED**
-
-**Status**: ✅ Fixed (2025-10-17)
-
-**Location**: browser.go:19-22 (constants), browser.go:101, browser.go:150; fetch.go:63
-
-**Problem**:
-Magic numbers scattered throughout code:
-```go
-// browser.go - Hard-coded timeouts
-browser := rod.New().ControlURL(controlURL).Timeout(5 * time.Second)   // Existing browser
-browser := rod.New().ControlURL(controlURL).Timeout(30 * time.Second)  // New browser
-
-// fetch.go - Hard-coded wait time
-err = page.WaitStable(3 * time.Second)
-```
-
-**Why It's Bad**:
-- Magic numbers not self-documenting
-- Inconsistent timeout values (5s vs 30s for same operation)
-- Hard to change consistently across codebase
-
-**Resolution**:
-- Added package-level constants in browser.go
-- Unified connection timeout to 10 seconds (both existing and new browsers)
-- All timeouts now use named constants
-
-**Implementation**:
-```go
-// browser.go:19-22
-const (
-    ConnectTimeout   = 10 * time.Second // Browser connection timeout (existing or newly launched)
-    StabilizeTimeout = 3 * time.Second  // Page stabilization wait time
-)
-
-// Usage throughout codebase
-browser := rod.New().ControlURL(controlURL).Timeout(ConnectTimeout)
-err = pf.page.WaitStable(StabilizeTimeout)
-```
-
-**Benefits**:
-- ✅ Single source of truth for timeout values
-- ✅ Self-documenting code
-- ✅ Easy to adjust values globally
-- ✅ Consistent 10s timeout for all connection operations
-- ✅ 10s accommodates slower systems while remaining responsive
-
-**Files Modified**:
-- browser.go: Lines 19-22 (added constants), 101, 150 (use constants)
-- fetch.go: Line 63 (use StabilizeTimeout constant)
-
-**Note**: Timeouts are not yet CLI-configurable. Can add `--connect-timeout` and `--stabilize-timeout` flags post-v1.0 if needed.
-
----
-
-### 9. Fragile Error Detection ⏳ **PENDING**
+### 2. Fragile Error Detection
 
 **Status**: ⏳ Not yet addressed
 
@@ -485,48 +109,49 @@ if errors.As(err, &timeoutErr) && timeoutErr.Timeout() {
 
 ---
 
-### 10. File Overwrite Without Warning ✅ **COMPLETED**
+### 3. No Build-time Version Injection
 
-**Status**: ✅ Fixed (2025-10-17)
+**Status**: ⏳ Not yet addressed
 
-**Location**: convert.go:93
+**Location**: main.go:16-18
 
 **Problem**:
 ```go
-err := os.WriteFile(filename, []byte(content), 0644)
-// Silently overwrites existing files!
+const (
+    version = "1.0.0"  // Hard-coded
+)
 ```
 
-**Why It Was Flagged**:
-- Initially appeared to violate principle of least surprise
-- Concern about user data loss without warning
-- No indication when overwriting files
+**Why It's Bad**:
+- Version must be manually updated
+- No git commit hash
+- No build date
+- Can't tell development vs release builds
 
-**Analysis**:
-Unix tools like `mv`, `cp`, `curl -o`, and `wget` all overwrite files silently by default. This is expected behavior.
+**Fix**:
+Use `-ldflags` at build time:
 
-**Resolution**:
-Added verbose-mode warning when overwriting existing files, following Unix conventions:
 ```go
-// Check if file exists and warn in verbose mode
-if _, err := os.Stat(filename); err == nil {
-    logger.Verbose("Overwriting existing file: %s", filename)
-}
-err := os.WriteFile(filename, []byte(content), 0644)
+// main.go
+var (
+    version   = "dev"
+    commit    = "unknown"
+    buildDate = "unknown"
+)
 ```
 
-**Benefits**:
-- ✅ Maintains Unix tool conventions (silent by default)
-- ✅ Provides feedback in verbose mode for users who want it
-- ✅ No breaking changes to CLI interface
-- ✅ Helpful for debugging file operations
+```bash
+# Build command
+go build -ldflags="-X main.version=1.0.0 -X main.commit=$(git rev-parse HEAD) -X main.buildDate=$(date -u +%Y-%m-%d)"
+```
 
-**Files Modified**:
-- convert.go: Lines 92-95 (added existence check and verbose warning)
+**Complexity**: LOW
+
+**Priority**: MEDIUM (needed for releases)
 
 ---
 
-### 11. Memory Concerns for Large Pages ⏳ **PENDING**
+### 4. Memory Concerns for Large Pages
 
 **Status**: ⏳ Not yet addressed
 
@@ -568,9 +193,9 @@ Implement streaming conversion (complex):
 
 ---
 
-## 📋 Best Practice Violations (5)
+## 📋 Best Practice Violations (6)
 
-### 11. No Context Usage ⏳ **PENDING**
+### 5. No Context Usage
 
 **Status**: ⏳ Not yet addressed
 
@@ -608,7 +233,7 @@ func (pf *PageFetcher) Fetch(ctx context.Context, opts FetchOptions) (string, er
 
 ---
 
-### 12. Inconsistent Error Wrapping ⏳ **PENDING**
+### 6. Inconsistent Error Wrapping
 
 **Status**: ⏳ Not yet addressed
 
@@ -647,7 +272,7 @@ return nil, fmt.Errorf("failed to connect to browser: %w", err)
 
 ---
 
-### 13. No Structured Logging ⏳ **PENDING**
+### 7. No Structured Logging
 
 **Status**: ⏳ Not yet addressed
 
@@ -692,57 +317,7 @@ slog.Debug("page loaded", "status", status, "duration", duration)
 
 ---
 
-### 14. No Tests ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed (Phase 7 in PROJECT.md)
-
-**Location**: Entire project
-
-**Problem**:
-Zero test files. No unit tests, no integration tests.
-
-**Missing Coverage**:
-- ❌ Browser connection logic
-- ❌ Page fetching
-- ❌ Auth detection
-- ❌ Format conversion
-- ❌ Error handling
-- ❌ CLI flag parsing
-- ❌ File output
-
-**Should Have**:
-
-**Unit Tests**:
-```go
-// browser_test.go
-func TestBrowserConnection(t *testing.T)
-func TestBrowserLaunch(t *testing.T)
-
-// fetch_test.go
-func TestAuthDetection(t *testing.T)
-func TestPageFetch(t *testing.T)
-
-// convert_test.go
-func TestMarkdownConversion(t *testing.T)
-func TestHTMLPassthrough(t *testing.go)
-```
-
-**Integration Tests**:
-```go
-// integration_test.go
-func TestFetchRealPage(t *testing.T)
-func TestAuthWorkflow(t *testing.T)
-```
-
-**Complexity**: MEDIUM
-
-**Priority**: HIGH - Critical for v1.0
-
-**Status**: Planned in Phase 7 (PROJECT.md:171-187)
-
----
-
-### 15. Magic Numbers ⏳ **PENDING**
+### 8. Magic Numbers
 
 **Status**: ⏳ Not yet addressed
 
@@ -778,488 +353,7 @@ sizeKB := float64(len(content)) / BytesPerKB
 
 ---
 
-## 🐛 Potential Bugs (4)
-
-### 16. Race Condition in Logger ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed
-
-**Location**: logger.go + main.go:20
-
-**Problem**:
-Global logger can be accessed concurrently without synchronization.
-
-**Scenario**:
-```go
-// main.go
-var logger *Logger  // Global
-
-// If snag becomes a library and is used concurrently:
-go snag.Fetch(url1)  // Sets logger
-go snag.Fetch(url2)  // Overwrites logger!
-```
-
-**Current Risk**: LOW (single-threaded CLI)
-
-**Future Risk**: HIGH (if becomes library)
-
-**Fix**:
-- Pass logger as parameter (Issue #4)
-- Or use sync.Mutex if keeping global
-
-**Complexity**: See Issue #4
-
-**Priority**: LOW for CLI, HIGH for library
-
----
-
-### 17. Browser Cleanup Race ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed
-
-**Location**: main.go:207-212
-
-**Problem**:
-```go
-defer func() {
-    if config.CloseTab {
-        logger.Verbose("Cleanup: closing tab and browser if needed")
-    }
-    bm.Close()  // Called even if bm.Connect() failed
-}()
-```
-
-**Why It's Not Actually a Bug**:
-The `Close()` method handles nil browser:
-```go
-// browser.go:182
-func (bm *BrowserManager) Close() error {
-    if bm.browser == nil {
-        return nil  // Safe!
-    }
-    // ...
-}
-```
-
-**Status**: False alarm - already handled correctly.
-
-**Complexity**: N/A
-
-**Priority**: N/A
-
-**Resolution**: No fix needed. Good defensive programming already in place.
-
----
-
-### 18. OpenBrowserOnly Might Not Keep Browser Open ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed
-
-**Location**: browser.go:147-164, main.go:138
-
-**Problem**:
-```go
-// main.go:130-138
-if c.Bool("open-browser") {
-    logger.Info("Opening browser...")
-    bm := NewBrowserManager(...)
-    return bm.OpenBrowserOnly()  // Returns immediately
-}
-// ... rest of run() has defers that might close browser
-```
-
-**Why It Might Be a Problem**:
-- `OpenBrowserOnly()` returns nil
-- Function exits
-- Defers in main.go won't execute (different code path)
-- Actually, this is fine!
-
-**Analysis**:
-Looking at the code flow:
-1. `--open-browser` takes early return (line 138)
-2. No defers executed before this point
-3. Browser stays open (correct)
-
-**Status**: False alarm - works correctly.
-
-**Resolution**: No fix needed.
-
----
-
-### 19. WaitFor Element Timeout ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed
-
-**Location**: fetch.go:72-82
-
-**Problem**:
-```go
-if opts.WaitFor != "" {
-    logger.Verbose("Waiting for selector: %s", opts.WaitFor)
-    elem, err := page.Element(opts.WaitFor)  // Uses page timeout!
-    if err != nil {
-        return "", fmt.Errorf("failed to find selector %s: %w", opts.WaitFor, err)
-    }
-    // ...
-}
-```
-
-**Why It's Bad**:
-- If selector never appears, user waits full page timeout (30s)
-- No feedback during wait
-- No separate timeout for element wait
-
-**Fix**:
-```go
-// Add feedback
-logger.Progress("Waiting for selector: %s (timeout: %ds)", opts.WaitFor, timeout)
-
-// Or add separate timeout
-elem, err := page.Timeout(5 * time.Second).Element(opts.WaitFor)
-```
-
-**Complexity**: LOW
-
-**Priority**: LOW
-
----
-
-## 🎯 Missing Functionality (5)
-
-### 20. No Build-time Version Injection ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed
-
-**Location**: main.go:16-18
-
-**Problem**:
-```go
-const (
-    version = "1.0.0"  // Hard-coded
-)
-```
-
-**Why It's Bad**:
-- Version must be manually updated
-- No git commit hash
-- No build date
-- Can't tell development vs release builds
-
-**Fix**:
-Use `-ldflags` at build time:
-
-```go
-// main.go
-var (
-    version   = "dev"
-    commit    = "unknown"
-    buildDate = "unknown"
-)
-```
-
-```bash
-# Build command
-go build -ldflags="-X main.version=1.0.0 -X main.commit=$(git rev-parse HEAD) -X main.buildDate=$(date -u +%Y-%m-%d)"
-```
-
-**Complexity**: LOW
-
-**Priority**: MEDIUM (needed for releases)
-
----
-
-### 21. No Progress Indicators ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed
-
-**Location**: All files
-
-**Problem**:
-Long operations have no visual feedback:
-- Browser launch: 2-5 seconds
-- Page load: 5-30 seconds
-- Conversion: <1 second (usually fine)
-
-**User Experience**:
-```bash
-$ snag https://slow-site.com
-# ... 10 seconds of silence ...
-# User: "Is it working??"
-```
-
-**Fix**:
-Add spinner or progress dots:
-```go
-logger.ProgressWithSpinner("Fetching page...")
-// or
-logger.ProgressDots("Loading", interval)
-```
-
-**Complexity**: MEDIUM
-
-**Priority**: LOW (verbose mode helps)
-
----
-
-### 22. No Retry Logic ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed
-
-**Location**: fetch.go
-
-**Problem**:
-Network requests don't retry on transient failures:
-- DNS resolution failures
-- Connection refused
-- Temporary network issues
-
-**Fix**:
-```go
-func fetchWithRetry(maxRetries int, backoff time.Duration) error {
-    for i := 0; i < maxRetries; i++ {
-        err := fetch()
-        if err == nil {
-            return nil
-        }
-        if !isRetriable(err) {
-            return err
-        }
-        time.Sleep(backoff * time.Duration(i+1))
-    }
-    return ErrMaxRetriesExceeded
-}
-```
-
-**Complexity**: MEDIUM
-
-**Priority**: LOW (most sites are reliable)
-
-**Recommendation**: Defer to post-v1.0.
-
----
-
-### 23. No Configuration File Support ⏭️ **DEFERRED**
-
-**Status**: ⏭️ Intentionally deferred (Design Decision #5)
-
-**Location**: N/A (missing feature)
-
-**Problem**:
-All options must be specified via CLI flags every time.
-
-**Use Case**:
-```bash
-# User always wants:
-snag --timeout 60 --verbose --user-agent "Custom/1.0" <url>
-
-# Instead of ~/.snagrc:
-# timeout = 60
-# verbose = true
-# user-agent = "Custom/1.0"
-```
-
-**Design Decision**:
-- Not in MVP (see docs/design.md:521-531)
-- Can use shell aliases as workaround
-- Post-v1.0 consideration
-
-**Complexity**: MEDIUM
-
-**Priority**: Post-MVP
-
----
-
-### 24. No Cookie/Session Management ⏭️ **DEFERRED**
-
-**Status**: ⏭️ Post-MVP feature
-
-**Location**: N/A (missing feature)
-
-**Problem**:
-Can't save/load cookies between runs. Auth sessions aren't persistent across invocations.
-
-**Use Case**:
-```bash
-# First run: authenticate and save cookies
-snag --save-cookies auth.json https://site.com
-
-# Second run: reuse cookies
-snag --load-cookies auth.json https://site.com/private
-```
-
-**Workaround**:
-Use `--open-browser` to keep session in running browser.
-
-**Complexity**: MEDIUM
-
-**Priority**: Post-MVP
-
----
-
-## 📁 File-Specific Issues (6)
-
-### 25. main.go - Format Validation Should Use Enum ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed
-
-**Location**: main.go:166-170
-
-**Problem**:
-```go
-if config.Format != "markdown" && config.Format != "html" {
-    logger.Error("Invalid format: %s", config.Format)
-    return fmt.Errorf("invalid format: %s", config.Format)
-}
-```
-
-**Why It's Bad**:
-- Magic strings duplicated
-- No single source of truth for valid formats
-- Hard to extend (add PDF, text, etc.)
-
-**Fix**:
-```go
-// At package level
-const (
-    FormatMarkdown = "markdown"
-    FormatHTML     = "html"
-)
-
-var validFormats = map[string]bool{
-    FormatMarkdown: true,
-    FormatHTML:     true,
-}
-
-// In validation
-if !validFormats[config.Format] {
-    logger.Error("Invalid format: %s", config.Format)
-    logger.ErrorWithSuggestion(
-        "Format must be 'markdown' or 'html'",
-        fmt.Sprintf("Valid formats: %s", strings.Join(getValidFormats(), ", ")),
-    )
-    return ErrInvalidFormat
-}
-```
-
-**Complexity**: LOW
-
-**Priority**: LOW
-
----
-
-### 26. main.go - Config Struct Should Have Validation Method ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed
-
-**Location**: main.go:250-261
-
-**Problem**:
-Validation logic scattered in `run()` function. Config struct has no self-validation.
-
-**Current**:
-```go
-func run(c *cli.Context) error {
-    // ... validation logic mixed with initialization
-    if config.Format != "markdown" && config.Format != "html" {
-        // ...
-    }
-    // ... more code
-}
-```
-
-**Better**:
-```go
-type Config struct {
-    // fields...
-}
-
-func (c *Config) Validate() error {
-    if c.Format != "markdown" && c.Format != "html" {
-        return ErrInvalidFormat
-    }
-    if c.Timeout < 1 {
-        return ErrInvalidTimeout
-    }
-    // ... etc
-    return nil
-}
-
-func run(c *cli.Context) error {
-    config := &Config{...}
-    if err := config.Validate(); err != nil {
-        return err
-    }
-    // ...
-}
-```
-
-**Benefits**:
-- Separation of concerns
-- Reusable validation
-- Testable independently
-- Cleaner `run()` function
-
-**Complexity**: LOW
-
-**Priority**: LOW
-
----
-
-### 27. errors.go - Consider Adding Error Codes ⏳ **PENDING**
-
-**Status**: ⏳ Not yet addressed
-
-**Location**: errors.go
-
-**Problem**:
-Errors have no programmatic codes for handling.
-
-**Current**:
-```go
-var ErrBrowserNotFound = errors.New("no Chromium-based browser found")
-```
-
-**Enhancement**:
-```go
-type ErrorCode int
-
-const (
-    ErrCodeBrowserNotFound ErrorCode = 1001
-    ErrCodePageTimeout     ErrorCode = 1002
-    ErrCodeAuthRequired    ErrorCode = 1003
-    // ...
-)
-
-type SnagError struct {
-    Code    ErrorCode
-    Message string
-    Err     error
-}
-
-func (e *SnagError) Error() string {
-    return fmt.Sprintf("[%d] %s: %v", e.Code, e.Message, e.Err)
-}
-```
-
-**Benefits**:
-- Programmatic error handling
-- Error codes in logs
-- Easier debugging
-- Better for automation
-
-**Trade-offs**:
-- More complex
-- Might be overkill for CLI
-
-**Recommendation**: Defer to post-v1.0 or library use.
-
-**Complexity**: MEDIUM
-
-**Priority**: LOW
-
----
-
-### 28. logger.go - Should Be Interface ⏳ **PENDING**
+### 9. Logger Should Be Interface
 
 **Status**: ⏳ Not yet addressed
 
@@ -1311,7 +405,7 @@ func (c *ConsoleLogger) Success(...) { ... }
 
 ---
 
-### 29. browser.go - Close() Should Not Log And Return Error ⏳ **PENDING**
+### 10. Close() Should Not Log And Return Error
 
 **Status**: ⏳ Not yet addressed
 
@@ -1371,7 +465,342 @@ func (bm *BrowserManager) Close() error {
 
 ---
 
-### 30. browser.go - disable-blink-features May Not Work ⏳ **PENDING**
+## 🐛 Potential Bugs (2)
+
+### 11. Race Condition in Logger
+
+**Status**: ⏳ Not yet addressed
+
+**Location**: logger.go + main.go:20
+
+**Problem**:
+Global logger can be accessed concurrently without synchronization.
+
+**Scenario**:
+```go
+// main.go
+var logger *Logger  // Global
+
+// If snag becomes a library and is used concurrently:
+go snag.Fetch(url1)  // Sets logger
+go snag.Fetch(url2)  // Overwrites logger!
+```
+
+**Current Risk**: LOW (single-threaded CLI)
+
+**Future Risk**: HIGH (if becomes library)
+
+**Fix**:
+- Pass logger as parameter (related to deferred Issue #4)
+- Or use sync.Mutex if keeping global
+
+**Complexity**: See deferred Issue #4 in docs/2025-10-17-code-review-issues-one.md
+
+**Priority**: LOW for CLI, HIGH for library
+
+---
+
+### 12. WaitFor Element Timeout
+
+**Status**: ⏳ Not yet addressed
+
+**Location**: fetch.go:72-82
+
+**Problem**:
+```go
+if opts.WaitFor != "" {
+    logger.Verbose("Waiting for selector: %s", opts.WaitFor)
+    elem, err := page.Element(opts.WaitFor)  // Uses page timeout!
+    if err != nil {
+        return "", fmt.Errorf("failed to find selector %s: %w", opts.WaitFor, err)
+    }
+    // ...
+}
+```
+
+**Why It's Bad**:
+- If selector never appears, user waits full page timeout (30s)
+- No feedback during wait
+- No separate timeout for element wait
+
+**Fix**:
+```go
+// Add feedback
+logger.Progress("Waiting for selector: %s (timeout: %ds)", opts.WaitFor, timeout)
+
+// Or add separate timeout
+elem, err := page.Timeout(5 * time.Second).Element(opts.WaitFor)
+```
+
+**Complexity**: LOW
+
+**Priority**: LOW
+
+---
+
+## 🎯 Missing Functionality (3)
+
+### 13. No Progress Indicators
+
+**Status**: ⏳ Not yet addressed
+
+**Location**: All files
+
+**Problem**:
+Long operations have no visual feedback:
+- Browser launch: 2-5 seconds
+- Page load: 5-30 seconds
+- Conversion: <1 second (usually fine)
+
+**User Experience**:
+```bash
+$ snag https://slow-site.com
+# ... 10 seconds of silence ...
+# User: "Is it working??"
+```
+
+**Fix**:
+Add spinner or progress dots:
+```go
+logger.ProgressWithSpinner("Fetching page...")
+// or
+logger.ProgressDots("Loading", interval)
+```
+
+**Complexity**: MEDIUM
+
+**Priority**: LOW (verbose mode helps)
+
+---
+
+### 14. No Retry Logic
+
+**Status**: ⏳ Not yet addressed
+
+**Location**: fetch.go
+
+**Problem**:
+Network requests don't retry on transient failures:
+- DNS resolution failures
+- Connection refused
+- Temporary network issues
+
+**Fix**:
+```go
+func fetchWithRetry(maxRetries int, backoff time.Duration) error {
+    for i := 0; i < maxRetries; i++ {
+        err := fetch()
+        if err == nil {
+            return nil
+        }
+        if !isRetriable(err) {
+            return err
+        }
+        time.Sleep(backoff * time.Duration(i+1))
+    }
+    return ErrMaxRetriesExceeded
+}
+```
+
+**Complexity**: MEDIUM
+
+**Priority**: LOW (most sites are reliable)
+
+**Recommendation**: Defer to post-v1.0.
+
+---
+
+### 15. No Cookie/Session Management
+
+**Status**: ⏭️ Post-MVP feature
+
+**Location**: N/A (missing feature)
+
+**Problem**:
+Can't save/load cookies between runs. Auth sessions aren't persistent across invocations.
+
+**Use Case**:
+```bash
+# First run: authenticate and save cookies
+snag --save-cookies auth.json https://site.com
+
+# Second run: reuse cookies
+snag --load-cookies auth.json https://site.com/private
+```
+
+**Workaround**:
+Use `--open-browser` to keep session in running browser.
+
+**Complexity**: MEDIUM
+
+**Priority**: Post-MVP
+
+---
+
+## 📁 File-Specific Issues (4)
+
+### 16. Format Validation Should Use Enum
+
+**Status**: ⏳ Not yet addressed
+
+**Location**: main.go:166-170
+
+**Problem**:
+```go
+if config.Format != "markdown" && config.Format != "html" {
+    logger.Error("Invalid format: %s", config.Format)
+    return fmt.Errorf("invalid format: %s", config.Format)
+}
+```
+
+**Why It's Bad**:
+- Magic strings duplicated
+- No single source of truth for valid formats
+- Hard to extend (add PDF, text, etc.)
+
+**Fix**:
+```go
+// At package level
+const (
+    FormatMarkdown = "markdown"
+    FormatHTML     = "html"
+)
+
+var validFormats = map[string]bool{
+    FormatMarkdown: true,
+    FormatHTML:     true,
+}
+
+// In validation
+if !validFormats[config.Format] {
+    logger.Error("Invalid format: %s", config.Format)
+    logger.ErrorWithSuggestion(
+        "Format must be 'markdown' or 'html'",
+        fmt.Sprintf("Valid formats: %s", strings.Join(getValidFormats(), ", ")),
+    )
+    return ErrInvalidFormat
+}
+```
+
+**Complexity**: LOW
+
+**Priority**: LOW
+
+---
+
+### 17. Config Struct Should Have Validation Method
+
+**Status**: ⏳ Not yet addressed
+
+**Location**: main.go:250-261
+
+**Problem**:
+Validation logic scattered in `run()` function. Config struct has no self-validation.
+
+**Current**:
+```go
+func run(c *cli.Context) error {
+    // ... validation logic mixed with initialization
+    if config.Format != "markdown" && config.Format != "html" {
+        // ...
+    }
+    // ... more code
+}
+```
+
+**Better**:
+```go
+type Config struct {
+    // fields...
+}
+
+func (c *Config) Validate() error {
+    if c.Format != "markdown" && c.Format != "html" {
+        return ErrInvalidFormat
+    }
+    if c.Timeout < 1 {
+        return ErrInvalidTimeout
+    }
+    // ... etc
+    return nil
+}
+
+func run(c *cli.Context) error {
+    config := &Config{...}
+    if err := config.Validate(); err != nil {
+        return err
+    }
+    // ...
+}
+```
+
+**Benefits**:
+- Separation of concerns
+- Reusable validation
+- Testable independently
+- Cleaner `run()` function
+
+**Complexity**: LOW
+
+**Priority**: LOW
+
+---
+
+### 18. Consider Adding Error Codes
+
+**Status**: ⏳ Not yet addressed
+
+**Location**: errors.go
+
+**Problem**:
+Errors have no programmatic codes for handling.
+
+**Current**:
+```go
+var ErrBrowserNotFound = errors.New("no Chromium-based browser found")
+```
+
+**Enhancement**:
+```go
+type ErrorCode int
+
+const (
+    ErrCodeBrowserNotFound ErrorCode = 1001
+    ErrCodePageTimeout     ErrorCode = 1002
+    ErrCodeAuthRequired    ErrorCode = 1003
+    // ...
+)
+
+type SnagError struct {
+    Code    ErrorCode
+    Message string
+    Err     error
+}
+
+func (e *SnagError) Error() string {
+    return fmt.Sprintf("[%d] %s: %v", e.Code, e.Message, e.Err)
+}
+```
+
+**Benefits**:
+- Programmatic error handling
+- Error codes in logs
+- Easier debugging
+- Better for automation
+
+**Trade-offs**:
+- More complex
+- Might be overkill for CLI
+
+**Recommendation**: Defer to post-v1.0 or library use.
+
+**Complexity**: MEDIUM
+
+**Priority**: LOW
+
+---
+
+### 19. disable-blink-features May Not Work
 
 **Status**: ⏳ Not yet addressed
 
@@ -1405,7 +834,7 @@ l := launcher.New().
 
 ## 🔒 Security Concerns (3)
 
-### 31. JavaScript Evaluation ⏳ **PENDING**
+### 20. JavaScript Evaluation
 
 **Status**: ⏳ Not yet addressed
 
@@ -1434,7 +863,7 @@ If JavaScript ever becomes dynamic or user-provided → XSS risk.
 
 ---
 
-### 32. Path Traversal in File Output ⏳ **PENDING**
+### 21. Path Traversal in File Output
 
 **Status**: ⏳ Not yet addressed
 
@@ -1501,7 +930,7 @@ func validateOutputPath(filename string) error {
 
 ---
 
-### 33. Browser Binary Execution ⏳ **PENDING**
+### 22. Browser Binary Execution
 
 **Status**: ⏳ Not yet addressed
 
@@ -1537,42 +966,64 @@ if !exists {
 
 ---
 
+## ✅ Non-Issues (Verified)
+
+### Browser Cleanup Race
+
+**Location**: main.go:207-212
+
+**Status**: ✅ Not a bug - already handled correctly
+
+**Analysis**:
+The `Close()` method handles nil browser safely:
+```go
+// browser.go:182
+func (bm *BrowserManager) Close() error {
+    if bm.browser == nil {
+        return nil  // Safe!
+    }
+    // ...
+}
+```
+
+Good defensive programming already in place.
+
+---
+
+### OpenBrowserOnly Browser Persistence
+
+**Location**: browser.go:147-164, main.go:138
+
+**Status**: ✅ Not a bug - works correctly
+
+**Analysis**:
+- `--open-browser` takes early return (line 138)
+- No defers executed before this point
+- Browser stays open (correct behavior)
+
+---
+
 ## Summary by Priority
 
 ### Critical (Fix Before v1.0)
-
-1. ✅ Duplicate BrowserOptions Passing - **FIXED**
-2. ✅ Unused Variable in Auth Detection - **FIXED**
-3. ✅ Lost Error Messages in main() - **FIXED**
-4. ⏭️ Global Mutable Logger - **SKIPPED** (standard practice for CLI)
-5. ⏭️ No Signal Handling - **DEFERRED** (see SIGINT.md)
-6. ✅ Context Deadline Exceeded on Page Operations - **FIXED**
-14. No Tests (Phase 7 planned)
+1. No Tests (Phase 7 planned)
 
 ### High Priority (Should Fix Soon)
-
-7. ✅ No URL Validation - **FIXED**
-8. ✅ Hard-coded Timeouts - **FIXED**
-9. Fragile Error Detection
-10. ✅ File Overwrite Without Warning - **FIXED**
-20. No Build-time Version Injection
+2. Fragile Error Detection
+3. No Build-time Version Injection
+4. Memory Concerns for Large Pages (document limitation)
 
 ### Medium Priority (Consider for v1.0)
-
-11. Memory Concerns for Large Pages
-12. Logger Should Be Interface
-13. Path Traversal in File Output
+9. Logger Should Be Interface
+21. Path Traversal in File Output
 
 ### Low Priority (Post-v1.0)
-
-13-24. Various improvements and enhancements
+5-8, 10-20, 22: Various improvements and enhancements
 
 ### Deferred (Design Decisions)
+15. Cookie/Session Management (post-MVP feature)
 
-25. Global Logger (defer to library phase)
-26. No Context Usage (defer to library phase)
-27. Config File Support (intentional for MVP)
-28. Cookie Management (post-MVP feature)
+See docs/2025-10-17-code-review-issues-one.md for completed and deferred issues.
 
 ---
 
@@ -1592,5 +1043,6 @@ if !exists {
 
 ---
 
-**Document Version**: 1.3
+**Document Version**: 2.0
 **Last Updated**: 2025-10-17
+**Archive**: See docs/2025-10-17-code-review-issues-one.md for completed issues

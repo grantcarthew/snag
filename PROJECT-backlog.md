@@ -27,6 +27,7 @@
 ## Reference Documentation
 
 **IMPORTANT**: Before starting implementation, review:
+
 - ./docs/design.md - Complete design decisions and rationale
 - ./docs/notes.md - License headers and development notes
 - ./reference/rod/ - Chrome DevTools Protocol library documentation
@@ -43,23 +44,27 @@
 ## Key Learnings from Implementation
 
 ### API Documentation is Critical
+
 - **Always read source code/docs before using unfamiliar APIs**
 - Used `~/reference/` documentation effectively for rod and html-to-markdown/v2
 - Example: rod's `Page()` method takes `proto.TargetCreateTarget{}`, not `DefaultDevice`
 - Example: html-to-markdown uses `htmltomarkdown.ConvertString()` directly, not `NewConverter()`
 
 ### CLI Flag Ordering (urfave/cli)
+
 - Flags must come BEFORE positional arguments with urfave/cli
 - Correct: `snag --verbose https://example.com`
 - Incorrect: `snag https://example.com --verbose` (flags ignored)
 - This is different from Cobra which supports true position independence
 
 ### Flag Name Conflicts
+
 - urfave/cli reserves `-v` for `--version`
 - Had to remove `-v` alias from `--verbose` flag
 - Always check for built-in flag conflicts in CLI frameworks
 
 ### Go Import Patterns
+
 - Use package-level functions when available (cleaner)
 - `htmltomarkdown.ConvertString()` vs creating converter instances
 - Check reference documentation for idiomatic usage patterns
@@ -77,6 +82,7 @@
 - ✅ Create basic README.md structure
 
 **Key Decisions:**
+
 - 7 sentinel errors defined for internal logic
 - Logger uses stderr for all output (stdout reserved for content)
 - Color auto-detection via `NO_COLOR` env and TTY check
@@ -93,6 +99,7 @@
 - ✅ Configure position-independent argument parsing
 
 **Key Decisions:**
+
 - Removed `-v` alias from verbose (conflicts with urfave/cli's --version)
 - Flags must precede URL argument
 - Exit codes: 0 (success), 1 (any error)
@@ -109,6 +116,7 @@
 - ✅ Add error handling for browser not found
 
 **Key Decisions:**
+
 - Three-tier connection strategy: existing → launch headless → launch visible
 - Only close browser if launched by snag (not existing sessions)
 - Uses `proto.TargetCreateTarget{}` for creating pages
@@ -126,6 +134,7 @@
 - ✅ Add error handling for navigation failures
 
 **Key Decisions:**
+
 - `Element()` returns `(*Element, error)` - must handle both
 - `Has()` returns `(bool, *Element, error)` - 3 values
 - Auth detection checks: HTTP status, password inputs, login form patterns
@@ -143,6 +152,7 @@
 - ✅ Handle conversion errors gracefully
 
 **Key Decisions:**
+
 - Use `htmltomarkdown.ConvertString()` package-level function
 - HTML format is simple pass-through (no conversion)
 - File output shows size in KB for user feedback
@@ -163,6 +173,7 @@
 - ✅ Validate end-to-end flow
 
 **Key Decisions:**
+
 - Main `snag()` function orchestrates all components
 - Defer cleanup ensures browser/page cleanup
 - Error suggestions provide actionable help
@@ -197,6 +208,7 @@
 - ✅ Document platform support (macOS, Linux)
 
 **Current State:**
+
 - Basic README.md created with all essential documentation
 - All flags documented with clear examples
 - Common use cases covered (fetch, save, auth, formats)
@@ -223,12 +235,14 @@
 ## Working Features (Tested)
 
 ### ✅ Core Functionality
+
 - **URL Fetching**: Successfully fetches web pages via Chrome/Chromium
 - **Browser Management**: Auto-launches headless Chrome, detects existing instances
 - **Format Conversion**: HTML → Markdown conversion working perfectly
 - **Output Modes**: Both stdout and file output (`-o`) tested and working
 
 ### ✅ CLI Features
+
 - **Markdown Output** (default): `./snag https://example.com`
 - **HTML Output**: `./snag --format html https://example.com`
 - **File Output**: `./snag -o output.md https://example.com`
@@ -239,12 +253,14 @@
 - **Help**: `./snag --help`
 
 ### ✅ Logging System
+
 - Clean separation: content → stdout, logs → stderr
 - Color output with emoji indicators (✓ ⚠ ✗)
 - Auto-detects TTY and respects NO_COLOR
 - Four log levels working correctly
 
 ### 🔧 Browser Compatibility
+
 - ✅ Chrome/Chromium (tested)
 - ✅ Headless mode working
 - ⏳ Existing session detection (implemented, not tested)
@@ -290,6 +306,7 @@ require (
 ## Next Steps
 
 ### Immediate (Phase 7)
+
 1. Create `testdata/` directory with HTML fixtures
 2. Write integration tests for core functionality
 3. Test auth detection with mock login pages
@@ -297,18 +314,21 @@ require (
 5. Test all CLI flag combinations
 
 ### Short-term (Phase 8)
+
 1. Create `LICENSES/` directory
 2. Add third-party license files
 3. Add troubleshooting section to README
 4. Document common error scenarios
 
 ### Medium-term (Phase 9)
+
 1. Set up GitHub Actions for multi-platform builds
 2. Create Homebrew tap and formula
 3. Test on Linux (currently only tested on macOS)
 4. Tag v1.0.0 release
 
 ### Future Enhancements (Post-MVP)
+
 - Tab management (`--list-tabs`, `--tab`)
 - PDF export (`--format pdf`)
 - Plain text extraction (`--format text`)
