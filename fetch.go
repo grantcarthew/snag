@@ -102,6 +102,8 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 // detectAuth checks if the page requires authentication
 func (pf *PageFetcher) detectAuth() error {
 	// Check HTTP status code by evaluating JavaScript
+	// SECURITY: This JavaScript is hardcoded and safe. Never accept user-provided
+	// JavaScript for evaluation as it would create XSS vulnerabilities.
 	statusCode, err := pf.page.Eval(`() => {
 		return window.performance?.getEntriesByType?.('navigation')?.[0]?.responseStatus || 0;
 	}`)

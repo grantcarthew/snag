@@ -113,6 +113,9 @@ func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
 // launchBrowser launches a new browser instance
 func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 	// Find browser executable
+	// SECURITY: We trust the system-installed browser binary found by launcher.LookPath().
+	// Binary integrity is the responsibility of the OS package manager. If an attacker
+	// can replace the browser binary, they already have system-level access.
 	path, exists := launcher.LookPath()
 	if !exists {
 		return nil, ErrBrowserNotFound
