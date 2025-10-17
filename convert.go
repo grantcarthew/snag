@@ -89,6 +89,11 @@ func (cc *ContentConverter) writeToStdout(content string) error {
 func (cc *ContentConverter) writeToFile(content string, filename string) error {
 	logger.Verbose("Writing to file: %s", filename)
 
+	// Check if file exists and warn in verbose mode
+	if _, err := os.Stat(filename); err == nil {
+		logger.Verbose("Overwriting existing file: %s", filename)
+	}
+
 	// Write to file
 	err := os.WriteFile(filename, []byte(content), 0644)
 	if err != nil {
