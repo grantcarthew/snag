@@ -452,7 +452,7 @@ go snag.Fetch(url2)  // Overwrites logger!
 
 ### 12. WaitFor Element Timeout
 
-**Status**: ⏳ Not yet addressed
+**Status**: ⏭️ Deferred to UX improvements
 
 **Location**: fetch.go:72-82
 
@@ -492,7 +492,7 @@ elem, err := page.Timeout(5 * time.Second).Element(opts.WaitFor)
 
 ### 13. No Progress Indicators
 
-**Status**: ⏳ Not yet addressed
+**Status**: ⏭️ Deferred - see UX.md
 
 **Location**: All files
 
@@ -525,7 +525,7 @@ logger.ProgressDots("Loading", interval)
 
 ### 14. No Retry Logic
 
-**Status**: ⏳ Not yet addressed
+**Status**: ❌ Won't do - not applicable for interactive CLI
 
 **Location**: fetch.go
 
@@ -562,7 +562,7 @@ func fetchWithRetry(maxRetries int, backoff time.Duration) error {
 
 ### 15. No Cookie/Session Management
 
-**Status**: ⏭️ Post-MVP feature
+**Status**: ⏭️ Deferred - on backlog
 
 **Location**: N/A (missing feature)
 
@@ -591,7 +591,7 @@ Use `--open-browser` to keep session in running browser.
 
 ### 16. Format Validation Should Use Enum
 
-**Status**: ⏳ Not yet addressed
+**Status**: ✅ Fixed
 
 **Location**: main.go:166-170
 
