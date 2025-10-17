@@ -93,8 +93,9 @@ func main() {
 				Usage: "Force visible mode for authentication",
 			},
 			&cli.BoolFlag{
-				Name:  "open-browser",
-				Usage: "Open Chrome browser in visible state (no URL required)",
+				Name:    "open-browser",
+				Aliases: []string{"ob"},
+				Usage:   "Open Chrome browser in visible state (no URL required)",
 			},
 
 			// Logging/Debugging
