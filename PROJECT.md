@@ -224,7 +224,7 @@ return nil, fmt.Errorf("failed to connect to browser: %w", err)
 
 ### 7. No Structured Logging
 
-**Status**: ⏳ Not yet addressed
+**Status**: ❌ Won't do - custom logger better for CLI UX
 
 **Location**: logger.go
 
@@ -269,7 +269,7 @@ slog.Debug("page loaded", "status", status, "duration", duration)
 
 ### 8. Magic Numbers
 
-**Status**: ⏳ Not yet addressed
+**Status**: ✅ Fixed
 
 **Locations**:
 - convert.go:93 - File mode `0644`
@@ -305,7 +305,7 @@ sizeKB := float64(len(content)) / BytesPerKB
 
 ### 9. Logger Should Be Interface
 
-**Status**: ⏳ Not yet addressed
+**Status**: ❌ Won't do - unnecessary for main package
 
 **Location**: logger.go:38-43
 
@@ -357,7 +357,7 @@ func (c *ConsoleLogger) Success(...) { ... }
 
 ### 10. Close() Should Not Log And Return Error
 
-**Status**: ⏳ Not yet addressed
+**Status**: ✅ Fixed
 
 **Location**: browser.go:181-203
 
@@ -419,7 +419,7 @@ func (bm *BrowserManager) Close() error {
 
 ### 11. Race Condition in Logger
 
-**Status**: ⏳ Not yet addressed
+**Status**: ❌ Won't do - single-threaded CLI tool
 
 **Location**: logger.go + main.go:20
 
