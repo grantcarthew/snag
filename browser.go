@@ -102,7 +102,7 @@ func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
 
 	// Try to connect
 	if err := browser.Connect(); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBrowserConnection, err)
+		return nil, fmt.Errorf("%w: %w", ErrBrowserConnection, err)
 	}
 
 	// Return the browser but without timeout for future operations
@@ -151,7 +151,7 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 
 	// Try to connect
 	if err := browser.Connect(); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBrowserConnection, err)
+		return nil, fmt.Errorf("%w: %w", ErrBrowserConnection, err)
 	}
 
 	// Return the browser but without timeout for future operations

@@ -57,7 +57,7 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 			)
 			return "", ErrPageLoadTimeout
 		}
-		return "", fmt.Errorf("%w: %v", ErrNavigationFailed, err)
+		return "", fmt.Errorf("%w: %w", ErrNavigationFailed, err)
 	}
 
 	// Wait for page to be stable (use original page - no timeout constraint)
