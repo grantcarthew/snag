@@ -3,7 +3,7 @@
 **Review Date**: 2025-10-17
 **Reviewer**: Claude Code (Comprehensive Go Code Review)
 **Total Issues**: 32
-**Progress**: 6 completed, 2 skipped/deferred, 24 remaining
+**Progress**: 7 completed, 2 skipped/deferred, 23 remaining
 
 ## Status Legend
 
@@ -386,54 +386,58 @@ $ snag ftp://example.com
 
 ---
 
-### 8. Hard-coded Timeouts Throughout ⏳ **PENDING**
+### 8. Hard-coded Timeouts Throughout ✅ **COMPLETED**
 
-**Status**: ⏳ Not yet addressed
+**Status**: ✅ Fixed (2025-10-17)
 
-**Locations**:
-- browser.go:90 - 5 second connection timeout
-- browser.go:138 - 30 second browser timeout
-- fetch.go:66 - 3 second stable wait
+**Location**: browser.go:19-22 (constants), browser.go:101, browser.go:150; fetch.go:63
 
 **Problem**:
+Magic numbers scattered throughout code:
 ```go
-// browser.go:90
-browser := rod.New().
-    ControlURL(controlURL).
-    Timeout(5 * time.Second)  // Hard-coded!
+// browser.go - Hard-coded timeouts
+browser := rod.New().ControlURL(controlURL).Timeout(5 * time.Second)   // Existing browser
+browser := rod.New().ControlURL(controlURL).Timeout(30 * time.Second)  // New browser
 
-// browser.go:138
-browser := rod.New().
-    ControlURL(controlURL).
-    Timeout(30 * time.Second)  // Hard-coded!
-
-// fetch.go:66
-err = page.WaitStable(3 * time.Second)  // Hard-coded!
+// fetch.go - Hard-coded wait time
+err = page.WaitStable(3 * time.Second)
 ```
 
 **Why It's Bad**:
-- Not configurable by users
-- May be too short for slow networks
-- May be too long for fast networks
-- Magic numbers scattered in code
+- Magic numbers not self-documenting
+- Inconsistent timeout values (5s vs 30s for same operation)
+- Hard to change consistently across codebase
 
-**Fix**:
+**Resolution**:
+- Added package-level constants in browser.go
+- Unified connection timeout to 10 seconds (both existing and new browsers)
+- All timeouts now use named constants
+
+**Implementation**:
 ```go
-// Add constants at package level or config
+// browser.go:19-22
 const (
-    DefaultConnectTimeout = 5 * time.Second
-    DefaultBrowserTimeout = 30 * time.Second
-    DefaultStableTimeout  = 3 * time.Second
+    ConnectTimeout   = 10 * time.Second // Browser connection timeout (existing or newly launched)
+    StabilizeTimeout = 3 * time.Second  // Page stabilization wait time
 )
 
-// Or make them configurable via CLI flags
+// Usage throughout codebase
+browser := rod.New().ControlURL(controlURL).Timeout(ConnectTimeout)
+err = pf.page.WaitStable(StabilizeTimeout)
 ```
 
-**Complexity**: LOW
+**Benefits**:
+- ✅ Single source of truth for timeout values
+- ✅ Self-documenting code
+- ✅ Easy to adjust values globally
+- ✅ Consistent 10s timeout for all connection operations
+- ✅ 10s accommodates slower systems while remaining responsive
 
-**Priority**: LOW (current values are reasonable defaults)
+**Files Modified**:
+- browser.go: Lines 19-22 (added constants), 101, 150 (use constants)
+- fetch.go: Line 63 (use StabilizeTimeout constant)
 
-**Recommendation**: Document as constants for now, make configurable post-v1.0.
+**Note**: Timeouts are not yet CLI-configurable. Can add `--connect-timeout` and `--stabilize-timeout` flags post-v1.0 if needed.
 
 ---
 
@@ -1548,7 +1552,7 @@ if !exists {
 ### High Priority (Should Fix Soon)
 
 7. ✅ No URL Validation - **FIXED**
-8. Hard-coded Timeouts
+8. ✅ Hard-coded Timeouts - **FIXED**
 9. Fragile Error Detection
 10. ✅ File Overwrite Without Warning - **FIXED**
 20. No Build-time Version Injection
