@@ -146,12 +146,19 @@ func run(c *cli.Context) error {
 		return ErrInvalidURL
 	}
 
-	url := c.Args().First()
-	logger.Verbose("Target URL: %s", url)
+	urlStr := c.Args().First()
+
+	// Validate and normalize URL
+	validatedURL, err := validateURL(urlStr)
+	if err != nil {
+		return err
+	}
+
+	logger.Verbose("Target URL: %s", validatedURL)
 
 	// Extract configuration from flags
 	config := &Config{
-		URL:           url,
+		URL:           validatedURL,
 		OutputFile:    c.String("output"),
 		Format:        c.String("format"),
 		Timeout:       c.Int("timeout"),
