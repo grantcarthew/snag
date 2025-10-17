@@ -42,11 +42,9 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 	// Navigate to the URL with timeout
 	logger.Verbose("Navigating to %s (timeout: %ds)...", opts.URL, opts.Timeout)
 
-	// Create a timeout context for navigation
-	page := pf.page.Timeout(pf.timeout)
-
-	// Navigate to URL
-	err := page.Navigate(opts.URL)
+	// Apply timeout only to navigation - use original page for other operations
+	// This prevents "context deadline exceeded" on HTML extraction if total time > timeout
+	err := pf.page.Timeout(pf.timeout).Navigate(opts.URL)
 	if err != nil {
 		// Check if it's a timeout
 		if strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "context deadline exceeded") {
@@ -60,9 +58,9 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 		return "", fmt.Errorf("%w: %v", ErrNavigationFailed, err)
 	}
 
-	// Wait for page to be stable
+	// Wait for page to be stable (use original page - no timeout constraint)
 	logger.Verbose("Waiting for page to stabilize...")
-	err = page.WaitStable(3 * time.Second)
+	err = pf.page.WaitStable(3 * time.Second)
 	if err != nil {
 		logger.Warning("Page did not stabilize: %v", err)
 	}
@@ -70,7 +68,7 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 	// If WaitFor selector is specified, wait for it
 	if opts.WaitFor != "" {
 		logger.Verbose("Waiting for selector: %s", opts.WaitFor)
-		elem, err := page.Element(opts.WaitFor)
+		elem, err := pf.page.Element(opts.WaitFor)
 		if err != nil {
 			return "", fmt.Errorf("failed to find selector %s: %w", opts.WaitFor, err)
 		}
@@ -86,9 +84,9 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 		return "", authErr
 	}
 
-	// Extract HTML content
+	// Extract HTML content (use original page - should be fast, no timeout needed)
 	logger.Verbose("Extracting HTML content...")
-	html, err := page.HTML()
+	html, err := pf.page.HTML()
 	if err != nil {
 		return "", fmt.Errorf("failed to extract HTML: %w", err)
 	}
