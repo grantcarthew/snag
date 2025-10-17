@@ -17,11 +17,14 @@ import (
 
 // BrowserManager handles browser lifecycle and connection
 type BrowserManager struct {
-	browser      *rod.Browser
-	launcher     *launcher.Launcher
-	port         int
-	wasLaunched  bool
-	userAgent    string
+	browser       *rod.Browser
+	launcher      *launcher.Launcher
+	port          int
+	wasLaunched   bool
+	userAgent     string
+	forceHeadless bool
+	forceVisible  bool
+	openBrowser   bool
 }
 
 // BrowserOptions contains options for browser management
@@ -36,15 +39,18 @@ type BrowserOptions struct {
 // NewBrowserManager creates a new browser manager
 func NewBrowserManager(opts BrowserOptions) *BrowserManager {
 	return &BrowserManager{
-		port:      opts.Port,
-		userAgent: opts.UserAgent,
+		port:          opts.Port,
+		userAgent:     opts.UserAgent,
+		forceHeadless: opts.ForceHeadless,
+		forceVisible:  opts.ForceVisible,
+		openBrowser:   opts.OpenBrowser,
 	}
 }
 
 // Connect attempts to connect to an existing browser or launch a new one
-func (bm *BrowserManager) Connect(opts BrowserOptions) (*rod.Browser, error) {
+func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 	// Strategy 1: Try to connect to existing browser instance (unless forced)
-	if !opts.ForceHeadless && !opts.ForceVisible {
+	if !bm.forceHeadless && !bm.forceVisible {
 		logger.Verbose("Checking for existing Chrome instance on port %d...", bm.port)
 		if browser, err := bm.connectToExisting(); err == nil {
 			logger.Success("Connected to existing Chrome instance")
@@ -56,7 +62,7 @@ func (bm *BrowserManager) Connect(opts BrowserOptions) (*rod.Browser, error) {
 	}
 
 	// Strategy 2: Launch new browser instance
-	headless := !opts.ForceVisible && !opts.OpenBrowser
+	headless := !bm.forceVisible && !bm.openBrowser
 
 	if headless {
 		logger.Verbose("Launching Chrome in headless mode...")

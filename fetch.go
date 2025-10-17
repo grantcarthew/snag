@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/proto"
 )
 
 // PageFetcher handles fetching page content
@@ -102,13 +101,6 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 
 // detectAuth checks if the page requires authentication
 func (pf *PageFetcher) detectAuth() error {
-	// Get the current response
-	info, err := proto.NetworkGetResponseBody{}.Call(pf.page)
-	if err != nil {
-		// This error is expected for some pages, don't fail
-		logger.Debug("Could not get response body for auth detection: %v", err)
-	}
-
 	// Check HTTP status code by evaluating JavaScript
 	statusCode, err := pf.page.Eval(`() => {
 		return window.performance?.getEntriesByType?.('navigation')?.[0]?.responseStatus || 0;
@@ -155,8 +147,6 @@ func (pf *PageFetcher) detectAuth() error {
 			}
 		}
 	}
-
-	_ = info // Suppress unused variable warning
 
 	return nil
 }

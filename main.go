@@ -110,6 +110,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -186,12 +187,7 @@ func snag(config *Config) error {
 	})
 
 	// Connect to browser
-	_, err := bm.Connect(BrowserOptions{
-		Port:          config.Port,
-		ForceHeadless: config.ForceHeadless,
-		ForceVisible:  config.ForceVisible,
-		UserAgent:     config.UserAgent,
-	})
+	_, err := bm.Connect()
 	if err != nil {
 		if err == ErrBrowserNotFound {
 			logger.Error("No Chromium-based browser found")
