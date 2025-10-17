@@ -3,7 +3,7 @@
 **Review Date**: 2025-10-17
 **Reviewer**: Claude Code (Comprehensive Go Code Review)
 **Total Issues**: 31
-**Progress**: 3 completed, 2 skipped/deferred, 26 remaining
+**Progress**: 4 completed, 2 skipped/deferred, 25 remaining
 
 ## Status Legend
 
@@ -211,11 +211,11 @@ Use global `browserManager` variable (matching logger pattern) with signal handl
 
 ## ⚠️ Important Issues (5)
 
-### 6. No URL Validation ⏳ **PENDING**
+### 6. No URL Validation ✅ **COMPLETED**
 
-**Status**: ⏳ Not yet addressed
+**Status**: ✅ Fixed (2025-10-17)
 
-**Location**: main.go:148
+**Location**: main.go:149 (original), validate.go (new)
 
 **Problem**:
 ```go
@@ -229,29 +229,76 @@ url := c.Args().First()  // No validation!
 - May cause confusing errors later
 
 **Examples of Bad Input**:
-- `snag example.com` (no scheme)
-- `snag not-a-url`
-- `snag http://`
+- `snag example.com` (no scheme - now auto-adds https://)
+- `snag "bad url with spaces"` (invalid characters)
+- `snag ftp://example.com` (unsupported scheme)
 
-**Fix**:
+**Resolution**:
+- Created new `validate.go` module with `validateURL()` function
+- Auto-adds `https://` if no scheme is present (user-friendly)
+- Validates URL using `net/url.Parse()`
+- Supports `http://`, `https://`, and `file://` schemes
+- Validates host exists (except for file:// URLs)
+- Provides clear error messages with examples
+- Keeps main.go clean and focused
+
+**Implementation**:
 ```go
-import "net/url"
+// validate.go
+func validateURL(urlStr string) (string, error) {
+    // Add https:// if no scheme present
+    if !strings.Contains(urlStr, "://") {
+        urlStr = "https://" + urlStr
+    }
 
-urlStr := c.Args().First()
-parsedURL, err := url.Parse(urlStr)
-if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
-    logger.Error("Invalid URL: %s", urlStr)
-    logger.ErrorWithSuggestion(
-        "URL must start with http:// or https://",
-        "snag https://example.com",
-    )
-    return ErrInvalidURL
+    // Parse and validate
+    parsedURL, err := url.Parse(urlStr)
+    if err != nil {
+        return "", ErrInvalidURL
+    }
+
+    // Check supported schemes
+    validSchemes := map[string]bool{
+        "http":  true,
+        "https": true,
+        "file":  true,
+    }
+
+    if !validSchemes[parsedURL.Scheme] {
+        return "", ErrInvalidURL
+    }
+
+    // Validate host (except file://)
+    if parsedURL.Scheme != "file" && parsedURL.Host == "" {
+        return "", ErrInvalidURL
+    }
+
+    return urlStr, nil
 }
 ```
 
-**Complexity**: LOW
+**Files Modified**:
+- validate.go: New file (15-58)
+- main.go: Updated to call validateURL() (149-157)
 
-**Priority**: MEDIUM
+**User Experience**:
+```bash
+# Auto-adds https://
+$ snag example.com
+→ Uses: https://example.com ✓
+
+# Invalid characters
+$ snag "bad url with spaces"
+✗ Invalid URL: https://bad url with spaces
+✗ URL parsing failed: invalid character " " in host name
+  Try: snag https://example.com
+
+# Unsupported scheme
+$ snag ftp://example.com
+✗ Unsupported URL scheme: ftp
+✗ URL must use http://, https://, or file://
+  Try: snag https://example.com
+```
 
 ---
 
@@ -1427,10 +1474,10 @@ if !exists {
 
 ### High Priority (Should Fix Soon)
 
-6. No URL Validation
+6. ✅ No URL Validation - **FIXED**
 7. File Overwrite Without Warning
 8. Fragile Error Detection
-9. No Build-time Version Injection
+20. No Build-time Version Injection
 
 ### Medium Priority (Consider for v1.0)
 
@@ -1461,8 +1508,9 @@ if !exists {
 6. Proper resource cleanup with defer
 7. Verbose logging for debugging
 8. User-friendly CLI design
+9. URL validation with auto-scheme addition (user-friendly)
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 1.1
 **Last Updated**: 2025-10-17
