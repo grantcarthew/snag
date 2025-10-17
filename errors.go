@@ -1,0 +1,33 @@
+// Copyright (c) 2025 Grant Carthew
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package main
+
+import "errors"
+
+// Sentinel errors for internal logic and testing
+var (
+	// ErrBrowserNotFound indicates no Chromium-based browser was found on the system
+	ErrBrowserNotFound = errors.New("no Chromium-based browser found")
+
+	// ErrPageLoadTimeout indicates the page took too long to load
+	ErrPageLoadTimeout = errors.New("page load timeout exceeded")
+
+	// ErrAuthRequired indicates authentication is needed to access the page
+	ErrAuthRequired = errors.New("authentication required")
+
+	// ErrInvalidURL indicates the provided URL is invalid or malformed
+	ErrInvalidURL = errors.New("invalid URL")
+
+	// ErrConversionFailed indicates HTML to Markdown conversion failed
+	ErrConversionFailed = errors.New("HTML to Markdown conversion failed")
+
+	// ErrBrowserConnection indicates failure to connect to the browser
+	ErrBrowserConnection = errors.New("failed to connect to browser")
+
+	// ErrNavigationFailed indicates page navigation failed
+	ErrNavigationFailed = errors.New("page navigation failed")
+)
