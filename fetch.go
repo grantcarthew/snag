@@ -7,6 +7,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -46,8 +48,8 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 	// This prevents "context deadline exceeded" on HTML extraction if total time > timeout
 	err := pf.page.Timeout(pf.timeout).Navigate(opts.URL)
 	if err != nil {
-		// Check if it's a timeout
-		if strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "context deadline exceeded") {
+		// Check if it's a timeout using proper error type checking
+		if errors.Is(err, context.DeadlineExceeded) {
 			logger.Error("Page load timeout exceeded (%ds)", opts.Timeout)
 			logger.ErrorWithSuggestion(
 				fmt.Sprintf("The page took too long to load"),
