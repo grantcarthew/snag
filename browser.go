@@ -163,21 +163,53 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 }
 
 // OpenBrowserOnly opens a browser without navigating to any page
+// The browser is left running with CDP debugging enabled, and snag exits
 func (bm *BrowserManager) OpenBrowserOnly() error {
-	browser, err := bm.launchBrowser(false) // Always visible
-	if err != nil {
-		return err
+	// Find browser executable
+	path, exists := launcher.LookPath()
+	if !exists {
+		return ErrBrowserNotFound
 	}
 
-	bm.browser = browser
-	bm.wasLaunched = true
+	logger.Debug("Found browser at: %s", path)
+
+	// Create launcher with options
+	// Leakless(false) allows the browser to persist after this process exits
+	l := launcher.New().
+		Bin(path).
+		Leakless(false). // Browser persists after snag exits
+		Headless(false). // Always visible
+		Set("disable-blink-features", "AutomationControlled").
+		Set("remote-debugging-port", fmt.Sprintf("%d", bm.port))
+
+	// Launch browser and let it run independently
+	controlURL, err := l.Launch()
+	if err != nil {
+		return fmt.Errorf("failed to launch browser: %w", err)
+	}
+
+	// Connect to browser briefly to open a visible tab, then disconnect
+	browser := rod.New().ControlURL(controlURL).Timeout(ConnectTimeout)
+	if err := browser.Connect(); err != nil {
+		return fmt.Errorf("%w: %w", ErrBrowserConnection, err)
+	}
+
+	// Create a new page so the browser window is visible
+	_, err = browser.Page(proto.TargetCreateTarget{URL: "about:blank"})
+	if err != nil {
+		browser.Close()
+		return fmt.Errorf("failed to create page: %w", err)
+	}
+
+	// Disconnect from browser but leave it running
+	// Don't call Close() - we want the browser to persist
 
 	logger.Success("Browser opened on port %d", bm.port)
 	logger.Info("Browser is running with remote debugging enabled")
 	logger.Info("You can now connect to it using: snag <url>")
 
-	// Keep the browser open (don't close it)
-	// The process will exit but browser stays running
+	// Don't store launcher or browser - let it run independently
+	// Don't call cleanup - the browser stays running after we exit
 	return nil
 }
 
