@@ -41,7 +41,7 @@ func (cc *ContentConverter) Process(html string, outputFile string) error {
 		logger.Verbose("Converting HTML to Markdown...")
 		content, err = cc.convertToMarkdown(html)
 		if err != nil {
-			return fmt.Errorf("%w: %v", ErrConversionFailed, err)
+			return fmt.Errorf("%w: %w", ErrConversionFailed, err)
 		}
 		logger.Debug("Converted to %d bytes of Markdown", len(content))
 
