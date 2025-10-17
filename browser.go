@@ -90,17 +90,18 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
 	controlURL := fmt.Sprintf("ws://localhost:%d", bm.port)
 
-	// Create browser instance with timeout
-	browser := rod.New().
-		ControlURL(controlURL).
-		Timeout(5 * time.Second)
+	// Create browser instance and connect with timeout
+	// We need to assign the result because Timeout() creates a new instance
+	browser := rod.New().ControlURL(controlURL).Timeout(5 * time.Second)
 
 	// Try to connect
 	if err := browser.Connect(); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBrowserConnection, err)
 	}
 
-	return browser, nil
+	// Return the browser but without timeout for future operations
+	// CancelTimeout() removes the timeout context from subsequent operations
+	return browser.CancelTimeout(), nil
 }
 
 // launchBrowser launches a new browser instance
@@ -138,16 +139,18 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 
 	bm.launcher = l
 
-	// Connect to launched browser
-	browser := rod.New().
-		ControlURL(controlURL).
-		Timeout(30 * time.Second)
+	// Create browser instance and connect with timeout
+	// We need to assign the result because Timeout() creates a new instance
+	browser := rod.New().ControlURL(controlURL).Timeout(30 * time.Second)
 
+	// Try to connect
 	if err := browser.Connect(); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBrowserConnection, err)
 	}
 
-	return browser, nil
+	// Return the browser but without timeout for future operations
+	// CancelTimeout() removes the timeout context from subsequent operations
+	return browser.CancelTimeout(), nil
 }
 
 // OpenBrowserOnly opens a browser without navigating to any page
