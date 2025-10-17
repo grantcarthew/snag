@@ -15,6 +15,12 @@ import (
 	"github.com/go-rod/rod/lib/proto"
 )
 
+// Timeout constants
+const (
+	ConnectTimeout   = 10 * time.Second // Browser connection timeout (existing or newly launched)
+	StabilizeTimeout = 3 * time.Second  // Page stabilization wait time
+)
+
 // BrowserManager handles browser lifecycle and connection
 type BrowserManager struct {
 	browser       *rod.Browser
@@ -92,7 +98,7 @@ func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
 
 	// Create browser instance and connect with timeout
 	// We need to assign the result because Timeout() creates a new instance
-	browser := rod.New().ControlURL(controlURL).Timeout(5 * time.Second)
+	browser := rod.New().ControlURL(controlURL).Timeout(ConnectTimeout)
 
 	// Try to connect
 	if err := browser.Connect(); err != nil {
@@ -141,7 +147,7 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 
 	// Create browser instance and connect with timeout
 	// We need to assign the result because Timeout() creates a new instance
-	browser := rod.New().ControlURL(controlURL).Timeout(30 * time.Second)
+	browser := rod.New().ControlURL(controlURL).Timeout(ConnectTimeout)
 
 	// Try to connect
 	if err := browser.Connect(); err != nil {
