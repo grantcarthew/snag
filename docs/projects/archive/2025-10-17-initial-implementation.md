@@ -1,4 +1,4 @@
-# snag - Project Implementation Plan
+# snag - Initial Implementation
 
 ## Project Status
 
@@ -179,58 +179,54 @@
 - Error suggestions provide actionable help
 - Tested successfully with example.com
 
-### Phase 7: Testing & Validation
+### Phase 7: Testing & Validation ⏳
 
-- Create testdata/ directory
-- Create HTML test fixtures (simple.html, auth.html, etc.)
+**See [PROJECT-testing.md](PROJECT-testing.md) for complete testing plan.**
+
+**Summary**:
+- Create testdata/ directory with HTML fixtures
 - Implement test HTTP server for controlled tests
-- Write integration test: simple page fetch
-- Write integration test: HTML to Markdown conversion
-- Write integration test: auth detection (401/403)
-- Write integration test: timeout handling
-- Write integration test: output to file
-- Write integration test: output format selection
-- Write integration test: browser connection modes
-- Write integration test: CLI flag combinations
-- Test verbose/quiet/debug logging modes
-- Validate error messages are clear and actionable
-- Test on real websites (example.com, etc.)
+- Write integration tests for core functionality
+- Test auth detection, timeout handling, browser modes
+- Validate error messages and edge cases
+- Test real websites (example.com, httpbin.org)
+- Target: 70%+ code coverage
+
+**Status**: Not started (0%)
 
 ### Phase 8: Documentation ⏳
 
-- ✅ Complete README.md with full description
-- ✅ Document all 16 CLI flags with examples
-- ✅ Add usage examples for common scenarios
-- ✅ Add authenticated site workflow example
-- ⏳ Add troubleshooting section
-- ⏳ Create LICENSES/ directory
-- ⏳ Add third-party license files (rod, urfave/cli, html-to-markdown)
-- ✅ Document platform support (macOS, Linux)
+**See [PROJECT-documentation.md](PROJECT-documentation.md) for complete documentation plan.**
 
-**Current State:**
+**Summary**:
+- Add comprehensive troubleshooting section to README
+- Create LICENSES/ directory with third-party licenses
+- Add advanced usage examples
+- Enhance installation instructions
+- Review and polish all documentation
 
-- Basic README.md created with all essential documentation
-- All flags documented with clear examples
-- Common use cases covered (fetch, save, auth, formats)
-- Missing: LICENSES/ directory and troubleshooting section
+**Current State** (25% complete):
+- ✅ Basic README.md with all CLI flags documented
+- ✅ Common usage examples and auth workflow
+- ⏳ Missing: troubleshooting section
+- ⏳ Missing: LICENSES/ directory and third-party licenses
 
-### Phase 9: Distribution & Release
+**Status**: 25% complete (2/8 tasks)
 
-- Create .github/workflows/release.yml
-- Configure multi-platform builds:
-  - darwin/arm64 (macOS Apple Silicon)
-  - darwin/amd64 (macOS Intel)
-  - linux/amd64 (Linux 64-bit)
-  - linux/arm64 (Linux ARM)
-- Set up GitHub release automation
-- Generate checksums for binaries
-- Create Homebrew tap repository (grantcarthew/homebrew-tap)
-- Write Homebrew formula (snag.rb)
-- Test Homebrew installation locally
-- Test binary downloads on each platform
-- Tag v1.0.0 release
-- Publish to GitHub releases
-- Update Homebrew tap
+### Phase 9: Distribution & Release ⏳
+
+**See [PROJECT-release.md](PROJECT-release.md) for complete release plan.**
+
+**Summary**:
+- Create GitHub Actions workflow for multi-platform builds
+- Build binaries for 4 platforms (macOS/Linux, ARM64/AMD64)
+- Set up Homebrew tap and formula
+- Generate SHA256 checksums
+- Test installation on all platforms
+- Create CHANGELOG.md and release process docs
+- Execute v1.0.0 release
+
+**Status**: Not started (0%)
 
 ## Working Features (Tested)
 
@@ -307,25 +303,35 @@ require (
 
 ### Immediate (Phase 7)
 
-1. Create `testdata/` directory with HTML fixtures
+**See [PROJECT-testing.md](PROJECT-testing.md) for detailed testing plan (10 tasks).**
+
+Quick summary:
+1. Create test infrastructure and fixtures
 2. Write integration tests for core functionality
-3. Test auth detection with mock login pages
-4. Test timeout handling
-5. Test all CLI flag combinations
+3. Test auth detection, timeouts, browser modes
+4. Test CLI flags and error handling
+5. Achieve 70%+ code coverage
 
 ### Short-term (Phase 8)
 
-1. Create `LICENSES/` directory
-2. Add third-party license files
-3. Add troubleshooting section to README
-4. Document common error scenarios
+**See [PROJECT-documentation.md](PROJECT-documentation.md) for detailed documentation plan (8 tasks).**
+
+Quick summary:
+1. Add troubleshooting section to README
+2. Create LICENSES/ directory with third-party licenses
+3. Add advanced usage examples
+4. Enhance installation instructions
+5. Review and polish all documentation
 
 ### Medium-term (Phase 9)
 
+**See [PROJECT-release.md](PROJECT-release.md) for detailed release plan (10 tasks).**
+
+Quick summary:
 1. Set up GitHub Actions for multi-platform builds
 2. Create Homebrew tap and formula
-3. Test on Linux (currently only tested on macOS)
-4. Tag v1.0.0 release
+3. Test on all platforms (macOS and Linux)
+4. Execute v1.0.0 release
 
 ### Future Enhancements (Post-MVP)
 
@@ -356,3 +362,15 @@ require (
 
 **MVP Complete**: 10/14 success criteria met (71%)
 **Core Functionality**: 100% working
+
+## Related Documents
+
+This project documentation is organized into multiple focused documents:
+
+- **[PROJECT.md](PROJECT.md)** (this file): Main project overview and status
+- **[PROJECT-testing.md](PROJECT-testing.md)**: Phase 7 - Complete testing strategy and implementation plan
+- **[PROJECT-documentation.md](PROJECT-documentation.md)**: Phase 8 - Documentation completion plan
+- **[PROJECT-release.md](PROJECT-release.md)**: Phase 9 - Distribution and release plan
+- **[README.md](README.md)**: User-facing documentation
+- **[docs/design.md](docs/design.md)**: Design decisions and rationale
+- **[docs/notes.md](docs/notes.md)**: Development notes and license headers
