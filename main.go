@@ -183,14 +183,28 @@ func run(c *cli.Context) error {
 		UserAgent:     c.String("user-agent"),
 	}
 
+	logger.Debug("Config: format=%s, timeout=%d, port=%d", config.Format, config.Timeout, config.Port)
+
 	// Validate format
-	if !validFormats[config.Format] {
-		logger.Error("Invalid format: %s", config.Format)
-		logger.ErrorWithSuggestion(
-			fmt.Sprintf("Format must be '%s' or '%s'", FormatMarkdown, FormatHTML),
-			fmt.Sprintf("snag <url> --format %s", FormatMarkdown),
-		)
-		return fmt.Errorf("invalid format: %s", config.Format)
+	if err := validateFormat(config.Format); err != nil {
+		return err
+	}
+
+	// Validate timeout
+	if err := validateTimeout(config.Timeout); err != nil {
+		return err
+	}
+
+	// Validate port
+	if err := validatePort(config.Port); err != nil {
+		return err
+	}
+
+	// Validate output file path if provided
+	if config.OutputFile != "" {
+		if err := validateOutputPath(config.OutputFile); err != nil {
+			return err
+		}
 	}
 
 	logger.Verbose("Configuration: format=%s, timeout=%ds, port=%d", config.Format, config.Timeout, config.Port)

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dynamic Content</title>
+</head>
+<body>
+    <h1>Dynamic Page</h1>
+    <p>Initial content loaded.</p>
+
+    <script>
+        setTimeout(function() {
+            var div = document.createElement('div');
+            div.id = 'delayed-content';
+            div.innerHTML = '<p>This content appears after 1 second.</p>';
+            document.body.appendChild(div);
+        }, 1000);
+    </script>
+</body>
+</html>
