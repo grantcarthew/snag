@@ -8,6 +8,8 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -31,6 +33,7 @@ type BrowserManager struct {
 	forceHeadless bool
 	forceVisible  bool
 	openBrowser   bool
+	browserName   string // Detected browser name (Chrome, Chromium, Edge, Brave, etc.)
 }
 
 // BrowserOptions contains options for browser management
@@ -40,6 +43,110 @@ type BrowserOptions struct {
 	ForceVisible  bool
 	OpenBrowser   bool
 	UserAgent     string
+}
+
+// findBrowserPath locates the browser executable and detects its name
+// Returns the path or an error if not found
+func (bm *BrowserManager) findBrowserPath() (string, error) {
+	// Find browser executable
+	// SECURITY: We trust the system-installed browser binary found by launcher.LookPath().
+	// Binary integrity is the responsibility of the OS package manager. If an attacker
+	// can replace the browser binary, they already have system-level access.
+	path, exists := launcher.LookPath()
+	if !exists {
+		return "", ErrBrowserNotFound
+	}
+
+	// Detect browser name from path
+	bm.browserName = detectBrowserName(path)
+
+	logger.Debug("Found browser at: %s", path)
+
+	return path, nil
+}
+
+// detectBrowserName extracts the browser name from the executable path
+func detectBrowserName(path string) string {
+	// Extract just the executable name to avoid false positives from directory/user names
+	base := filepath.Base(path)
+
+	// Remove common extensions for matching
+	baseName := strings.TrimSuffix(base, ".exe")
+	baseName = strings.TrimSuffix(baseName, ".app")
+
+	// Convert to lowercase for case-insensitive matching
+	lowerName := strings.ToLower(baseName)
+
+	// Check for specific browsers in order of specificity
+	// Note: Order matters - check specific names before generic ones
+	// (e.g., "chrome" before "chromium", "ungoogled-chromium" before "chromium")
+
+	// Ungoogled Chromium (check before regular Chromium)
+	if strings.Contains(lowerName, "ungoogled") {
+		return "Ungoogled-Chromium"
+	}
+
+	// Chrome (check before Chromium to avoid false matches)
+	if strings.Contains(lowerName, "chrome") && !strings.Contains(lowerName, "chromium") {
+		return "Chrome"
+	}
+
+	// Chromium
+	if strings.Contains(lowerName, "chromium") {
+		return "Chromium"
+	}
+
+	// Microsoft Edge
+	if strings.Contains(lowerName, "edge") || strings.Contains(lowerName, "msedge") {
+		return "Edge"
+	}
+
+	// Brave
+	if strings.Contains(lowerName, "brave") {
+		return "Brave"
+	}
+
+	// Opera
+	if strings.Contains(lowerName, "opera") {
+		return "Opera"
+	}
+
+	// Vivaldi
+	if strings.Contains(lowerName, "vivaldi") {
+		return "Vivaldi"
+	}
+
+	// Arc
+	if strings.Contains(lowerName, "arc") {
+		return "Arc"
+	}
+
+	// Yandex
+	if strings.Contains(lowerName, "yandex") {
+		return "Yandex"
+	}
+
+	// Thorium
+	if strings.Contains(lowerName, "thorium") {
+		return "Thorium"
+	}
+
+	// Slimjet
+	if strings.Contains(lowerName, "slimjet") {
+		return "Slimjet"
+	}
+
+	// Cent Browser
+	if strings.Contains(lowerName, "cent") {
+		return "Cent"
+	}
+
+	// Fallback: Capitalize first letter of base name
+	if len(baseName) > 0 {
+		return strings.ToUpper(baseName[:1]) + baseName[1:]
+	}
+
+	return "Browser"
 }
 
 // NewBrowserManager creates a new browser manager
@@ -57,23 +164,23 @@ func NewBrowserManager(opts BrowserOptions) *BrowserManager {
 func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 	// Strategy 1: Try to connect to existing browser instance (unless forced)
 	if !bm.forceHeadless && !bm.forceVisible {
-		logger.Verbose("Checking for existing Chrome instance on port %d...", bm.port)
+		logger.Verbose("Checking for existing browser instance on port %d...", bm.port)
 		if browser, err := bm.connectToExisting(); err == nil {
-			logger.Success("Connected to existing Chrome instance")
+			logger.Success("Connected to existing browser instance")
 			bm.browser = browser
 			bm.wasLaunched = false
 			return browser, nil
 		}
-		logger.Verbose("No existing Chrome instance found")
+		logger.Verbose("No existing browser instance found")
 	}
 
 	// Strategy 2: Launch new browser instance
 	headless := !bm.forceVisible && !bm.openBrowser
 
 	if headless {
-		logger.Verbose("Launching Chrome in headless mode...")
+		logger.Verbose("Launching browser in headless mode...")
 	} else {
-		logger.Info("Launching Chrome in visible mode...")
+		logger.Info("Launching browser in visible mode...")
 	}
 
 	browser, err := bm.launchBrowser(headless)
@@ -82,9 +189,9 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 	}
 
 	if headless {
-		logger.Success("Chrome launched in headless mode")
+		logger.Success("%s launched in headless mode", bm.browserName)
 	} else {
-		logger.Success("Chrome launched in visible mode")
+		logger.Success("%s launched in visible mode", bm.browserName)
 	}
 
 	bm.browser = browser
@@ -92,7 +199,7 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 	return browser, nil
 }
 
-// connectToExisting attempts to connect to an existing Chrome instance
+// connectToExisting attempts to connect to an existing browser instance
 func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
 	// Query the browser for its WebSocket debugger URL
 	baseURL := fmt.Sprintf("http://127.0.0.1:%d", bm.port)
@@ -119,16 +226,11 @@ func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
 
 // launchBrowser launches a new browser instance
 func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
-	// Find browser executable
-	// SECURITY: We trust the system-installed browser binary found by launcher.LookPath().
-	// Binary integrity is the responsibility of the OS package manager. If an attacker
-	// can replace the browser binary, they already have system-level access.
-	path, exists := launcher.LookPath()
-	if !exists {
-		return nil, ErrBrowserNotFound
+	// Find browser executable and detect its name
+	path, err := bm.findBrowserPath()
+	if err != nil {
+		return nil, err
 	}
-
-	logger.Debug("Found browser at: %s", path)
 
 	// Create launcher with options
 	l := launcher.New().
@@ -172,13 +274,11 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 // OpenBrowserOnly opens a browser without navigating to any page
 // The browser is left running with CDP debugging enabled, and snag exits
 func (bm *BrowserManager) OpenBrowserOnly() error {
-	// Find browser executable
-	path, exists := launcher.LookPath()
-	if !exists {
-		return ErrBrowserNotFound
+	// Find browser executable and detect its name
+	path, err := bm.findBrowserPath()
+	if err != nil {
+		return err
 	}
-
-	logger.Debug("Found browser at: %s", path)
 
 	// Create launcher with options
 	// Leakless(false) allows the browser to persist after this process exits
