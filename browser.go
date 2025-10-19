@@ -274,6 +274,17 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 // OpenBrowserOnly opens a browser without navigating to any page
 // The browser is left running with CDP debugging enabled, and snag exits
 func (bm *BrowserManager) OpenBrowserOnly() error {
+	// Check if a browser is already running on this port
+	logger.Verbose("Checking for existing browser instance on port %d...", bm.port)
+	if _, err := bm.connectToExisting(); err == nil {
+		// Browser is already running - nothing to do
+		// Don't call Close() - that would close the browser itself
+		// Just let the connection be garbage collected
+		logger.Success("Browser already running on port %d", bm.port)
+		logger.Info("You can connect to it using: snag <url>")
+		return nil
+	}
+
 	// Find browser executable and detect its name
 	path, err := bm.findBrowserPath()
 	if err != nil {

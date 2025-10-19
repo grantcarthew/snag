@@ -147,8 +147,8 @@ func run(c *cli.Context) error {
 	}
 	logger = NewLogger(level)
 
-	// Handle --open-browser flag (no URL required)
-	if c.Bool("open-browser") {
+	// Handle --open-browser flag WITHOUT URL (just open browser)
+	if c.Bool("open-browser") && c.NArg() == 0 {
 		logger.Info("Opening browser...")
 		bm := NewBrowserManager(BrowserOptions{
 			Port:         c.Int("port"),
@@ -186,6 +186,7 @@ func run(c *cli.Context) error {
 		CloseTab:      c.Bool("close-tab"),
 		ForceHeadless: c.Bool("force-headless"),
 		ForceVisible:  c.Bool("force-visible"),
+		OpenBrowser:   c.Bool("open-browser"),
 		UserAgent:     c.String("user-agent"),
 	}
 
@@ -226,6 +227,7 @@ func snag(config *Config) error {
 		Port:          config.Port,
 		ForceHeadless: config.ForceHeadless,
 		ForceVisible:  config.ForceVisible,
+		OpenBrowser:   config.OpenBrowser,
 		UserAgent:     config.UserAgent,
 	})
 
@@ -296,5 +298,6 @@ type Config struct {
 	CloseTab      bool
 	ForceHeadless bool
 	ForceVisible  bool
+	OpenBrowser   bool
 	UserAgent     string
 }
