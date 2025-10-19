@@ -9,6 +9,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/urfave/cli/v2"
 )
@@ -23,7 +25,8 @@ const (
 )
 
 var (
-	logger *Logger
+	logger         *Logger
+	browserManager *BrowserManager
 
 	// Valid output formats
 	validFormats = map[string]bool{
@@ -33,6 +36,26 @@ var (
 )
 
 func main() {
+	// Set up signal handling for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		sig := <-sigChan
+		fmt.Fprintf(os.Stderr, "\nReceived %v, cleaning up...\n", sig)
+
+		// Clean up browser if it exists (only closes headless browsers)
+		if browserManager != nil {
+			browserManager.Close()
+		}
+
+		// Exit with standard signal codes
+		if sig == os.Interrupt {
+			os.Exit(130) // 128 + 2 (SIGINT)
+		}
+		os.Exit(143) // 128 + 15 (SIGTERM)
+	}()
+
 	app := &cli.App{
 		Name:            "snag",
 		Usage:           "Intelligently fetch web page content with browser engine",
@@ -238,6 +261,9 @@ func snag(config *Config) error {
 		UserAgent:     config.UserAgent,
 	})
 
+	// Assign to global for signal handler access
+	browserManager = bm
+
 	// Connect to browser
 	_, err := bm.Connect()
 	if err != nil {
@@ -248,6 +274,7 @@ func snag(config *Config) error {
 				"brew install --cask google-chrome",
 			)
 		}
+		browserManager = nil // Clear global on error
 		return err
 	}
 
@@ -257,6 +284,7 @@ func snag(config *Config) error {
 			logger.Verbose("Cleanup: closing tab and browser if needed")
 		}
 		bm.Close()
+		browserManager = nil // Clear global after cleanup
 	}()
 
 	// Create new page
