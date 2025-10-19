@@ -2,10 +2,10 @@
 
 ## Status
 
-**Phase**: Phases 1-4 Complete ✅
-**Progress**: 70 tests passing, 1 skipped (bug documented)
+**Phase**: Phases 1-4 Complete ✅ | Bug Fixes Complete ✅
+**Progress**: 71 tests passing (100% pass rate)
 **Last Updated**: 2025-10-19
-**Test Runtime**: ~91 seconds
+**Test Runtime**: ~96 seconds
 
 ## Quick Reference
 
@@ -26,7 +26,7 @@ go test -cover
 
 ## Current Test Coverage
 
-**Total Tests**: 71 (70 passing ✅, 1 skipped ⏭️)
+**Total Tests**: 71 (all passing ✅)
 
 ### Unit Tests (25 tests)
 - **validate_test.go** (12 tests): URL, format, timeout, port, output path validation
@@ -46,7 +46,7 @@ go test -cover
   - Core Fetch Tests (5 tests): simple.html, complex.html, minimal.html, HTML format, output to file
   - Browser Mode Tests (5 tests): headless, visible, open-browser, custom port, connect existing
   - Authentication Detection (4 tests): 401, 403, login form, no false positives
-  - Timeout & Wait Tests (4 tests): custom timeout, wait-for selector, wait-for timeout ⏭️, default timeout
+  - Timeout & Wait Tests (4 tests): custom timeout, wait-for selector, wait-for timeout ✅, default timeout
   - Advanced Flags (5 tests): user agent, close-tab, verbose, quiet, debug
   - Real-World Tests (3 tests): example.com, httpbin.org, delayed response
 
@@ -83,12 +83,6 @@ Full browser-based integration tests with Chrome/Chromium:
 - **Advanced Flags (5 tests)**: User agent, close-tab, verbose, quiet, debug modes
 - **Real-World Tests (3 tests)**: example.com, httpbin.org, delayed responses
 
-**Known Issues Found**:
-- BUG: `--wait-for` with non-existent selector hangs indefinitely, ignores `--timeout` flag
-- Root cause: fetch.go wait-for logic doesn't respect timeout
-- Test: TestBrowser_WaitForTimeout (skipped with documentation)
-- TODO: Fix timeout handling in fetch.go
-
 ### ✅ Code Quality Improvements
 Through multiple external code reviews, implemented:
 - Validation functions actually called in tests (not just map checks)
@@ -101,6 +95,20 @@ Through multiple external code reviews, implemented:
 - Fenced code block syntax verification
 - Comprehensive validation coverage (all new functions tested)
 - Standard markdown heading format validation (with space after `#`)
+
+### ✅ Phase 5: Bug Fixes (Complete)
+**--wait-for timeout handling** (Fixed: 2025-10-19):
+- **Issue**: `--wait-for` with non-existent selector ignored `--timeout` flag, hung indefinitely
+- **Root cause**: fetch.go:73 didn't apply timeout context to Element/WaitVisible calls
+- **Fix**: Added `.Timeout(pf.timeout)` to Element call (fetch.go:75)
+- **Changes**:
+  - fetch.go:47-49: Updated comment to clarify timeout architecture
+  - fetch.go:75: Applied timeout to Element lookup
+  - fetch.go:77-83: Added timeout error handling for Element
+  - fetch.go:89-91: Added timeout error handling for WaitVisible
+  - cli_test.go:814-835: Unskipped TestBrowser_WaitForTimeout
+- **Result**: Test now passes in 5 seconds (respects 2-second timeout)
+- **Impact**: All 71 tests now passing (100% pass rate)
 
 ## Test Files Structure
 
@@ -188,28 +196,8 @@ Rejected overly strict suggestions:
 
 ## Future Work
 
-### Bug Fixes
-1. **--wait-for timeout handling** (Priority: Medium)
-   - Issue: `--wait-for` with non-existent selector ignores `--timeout` flag
-   - Location: fetch.go wait-for logic
-   - Test: TestBrowser_WaitForTimeout (currently skipped)
-   - Impact: Browser tab left open indefinitely, process hangs
-
-### Enhancements
-1. **Coverage report generation** (Priority: Low)
-   - Generate HTML coverage reports
-   - Set coverage thresholds
-   - Track coverage trends
-
-2. **CI/CD workflow setup** (Priority: Medium)
-   - GitHub Actions workflow
-   - Multi-platform testing (ubuntu-latest, macos-latest)
-   - Automated test runs on PR
-
-3. **HTML table conversion** (Priority: Low)
-   - Investigate html-to-markdown library configuration
-   - Consider alternative libraries for proper table syntax
-   - See docs/projects/PROJECT-html2markdown.md
+All testing work is complete. See:
+- **docs/projects/PROJECT-backlog.md** - Low priority tasks
 
 ## CI/CD Ready
 
@@ -231,28 +219,32 @@ Tests are designed for GitHub Actions:
 ## Related Documentation
 
 - **AGENTS.md**: Project conventions and development workflow
-- **docs/projects/PROJECT-html2markdown.md**: Table conversion investigation
+- **docs/projects/PROJECT-backlog.md**: Low priority tasks
 - **README.md**: User-facing documentation
 - **docs/design.md**: Technical design decisions
 
 ## Success Metrics
 
-**Phase 4 Complete Achievement**:
+**Testing Phase Complete Achievement**:
 - ✅ 4 test files created (1545 lines of test code)
 - ✅ 5 HTML fixtures in testdata/
-- ✅ 71 tests total (70 passing, 1 skipped with bug documentation)
+- ✅ 71 tests total (all passing, 100% pass rate)
 - ✅ Tests auto-skip when browser unavailable
 - ✅ All validation functions tested
 - ✅ All pure functions tested
 - ✅ CLI flag validation complete
 - ✅ Full browser integration test coverage
 - ✅ Real-world endpoint testing (example.com, httpbin.org)
-- ✅ Bug discovered and documented: --wait-for timeout handling
+- ✅ Bug discovered, documented, and fixed: --wait-for timeout handling
 
-**Future Enhancements**:
-- ⏳ Fix --wait-for timeout bug
-- ⏳ Coverage report generation
-- ⏳ CI/CD workflow setup
+**Testing Complete - All Goals Achieved**:
+- All test phases complete (1-4 + bug fixes)
+- 100% test pass rate (71/71 tests)
+- Comprehensive coverage of all features
+- Ready for production use
+
+**Next Steps**:
+- See `docs/projects/PROJECT-backlog.md` for low priority tasks
 
 ## Testing Commands
 
