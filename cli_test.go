@@ -581,7 +581,7 @@ func TestBrowser_ForceVisible(t *testing.T) {
 	_ = output
 }
 
-// TestBrowser_OpenBrowser tests --open-browser flag (open without fetching)
+// TestBrowser_OpenBrowser tests --open-browser flag (open browser and fetch)
 func TestBrowser_OpenBrowser(t *testing.T) {
 	if !isBrowserAvailable() {
 		t.Skip("Browser not available, skipping browser integration test")
@@ -595,11 +595,10 @@ func TestBrowser_OpenBrowser(t *testing.T) {
 	assertNoError(t, err)
 	assertExitCode(t, err, 0)
 
-	// Should NOT fetch content (just open browser)
-	// Stdout should be empty
-	if len(strings.TrimSpace(stdout)) > 0 {
-		t.Errorf("expected empty stdout with --open-browser, got: %s", stdout)
-	}
+	// Should fetch content in visible browser mode
+	// Stdout should contain the markdown content
+	assertContains(t, stdout, "Example Heading")
+	assertContains(t, stdout, "simple paragraph")
 
 	// Stderr may contain messages about opening browser
 	output := stderr
