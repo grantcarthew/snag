@@ -38,7 +38,7 @@ func main() {
 		Usage:           "Intelligently fetch web page content with browser engine",
 		UsageText:       "snag [options] <url>",
 		Version:         version,
-		HideVersion:     true,
+		HideVersion:     false,
 		HideHelpCommand: true,
 		Authors: []*cli.Author{
 			{
