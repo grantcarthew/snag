@@ -34,9 +34,12 @@ var (
 
 func main() {
 	app := &cli.App{
-		Name:    "snag",
-		Usage:   "Intelligently fetch web page content with browser engine",
-		Version: version,
+		Name:            "snag",
+		Usage:           "Intelligently fetch web page content with browser engine",
+		UsageText:       "snag [options] <url>",
+		Version:         version,
+		HideVersion:     true,
+		HideHelpCommand: true,
 		Authors: []*cli.Author{
 			{
 				Name:  "Grant Carthew",
@@ -56,7 +59,7 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:  "format",
-				Usage: "Output format: markdown (default) | html",
+				Usage: "Output format: markdown | html",
 				Value: FormatMarkdown,
 			},
 
@@ -95,7 +98,7 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:    "open-browser",
-				Aliases: []string{"ob"},
+				Aliases: []string{"b"},
 				Usage:   "Open Chrome browser in visible state (no URL required)",
 			},
 
