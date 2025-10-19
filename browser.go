@@ -175,7 +175,8 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 	}
 
 	// Strategy 2: Launch new browser instance
-	headless := !bm.forceVisible && !bm.openBrowser
+	// Priority: forceHeadless takes precedence over forceVisible and openBrowser
+	headless := bm.forceHeadless || (!bm.forceVisible && !bm.openBrowser)
 
 	if headless {
 		logger.Verbose("Launching browser in headless mode...")

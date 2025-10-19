@@ -60,9 +60,10 @@ func main() {
 				Usage:   "Save output to `FILE` instead of stdout",
 			},
 			&cli.StringFlag{
-				Name:  "format",
-				Usage: "Output format: markdown | html",
-				Value: FormatMarkdown,
+				Name:    "format",
+				Aliases: []string{"f"},
+				Usage:   "Output format: markdown | html",
+				Value:   FormatMarkdown,
 			},
 
 			// Page Loading
@@ -174,6 +175,12 @@ func run(c *cli.Context) error {
 	}
 
 	logger.Verbose("Target URL: %s", validatedURL)
+
+	// Validate conflicting flags
+	if c.Bool("force-headless") && c.Bool("force-visible") {
+		logger.Error("Conflicting flags: --force-headless and --force-visible cannot be used together")
+		return fmt.Errorf("conflicting flags: --force-headless and --force-visible")
+	}
 
 	// Extract configuration from flags
 	config := &Config{
