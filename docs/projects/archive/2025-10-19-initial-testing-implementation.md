@@ -29,30 +29,35 @@ go test -cover
 **Total Tests**: 71 (all passing ✅)
 
 ### Unit Tests (25 tests)
+
 - **validate_test.go** (12 tests): URL, format, timeout, port, output path validation
 - **convert_test.go** (6 tests): HTML→Markdown conversion (headings, links, tables, lists, code, minimal)
 - **logger_test.go** (7 tests): Logger levels, stderr routing, mode behavior
 
 ### Integration Tests (46 tests)
+
 - **cli_test.go** (46 tests total: 22 Phase 3 + 26 Phase 4 - 2 overlaps)
 
 **Phase 3: CLI Tests (9 tests - no browser required)**
-  - Version/Help/NoArgs (3 tests)
-  - URL validation (1 test with 3 subtests)
-  - Format/Timeout/Port validation (3 tests with 10 subtests)
-  - Format options, output permissions (2 tests with 2 subtests)
+
+- Version/Help/NoArgs (3 tests)
+- URL validation (1 test with 3 subtests)
+- Format/Timeout/Port validation (3 tests with 10 subtests)
+- Format options, output permissions (2 tests with 2 subtests)
 
 **Phase 4: Browser Integration (26 tests)**
-  - Core Fetch Tests (5 tests): simple.html, complex.html, minimal.html, HTML format, output to file
-  - Browser Mode Tests (5 tests): headless, visible, open-browser, custom port, connect existing
-  - Authentication Detection (4 tests): 401, 403, login form, no false positives
-  - Timeout & Wait Tests (4 tests): custom timeout, wait-for selector, wait-for timeout ✅, default timeout
-  - Advanced Flags (5 tests): user agent, close-tab, verbose, quiet, debug
-  - Real-World Tests (3 tests): example.com, httpbin.org, delayed response
+
+- Core Fetch Tests (5 tests): simple.html, complex.html, minimal.html, HTML format, output to file
+- Browser Mode Tests (5 tests): headless, visible, open-browser, custom port, connect existing
+- Authentication Detection (4 tests): 401, 403, login form, no false positives
+- Timeout & Wait Tests (4 tests): custom timeout, wait-for selector, wait-for timeout ✅, default timeout
+- Advanced Flags (5 tests): user agent, close-tab, verbose, quiet, debug
+- Real-World Tests (3 tests): example.com, httpbin.org, delayed response
 
 ## Completed Work
 
 ### ✅ Phase 1: Test Infrastructure (Complete)
+
 - Created `testdata/` directory with 5 HTML fixtures
 - Built binary for black-box testing
 - Implemented test helpers in `cli_test.go`:
@@ -62,20 +67,26 @@ go test -cover
   - Assertion helpers: `assertContains`, `assertExitCode`, `assertNoError`, `assertError`
 
 ### ✅ Phase 2: Unit Tests (Complete)
+
 All pure functions have comprehensive unit test coverage:
+
 - **validate.go**: URL, format, timeout, port, output path validation
 - **convert.go**: HTML to Markdown conversion with proper syntax verification
 - **logger.go**: All log levels, modes, and stderr routing
 
 ### ✅ Phase 3: Fast CLI Tests (Complete)
+
 Black-box integration tests without browser dependency:
+
 - CLI info (version, help, no args)
 - Input validation (URL, format, timeout, port)
 - Output path permissions
 - Flag acceptance testing
 
 ### ✅ Phase 4: Browser Integration Tests (Complete)
+
 Full browser-based integration tests with Chrome/Chromium:
+
 - **Core Fetch Tests (5 tests)**: Fetch simple/complex/minimal HTML, format output, file writing
 - **Browser Mode Tests (5 tests)**: Headless, visible, open-browser, custom port, existing instance
 - **Authentication Detection (4 tests)**: HTTP 401/403, login forms, no false positives
@@ -84,7 +95,9 @@ Full browser-based integration tests with Chrome/Chromium:
 - **Real-World Tests (3 tests)**: example.com, httpbin.org, delayed responses
 
 ### ✅ Code Quality Improvements
+
 Through multiple external code reviews, implemented:
+
 - Validation functions actually called in tests (not just map checks)
 - Combined string assertions for proper markdown syntax verification
 - Portable temp directory creation with proper cleanup
@@ -97,7 +110,9 @@ Through multiple external code reviews, implemented:
 - Standard markdown heading format validation (with space after `#`)
 
 ### ✅ Phase 5: Bug Fixes (Complete)
+
 **--wait-for timeout handling** (Fixed: 2025-10-19):
+
 - **Issue**: `--wait-for` with non-existent selector ignored `--timeout` flag, hung indefinitely
 - **Root cause**: fetch.go:73 didn't apply timeout context to Element/WaitVisible calls
 - **Fix**: Added `.Timeout(pf.timeout)` to Element call (fetch.go:75)
@@ -134,14 +149,17 @@ snag/
 During implementation, tests revealed missing validation that was added:
 
 1. **Format Validation** (`validateFormat`)
+
    - Validates markdown/html only (case-sensitive)
    - Clear error messages with case-sensitivity note
 
 2. **Timeout Validation** (`validateTimeout`)
+
    - Must be positive integer
    - Validates before attempting connection
 
 3. **Port Validation** (`validatePort`)
+
    - Range: 1-65535
    - Prevents invalid port numbers early
 
@@ -157,6 +175,7 @@ All validation functions have comprehensive test coverage with positive and nega
 ### HTML to Markdown Conversion
 
 **Table Conversion Issue** (Documented in `docs/projects/PROJECT-html2markdown.md`):
+
 - Tables do not convert to markdown table syntax (no pipe characters)
 - Content is preserved but structure is lost
 - Example: `<table>` → `NameValue Item1100` (not `| Name | Value |`)
@@ -164,6 +183,7 @@ All validation functions have comprehensive test coverage with positive and nega
 - Investigation needed for library configuration or alternative
 
 **Test Documentation**:
+
 ```go
 // NOTE: Current html-to-markdown library does not convert tables to proper
 // markdown table syntax. This test verifies table content is preserved.
@@ -173,12 +193,14 @@ All validation functions have comprehensive test coverage with positive and nega
 ## Testing Philosophy
 
 ### Black-Box Approach
+
 - Tests compiled `./snag` binary via `exec.Command()`
 - Validates actual user experience
 - No exposure of internal functions required
 - Catches integration issues
 
 ### Pragmatic Choices
+
 - **No mocking**: Test with real browser when available
 - **Standard library only**: No testify, no BATS
 - **Auto-skip**: Browser tests skip gracefully if Chrome unavailable
@@ -188,6 +210,7 @@ All validation functions have comprehensive test coverage with positive and nega
 ### Code Review Decisions
 
 Rejected overly strict suggestions:
+
 - ❌ Exact error string matching (CLI messages aren't APIs)
 - ❌ Removing global logger from tests (standard Go practice, no race conditions)
 - ❌ Ultra-specific error validation in black-box tests
@@ -197,17 +220,20 @@ Rejected overly strict suggestions:
 ## Future Work
 
 All testing work is complete. See:
+
 - **docs/projects/PROJECT-backlog.md** - Low priority tasks
 
 ## CI/CD Ready
 
 Tests are designed for GitHub Actions:
+
 - Chrome pre-installed on ubuntu-latest and macos-latest
 - No additional dependencies
 - Fast unit tests (~4ms)
 - Moderate integration tests (~8s with browser)
 
 **Example Workflow**:
+
 ```yaml
 - name: Build binary
   run: go build -o snag
@@ -226,6 +252,7 @@ Tests are designed for GitHub Actions:
 ## Success Metrics
 
 **Testing Phase Complete Achievement**:
+
 - ✅ 4 test files created (1545 lines of test code)
 - ✅ 5 HTML fixtures in testdata/
 - ✅ 71 tests total (all passing, 100% pass rate)
@@ -238,12 +265,14 @@ Tests are designed for GitHub Actions:
 - ✅ Bug discovered, documented, and fixed: --wait-for timeout handling
 
 **Testing Complete - All Goals Achieved**:
+
 - All test phases complete (1-4 + bug fixes)
 - 100% test pass rate (71/71 tests)
 - Comprehensive coverage of all features
 - Ready for production use
 
 **Next Steps**:
+
 - See `docs/projects/PROJECT-backlog.md` for low priority tasks
 
 ## Testing Commands

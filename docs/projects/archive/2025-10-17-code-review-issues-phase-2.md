@@ -22,6 +22,7 @@
 **Location**: fetch.go:53
 
 **Problem**:
+
 ```go
 if strings.Contains(err.Error(), "timeout") ||
    strings.Contains(err.Error(), "context deadline exceeded") {
@@ -30,12 +31,14 @@ if strings.Contains(err.Error(), "timeout") ||
 ```
 
 **Why It's Bad**:
+
 - Checking error strings is brittle
 - Error messages can change between library versions
 - Not type-safe
 - Go convention is to use `errors.Is()` or `errors.As()`
 
 **Fix**:
+
 ```go
 import "errors"
 
@@ -66,6 +69,7 @@ if errors.As(err, &timeoutErr) && timeoutErr.Timeout() {
 **Location**: main.go:16-18
 
 **Problem**:
+
 ```go
 const (
     version = "1.0.0"  // Hard-coded
@@ -73,6 +77,7 @@ const (
 ```
 
 **Why It's Bad**:
+
 - Version must be manually updated
 - No git commit hash
 - No build date
@@ -106,10 +111,12 @@ go build -ldflags="-X main.version=1.0.0 -X main.commit=$(git rev-parse HEAD) -X
 **Status**: ❌ Won't do - unrealistic use case
 
 **Locations**:
+
 - fetch.go:92 - HTML loaded entirely into memory
 - convert.go:42 - Duplicate created during conversion
 
 **Problem**:
+
 ```go
 // fetch.go:92 - Entire page in memory
 html, err := page.HTML()
@@ -119,17 +126,20 @@ content, err = cc.convertToMarkdown(html)
 ```
 
 **Why It's Bad**:
+
 - Large pages (>100MB) could cause OOM
 - No streaming support
 - Two copies in memory (HTML + Markdown)
 
 **Realistic Impact**:
+
 - Most web pages: <5MB (fine)
 - Large documentation sites: 10-50MB (probably fine)
 - Extreme cases: 100MB+ (could fail)
 
 **Fix**:
 Implement streaming conversion (complex):
+
 ```go
 // Would require streaming API from html-to-markdown
 // Or write content in chunks
@@ -155,12 +165,14 @@ Implement streaming conversion (complex):
 No `context.Context` used anywhere for cancellation or timeout propagation.
 
 **Why It's Bad**:
+
 - Can't cancel operations mid-flight
 - Timeouts are handled at individual operation level
 - No way to propagate cancellation down the stack
 - Not idiomatic Go for network operations
 
 **Example**:
+
 ```go
 // Current
 func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error)
@@ -170,6 +182,7 @@ func (pf *PageFetcher) Fetch(ctx context.Context, opts FetchOptions) (string, er
 ```
 
 **Benefits of Context**:
+
 - Proper cancellation (works with signal handling)
 - Timeout propagation
 - Request-scoped values
@@ -190,6 +203,7 @@ func (pf *PageFetcher) Fetch(ctx context.Context, opts FetchOptions) (string, er
 **Locations**: Multiple files
 
 **Problem**:
+
 ```go
 // browser.go:94 - Mix of %w and %v
 return nil, fmt.Errorf("%w: %v", ErrBrowserConnection, err)
@@ -199,11 +213,13 @@ return nil, fmt.Errorf("failed to launch browser: %w", err)
 ```
 
 **Why It's Bad**:
+
 - Mixing `%w` (wrapping) and `%v` (formatting) is confusing
 - `%w` should be used for errors to enable `errors.Is()` and `errors.As()`
 - `%v` breaks error chain
 
 **Fix**:
+
 ```go
 // Consistent wrapping
 return nil, fmt.Errorf("%w: %w", ErrBrowserConnection, err)
@@ -212,6 +228,7 @@ return nil, fmt.Errorf("failed to connect to browser: %w", err)
 ```
 
 **Best Practice**:
+
 - Use `%w` for wrapping errors
 - Use sentinel errors at package boundary
 - Allow error chain inspection
@@ -232,12 +249,14 @@ return nil, fmt.Errorf("failed to connect to browser: %w", err)
 Using fmt-based logging instead of structured logging (like `log/slog`).
 
 **Current Approach**:
+
 ```go
 logger.Verbose("Target URL: %s", url)
 logger.Debug("HTTP status code: %d", status)
 ```
 
 **Structured Alternative**:
+
 ```go
 slog.Info("fetching page", "url", url, "timeout", timeout)
 slog.Debug("page loaded", "status", status, "duration", duration)
@@ -246,6 +265,7 @@ slog.Debug("page loaded", "status", status, "duration", duration)
 **Trade-offs**:
 
 **Current (custom logger)**:
+
 - ✅ Simple, focused
 - ✅ Human-readable output
 - ✅ Color support built-in
@@ -253,6 +273,7 @@ slog.Debug("page loaded", "status", status, "duration", duration)
 - ❌ No JSON output
 
 **Structured (slog)**:
+
 - ✅ Machine-parseable
 - ✅ JSON output option
 - ✅ Standard library (Go 1.21+)
@@ -272,21 +293,25 @@ slog.Debug("page loaded", "status", status, "duration", duration)
 **Status**: ✅ Fixed
 
 **Locations**:
+
 - convert.go:93 - File mode `0644`
 - convert.go:99 - Division by `1024.0` for KB
 
 **Problem**:
+
 ```go
 err := os.WriteFile(filename, []byte(content), 0644)  // What is 0644?
 sizeKB := float64(len(content)) / 1024.0  // Why 1024.0?
 ```
 
 **Why It's Bad**:
+
 - Unclear meaning
 - Not self-documenting
 - Hard to change consistently
 
 **Fix**:
+
 ```go
 const (
     DefaultFileMode = 0644  // Owner RW, Group R, Other R
@@ -313,6 +338,7 @@ sizeKB := float64(len(content)) / BytesPerKB
 Logger is concrete struct, not interface.
 
 **Current**:
+
 ```go
 type Logger struct {
     level  LogLevel
@@ -322,6 +348,7 @@ type Logger struct {
 ```
 
 **Better**:
+
 ```go
 type Logger interface {
     Success(format string, args ...interface{})
@@ -345,6 +372,7 @@ func (c *ConsoleLogger) Success(...) { ... }
 ```
 
 **Benefits**:
+
 - Testability (mock logger)
 - Multiple implementations
 - Standard Go practice
@@ -362,6 +390,7 @@ func (c *ConsoleLogger) Success(...) { ... }
 **Location**: browser.go:181-203
 
 **Problem**:
+
 ```go
 func (bm *BrowserManager) Close() error {
     // ...
@@ -381,6 +410,7 @@ Go convention: Either log and handle, OR return error for caller to handle. Don'
 **Fix Options**:
 
 **Option 1**: Don't return error (recommended for cleanup):
+
 ```go
 func (bm *BrowserManager) Close() {
     if bm.browser == nil {
@@ -394,6 +424,7 @@ func (bm *BrowserManager) Close() {
 ```
 
 **Option 2**: Return error, don't log:
+
 ```go
 func (bm *BrowserManager) Close() error {
     if bm.browser == nil {
@@ -427,6 +458,7 @@ func (bm *BrowserManager) Close() error {
 Global logger can be accessed concurrently without synchronization.
 
 **Scenario**:
+
 ```go
 // main.go
 var logger *Logger  // Global
@@ -441,6 +473,7 @@ go snag.Fetch(url2)  // Overwrites logger!
 **Future Risk**: HIGH (if becomes library)
 
 **Fix**:
+
 - Pass logger as parameter (related to deferred Issue #4)
 - Or use sync.Mutex if keeping global
 
@@ -457,6 +490,7 @@ go snag.Fetch(url2)  // Overwrites logger!
 **Location**: fetch.go:72-82
 
 **Problem**:
+
 ```go
 if opts.WaitFor != "" {
     logger.Verbose("Waiting for selector: %s", opts.WaitFor)
@@ -469,11 +503,13 @@ if opts.WaitFor != "" {
 ```
 
 **Why It's Bad**:
+
 - If selector never appears, user waits full page timeout (30s)
 - No feedback during wait
 - No separate timeout for element wait
 
 **Fix**:
+
 ```go
 // Add feedback
 logger.Progress("Waiting for selector: %s (timeout: %ds)", opts.WaitFor, timeout)
@@ -498,11 +534,13 @@ elem, err := page.Timeout(5 * time.Second).Element(opts.WaitFor)
 
 **Problem**:
 Long operations have no visual feedback:
+
 - Browser launch: 2-5 seconds
 - Page load: 5-30 seconds
 - Conversion: <1 second (usually fine)
 
 **User Experience**:
+
 ```bash
 $ snag https://slow-site.com
 # ... 10 seconds of silence ...
@@ -511,6 +549,7 @@ $ snag https://slow-site.com
 
 **Fix**:
 Add spinner or progress dots:
+
 ```go
 logger.ProgressWithSpinner("Fetching page...")
 // or
@@ -531,11 +570,13 @@ logger.ProgressDots("Loading", interval)
 
 **Problem**:
 Network requests don't retry on transient failures:
+
 - DNS resolution failures
 - Connection refused
 - Temporary network issues
 
 **Fix**:
+
 ```go
 func fetchWithRetry(maxRetries int, backoff time.Duration) error {
     for i := 0; i < maxRetries; i++ {
@@ -570,6 +611,7 @@ func fetchWithRetry(maxRetries int, backoff time.Duration) error {
 Can't save/load cookies between runs. Auth sessions aren't persistent across invocations.
 
 **Use Case**:
+
 ```bash
 # First run: authenticate and save cookies
 snag --save-cookies auth.json https://site.com
@@ -596,6 +638,7 @@ Use `--open-browser` to keep session in running browser.
 **Location**: main.go:166-170
 
 **Problem**:
+
 ```go
 if config.Format != "markdown" && config.Format != "html" {
     logger.Error("Invalid format: %s", config.Format)
@@ -604,11 +647,13 @@ if config.Format != "markdown" && config.Format != "html" {
 ```
 
 **Why It's Bad**:
+
 - Magic strings duplicated
 - No single source of truth for valid formats
 - Hard to extend (add PDF, text, etc.)
 
 **Fix**:
+
 ```go
 // At package level
 const (
@@ -710,6 +755,7 @@ if !validFormats[config.Format] {
 
 **Analysis**:
 The `Close()` method handles nil browser safely:
+
 ```go
 // browser.go:182
 func (bm *BrowserManager) Close() error {
@@ -731,6 +777,7 @@ Good defensive programming already in place.
 **Status**: ✅ Not a bug - works correctly
 
 **Analysis**:
+
 - `--open-browser` takes early return (line 138)
 - No defers executed before this point
 - Browser stays open (correct behavior)
@@ -740,21 +787,26 @@ Good defensive programming already in place.
 ## Summary by Priority
 
 ### Critical (Fix Before v1.0)
+
 1. No Tests (Phase 7 planned)
 
 ### High Priority (Should Fix Soon)
+
 2. Fragile Error Detection
 3. No Build-time Version Injection
 4. Memory Concerns for Large Pages (document limitation)
 
 ### Medium Priority (Consider for v1.0)
+
 9. Logger Should Be Interface
-21. Path Traversal in File Output
+10. Path Traversal in File Output
 
 ### Low Priority (Post-v1.0)
+
 5-8, 10-20, 22: Various improvements and enhancements
 
 ### Deferred (Design Decisions)
+
 15. Cookie/Session Management (post-MVP feature)
 
 See docs/2025-10-17-code-review-issues-one.md for completed and deferred issues.

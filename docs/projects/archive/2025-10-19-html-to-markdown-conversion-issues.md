@@ -22,6 +22,7 @@ This document tracks issues and limitations with the HTML to Markdown conversion
 **Effort**: 2-4 hours implementation + testing.
 
 **Discovery**: Deep research into library documentation (2025-10-19) revealed:
+
 - ✅ Table plugin exists and is fully functional (PR #144, Feb 2025)
 - ✅ Strikethrough plugin exists and is fully functional
 - ✅ Table plugin supports alignment, colspan, rowspan, header promotion
@@ -262,6 +263,7 @@ The `htmltomarkdown.ConvertString()` convenience function is intentionally minim
 **Status**: Implementation code verified, ready to apply
 
 **Current Code** (convert.go:66-75):
+
 ```go
 func (cc *ContentConverter) convertToMarkdown(html string) (string, error) {
     // Convert HTML to Markdown using the package-level function
@@ -363,6 +365,7 @@ func (cc *ContentConverter) convertToMarkdown(html string) (string, error) {
 2. ❌ **Strikethrough test does NOT exist** - needs to be created
 
 **After implementation**, the table test will fail with this error:
+
 ```
 expected table headers in markdown, got:
 NameValue Item 1100
@@ -410,6 +413,7 @@ func TestConvertToMarkdown_Tables(t *testing.T) {
 ```
 
 **THIS TEST WILL FAIL** after we add the table plugin because:
+
 - It doesn't check for pipe `|` characters
 - It doesn't check for separator row with dashes
 - The TODO comment is outdated
@@ -494,6 +498,7 @@ func TestConvertToMarkdown_Strikethrough(t *testing.T) {
 **Additional Test Cases to Consider**:
 
 1. **Advanced Tables** (optional, future):
+
    - Table with alignment
    - Table with colspan/rowspan
    - Table with nested formatting (bold, links, code)
@@ -535,6 +540,7 @@ func TestConvertToMarkdown_Strikethrough(t *testing.T) {
 **Duration**: 2 hours (2025-10-19)
 
 1. ✅ **Research library capabilities**
+
    - ✅ Read v2 documentation and README
    - ✅ Discovered table plugin exists and is fully functional
    - ✅ Reviewed plugin API and configuration options
@@ -550,6 +556,7 @@ func TestConvertToMarkdown_Strikethrough(t *testing.T) {
 **Tasks**:
 
 1. **Update convert.go** (1 hour)
+
    - Replace `htmltomarkdown.ConvertString()` with `converter.NewConverter()`
    - Add imports for converter, base, commonmark, table, and strikethrough plugins
    - Register all plugins with converter
@@ -557,6 +564,7 @@ func TestConvertToMarkdown_Strikethrough(t *testing.T) {
    - Test locally with sample HTML tables and strikethrough text
 
 2. **Update convert_test.go** (1 hour) ⚠️ CRITICAL
+
    - **REWRITE** `TestConvertToMarkdown_Tables()` test completely (lines 60-89)
      - Remove old content-only checks
      - Add pipe `|` character verification
@@ -571,6 +579,7 @@ func TestConvertToMarkdown_Strikethrough(t *testing.T) {
    - Consider adding additional advanced test cases
 
 3. **Build and verify** (30 minutes)
+
    - Run `go build` to ensure no compilation errors
    - Run `go test -v` to ensure all tests pass
    - Manual testing with `./snag` on real web pages with tables and strikethrough text
@@ -588,11 +597,13 @@ func TestConvertToMarkdown_Strikethrough(t *testing.T) {
 ## Implementation Checklist
 
 **Before starting**:
+
 - [ ] Read this document completely
 - [ ] Review table plugin API documentation
 - [ ] Understand current convert.go implementation
 
 **Implementation**:
+
 - [ ] Update imports in convert.go (add table and strikethrough plugins)
 - [ ] Modify convertToMarkdown() function in convert.go
 - [ ] Choose table plugin configuration options
@@ -605,6 +616,7 @@ func TestConvertToMarkdown_Strikethrough(t *testing.T) {
 - [ ] Build binary and test manually
 
 **Verification**:
+
 - [ ] **IMPORTANT**: Table test initially FAILS (expected - old test checks wrong thing)
 - [ ] After rewriting table test, all tests pass
 - [ ] Table test now verifies pipe `|` characters
@@ -617,6 +629,7 @@ func TestConvertToMarkdown_Strikethrough(t *testing.T) {
 - [ ] Output produces valid GFM strikethrough syntax
 
 **Documentation**:
+
 - [ ] Update AGENTS.md
 - [ ] Update PROJECT.md completion status
 - [ ] Mark this document as implemented
@@ -676,6 +689,7 @@ func TestConvertToMarkdown_Strikethrough(t *testing.T) {
 **Investigation Complete**: 2025-10-19
 
 **Findings**:
+
 1. ✅ Table plugin exists and works perfectly
 2. ✅ Strikethrough plugin exists and works perfectly
 3. ✅ Solution is simple: use `converter.NewConverter()` with both plugins
@@ -693,6 +707,7 @@ func TestConvertToMarkdown_Strikethrough(t *testing.T) {
 6. ✅ Issue resolved
 
 **Test Update Summary**:
+
 - ✏️ 1 test to REWRITE: `TestConvertToMarkdown_Tables()`
 - ➕ 1 test to CREATE: `TestConvertToMarkdown_Strikethrough()`
 - ✅ 6 existing tests should still pass unchanged
