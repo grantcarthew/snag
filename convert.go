@@ -10,7 +10,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/JohannesKaufmann/html-to-markdown/v2"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/strikethrough"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/table"
 )
 
 const (
@@ -64,8 +68,17 @@ func (cc *ContentConverter) Process(html string, outputFile string) error {
 
 // convertToMarkdown converts HTML to Markdown
 func (cc *ContentConverter) convertToMarkdown(html string) (string, error) {
-	// Convert HTML to Markdown using the package-level function
-	markdown, err := htmltomarkdown.ConvertString(html)
+	// Create converter with table and strikethrough plugin support
+	conv := converter.NewConverter(
+		converter.WithPlugins(
+			base.NewBasePlugin(),
+			commonmark.NewCommonmarkPlugin(),
+			table.NewTablePlugin(),
+			strikethrough.NewStrikethroughPlugin(),
+		),
+	)
+
+	markdown, err := conv.ConvertString(html)
 	if err != nil {
 		return "", err
 	}

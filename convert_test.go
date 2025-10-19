@@ -75,16 +75,54 @@ func TestConvertToMarkdown_Tables(t *testing.T) {
 		t.Fatalf("convertToMarkdown failed: %v", err)
 	}
 
-	// NOTE: Current html-to-markdown library does not convert tables to proper
-	// markdown table syntax. This test verifies table content is preserved.
-	// TODO: Consider library configuration or alternative for proper table support.
-
-	// Check for table content (headers and data are preserved)
-	if !strings.Contains(md, "Name") || !strings.Contains(md, "Value") {
-		t.Errorf("expected table headers in markdown, got:\n%s", md)
+	// Verify proper markdown table syntax (not just content preservation)
+	if !strings.Contains(md, "|") {
+		t.Errorf("expected markdown table with pipe characters, got:\n%s", md)
 	}
+
+	// Verify header row
+	if !strings.Contains(md, "Name") || !strings.Contains(md, "Value") {
+		t.Errorf("expected table headers 'Name' and 'Value', got:\n%s", md)
+	}
+
+	// Verify data row
 	if !strings.Contains(md, "Item 1") || !strings.Contains(md, "100") {
-		t.Errorf("expected table data in markdown, got:\n%s", md)
+		t.Errorf("expected table data 'Item 1' and '100', got:\n%s", md)
+	}
+
+	// Verify separator row (some variation of dashes)
+	if !strings.Contains(md, "---") {
+		t.Errorf("expected table separator with dashes, got:\n%s", md)
+	}
+}
+
+func TestConvertToMarkdown_Strikethrough(t *testing.T) {
+	html := `<html><body>
+		<p>This is <del>deleted</del> text.</p>
+		<p>This is <s>strikethrough</s> text.</p>
+		<p>This is <strike>old strikethrough</strike> text.</p>
+	</body></html>`
+
+	converter := NewContentConverter(FormatMarkdown)
+	md, err := converter.convertToMarkdown(html)
+	if err != nil {
+		t.Fatalf("convertToMarkdown failed: %v", err)
+	}
+
+	// Verify strikethrough syntax
+	if !strings.Contains(md, "~~") {
+		t.Errorf("expected strikethrough with ~~ syntax, got:\n%s", md)
+	}
+
+	// Verify content is preserved for all three strikethrough tags
+	if !strings.Contains(md, "deleted") {
+		t.Errorf("expected 'deleted' content from <del> tag, got:\n%s", md)
+	}
+	if !strings.Contains(md, "strikethrough") {
+		t.Errorf("expected 'strikethrough' content from <s> tag, got:\n%s", md)
+	}
+	if !strings.Contains(md, "old") {
+		t.Errorf("expected 'old' content from <strike> tag, got:\n%s", md)
 	}
 }
 
