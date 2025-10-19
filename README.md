@@ -8,6 +8,21 @@ Intelligently fetch web page content using a browser engine.
 
 ## Installation
 
+### Homebrew
+
+**Note:** There's a name conflict with an older deprecated tool in Homebrew core. You must use the full tap name:
+
+```bash
+brew tap grantcarthew/tap
+brew install grantcarthew/tap/snag
+```
+
+### Go Install
+
+```bash
+go install github.com/grantcarthew/snag@latest
+```
+
 ### Build from source
 
 ```bash
