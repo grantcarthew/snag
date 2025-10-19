@@ -39,7 +39,7 @@ func NewPageFetcher(page *rod.Page, timeout int) *PageFetcher {
 
 // Fetch navigates to a URL and returns the HTML content
 func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
-	logger.Progress("Fetching %s...", opts.URL)
+	logger.Info("Fetching %s...", opts.URL)
 
 	// Navigate to the URL with timeout
 	logger.Verbose("Navigating to %s (timeout: %ds)...", opts.URL, opts.Timeout)

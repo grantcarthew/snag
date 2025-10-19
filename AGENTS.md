@@ -103,7 +103,8 @@ rm -f snag snag-*
 - Log to stderr only (stdout reserved for content)
 - Success messages: `logger.Success("Connected to existing Chrome instance")`
 - Errors: `logger.Error("Failed to connect")`
-- Info: `logger.Info("Connecting to Chrome on port 9222...")`
+- Info messages: `logger.Info("Fetching https://example.com...")`
+- Verbose: `logger.Verbose("Navigating to URL...")`
 - Debug: `logger.Debug("CDP message: ...")`
 
 ## Development Workflow
