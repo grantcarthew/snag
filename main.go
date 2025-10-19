@@ -48,7 +48,9 @@ func main() {
 		},
 		Description: `snag fetches web page content using Chrome/Chromium via the Chrome DevTools Protocol.
    It can connect to existing browser sessions, launch headless browsers, or open
-   visible browsers for authenticated sessions. Output can be Markdown or HTML.`,
+   visible browsers for authenticated sessions. Output can be Markdown or HTML.
+
+   The perfect companion for AI agents to gain context from web pages.`,
 		ArgsUsage: "<url>",
 		Flags: []cli.Flag{
 			// Output Control
