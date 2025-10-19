@@ -44,8 +44,9 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 	// Navigate to the URL with timeout
 	logger.Verbose("Navigating to %s (timeout: %ds)...", opts.URL, opts.Timeout)
 
-	// Apply timeout only to navigation - use original page for other operations
-	// This prevents "context deadline exceeded" on HTML extraction if total time > timeout
+	// Apply timeout to long-running operations (navigation, wait-for) using inline .Timeout()
+	// This creates temporary timeout clones that don't affect subsequent fast operations
+	// (HTML extraction, auth detection), preventing cumulative timeout issues
 	err := pf.page.Timeout(pf.timeout).Navigate(opts.URL)
 	if err != nil {
 		// Check if it's a timeout using proper error type checking
@@ -67,15 +68,28 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 		logger.Warning("Page did not stabilize: %v", err)
 	}
 
-	// If WaitFor selector is specified, wait for it
+	// If WaitFor selector is specified, wait for it (with timeout)
 	if opts.WaitFor != "" {
 		logger.Verbose("Waiting for selector: %s", opts.WaitFor)
-		elem, err := pf.page.Element(opts.WaitFor)
+		// Apply timeout to Element - it inherits to WaitVisible
+		elem, err := pf.page.Timeout(pf.timeout).Element(opts.WaitFor)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				logger.Error("Timeout waiting for selector: %s", opts.WaitFor)
+				logger.ErrorWithSuggestion(
+					fmt.Sprintf("Selector not found within %ds", opts.Timeout),
+					fmt.Sprintf("snag --wait-for '%s' --timeout 60 %s", opts.WaitFor, opts.URL),
+				)
+				return "", fmt.Errorf("timeout waiting for selector %s: %w", opts.WaitFor, err)
+			}
 			return "", fmt.Errorf("failed to find selector %s: %w", opts.WaitFor, err)
 		}
 		err = elem.WaitVisible()
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				logger.Error("Timeout waiting for selector to be visible: %s", opts.WaitFor)
+				return "", fmt.Errorf("timeout waiting for selector %s to be visible: %w", opts.WaitFor, err)
+			}
 			return "", fmt.Errorf("selector %s not visible: %w", opts.WaitFor, err)
 		}
 		logger.Verbose("Selector found: %s", opts.WaitFor)
