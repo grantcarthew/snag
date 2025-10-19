@@ -817,10 +817,6 @@ func TestBrowser_WaitForTimeout(t *testing.T) {
 		t.Skip("Browser not available, skipping browser integration test")
 	}
 
-	// TODO: BUG - --wait-for with non-existent selector hangs indefinitely, ignores --timeout
-	// See: fetch.go wait-for logic needs to respect timeout flag
-	t.Skip("BUG: --wait-for timeout not working - hangs on non-existent selector")
-
 	server := startTestServer(t)
 	url := server.URL + "/simple.html"
 
@@ -834,7 +830,7 @@ func TestBrowser_WaitForTimeout(t *testing.T) {
 	// Should indicate timeout or element not found
 	if !strings.Contains(output, "timeout") && !strings.Contains(output, "not found") &&
 	   !strings.Contains(output, "Timeout") {
-		// May have different error message, but should error
+		t.Errorf("Expected timeout error message, got: %s", output)
 	}
 }
 
