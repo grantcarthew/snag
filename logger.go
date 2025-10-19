@@ -79,13 +79,10 @@ func (l *Logger) Success(format string, args ...interface{}) {
 	}
 }
 
-// Info logs an informational message
+// Info logs an informational message (plain text)
 func (l *Logger) Info(format string, args ...interface{}) {
 	if l.level >= LevelNormal {
 		msg := fmt.Sprintf(format, args...)
-		if l.color {
-			msg = colorCyan + msg + colorReset
-		}
 		fmt.Fprintf(l.writer, "%s\n", msg)
 	}
 }
@@ -143,10 +140,3 @@ func (l *Logger) ErrorWithSuggestion(errMsg string, suggestion string) {
 	fmt.Fprintf(l.writer, "%s %s\n%s\n", prefix, errMsg, suggestion)
 }
 
-// Progress logs a progress message (operation in progress)
-func (l *Logger) Progress(format string, args ...interface{}) {
-	if l.level >= LevelNormal {
-		msg := fmt.Sprintf(format, args...)
-		fmt.Fprintf(l.writer, "%s\n", msg)
-	}
-}
