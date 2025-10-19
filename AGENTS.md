@@ -226,7 +226,7 @@ snag/
 - **CLI Interface** (main.go): urfave/cli framework with 16 flags
 - **Browser Manager** (browser.go): Detect, launch, and connect to Chrome via rod
 - **Page Fetcher** (fetch.go): Navigate, wait, extract HTML content
-- **Content Converter** (convert.go): HTML to Markdown using html-to-markdown/v2
+- **Content Converter** (convert.go): HTML to Markdown using html-to-markdown/v2 with table and strikethrough plugins
 - **Logger** (logger.go): Custom colored output with 4 levels
 - **Validator** (validate.go): Input validation for URLs and configuration
 
