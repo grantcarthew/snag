@@ -11,11 +11,13 @@ User experience enhancements to be implemented in future iterations.
 
 **Current Behavior**:
 Long operations have no visual feedback, leaving users uncertain if the tool is working:
+
 - Browser launch: 2-5 seconds of silence
 - Page load: 5-30 seconds of silence
 - Conversion: Usually <1 second (fine)
 
 **User Experience Issue**:
+
 ```bash
 $ snag https://slow-site.com
 # ... 10 seconds of silence ...
@@ -36,11 +38,13 @@ $ snag https://example.com
 ```
 
 **Implementation Options**:
+
 1. **Spinner library** - Use package like `github.com/briandowns/spinner`
 2. **Progress dots** - Simple periodic dots: `Fetching...........`
 3. **Custom progress** - Build minimal progress indicator
 
 **Considerations**:
+
 - Must write to stderr (don't interfere with stdout output)
 - Should respect quiet mode
 - Should work with NO_COLOR environment variable
@@ -58,6 +62,7 @@ When using `--wait-for` selector, if the element never appears, users wait the f
 **Location**: fetch.go:71-80
 
 **User Experience Issue**:
+
 ```bash
 $ snag https://example.com --wait-for "#missing-element"
 # ... 30 seconds of silence ...
@@ -67,6 +72,7 @@ $ snag https://example.com --wait-for "#missing-element"
 **Proposed Solution**:
 
 **Option 1**: Progress feedback during wait
+
 ```bash
 $ snag https://example.com --wait-for "#content"
 ⠋ Waiting for selector: #content (timeout: 30s)...
@@ -74,12 +80,14 @@ $ snag https://example.com --wait-for "#content"
 ```
 
 **Option 2**: Separate timeout for element wait
+
 ```bash
 $ snag https://example.com --wait-for "#content" --wait-timeout 5
 # Uses 5s for element wait instead of full page timeout
 ```
 
 **Option 3**: Both - progress feedback + configurable timeout
+
 ```bash
 $ snag https://example.com --wait-for "#content" --wait-timeout 10
 ⠋ Waiting for selector: #content (timeout: 10s)...
@@ -88,6 +96,7 @@ $ snag https://example.com --wait-for "#content" --wait-timeout 10
 ```
 
 **Implementation**:
+
 ```go
 // Add progress feedback
 logger.Progress("Waiting for selector: %s (timeout: %ds)", opts.WaitFor, timeout)

@@ -34,14 +34,17 @@ This document outlines the distribution and release plan for the `snag` CLI tool
 ## Target Platforms
 
 ### Tier 1 (Fully Supported)
+
 - **macOS ARM64** (Apple Silicon: M1/M2/M3)
 - **macOS AMD64** (Intel Macs)
 - **Linux AMD64** (64-bit Linux)
 
 ### Tier 2 (Best Effort)
+
 - **Linux ARM64** (Raspberry Pi, ARM servers)
 
 ### Future Platforms (Post-MVP)
+
 - Windows AMD64
 - Windows ARM64
 - FreeBSD
@@ -55,6 +58,7 @@ This document outlines the distribution and release plan for the `snag` CLI tool
 **File**: `.github/workflows/release.yml`
 
 **Workflow Triggers**:
+
 - Push to tags matching `v*.*.*` (e.g., v1.0.0)
 - Manual workflow dispatch for testing
 
@@ -66,7 +70,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
   workflow_dispatch:
 
 permissions:
@@ -86,7 +90,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: "1.21"
 
       - name: Get version
         id: version
@@ -136,6 +140,7 @@ jobs:
 ```
 
 **Deliverables**:
+
 - `.github/workflows/release.yml` file
 - Automated builds for 4 platforms
 - SHA256 checksum generation
@@ -175,17 +180,20 @@ func main() {
 ```
 
 **Build Command**:
+
 ```bash
 go build -ldflags "-X main.Version=v1.0.0" -o snag
 ```
 
 **Verification**:
+
 ```bash
 ./snag --version
 # Output: snag version v1.0.0
 ```
 
 **Deliverables**:
+
 - Version variable in main.go
 - Build process sets version via ldflags
 - `--version` flag shows correct version
@@ -236,6 +244,7 @@ ls -lh "$DIST_DIR/"
 ```
 
 **Testing**:
+
 ```bash
 # Test build script
 chmod +x scripts/build.sh
@@ -251,6 +260,7 @@ cd dist && sha256sum -c SHA256SUMS
 ```
 
 **Deliverables**:
+
 - `scripts/build.sh` script
 - Local builds working for all platforms
 - Checksums verified
@@ -264,6 +274,7 @@ cd dist && sha256sum -c SHA256SUMS
 **Steps**:
 
 1. **Create Repository on GitHub**:
+
    - Repository name: `homebrew-tap`
    - Description: "Homebrew formulae for Grant Carthew's projects"
    - Public repository
@@ -271,7 +282,7 @@ cd dist && sha256sum -c SHA256SUMS
 
 2. **Create Initial README**:
 
-```markdown
+````markdown
 # Homebrew Tap
 
 Official Homebrew tap for Grant Carthew's projects.
@@ -281,6 +292,7 @@ Official Homebrew tap for Grant Carthew's projects.
 ```bash
 brew tap grantcarthew/tap
 ```
+````
 
 ## Available Formulae
 
@@ -293,7 +305,8 @@ brew install grantcarthew/tap/snag
 ```
 
 See [snag repository](https://github.com/grantcarthew/snag) for more information.
-```
+
+````
 
 **Deliverables**:
 - GitHub repository: `grantcarthew/homebrew-tap`
@@ -367,14 +380,16 @@ class Snag < Formula
     assert_match version.to_s, shell_output("#{bin}/snag --version")
   end
 end
-```
+````
 
 **Formula Development Notes**:
+
 - Checksums must be replaced with actual SHA256 values after release
 - Formula requires one binary per platform (not tarball)
 - Caveats remind users about Chrome/Chromium requirement
 
 **Deliverables**:
+
 - `Formula/snag.rb` in homebrew-tap repository
 - Formula tested locally
 - Ready for v1.0.0 release
@@ -409,6 +424,7 @@ brew style snag
 ```
 
 **Testing Checklist**:
+
 - [ ] Formula syntax is correct
 - [ ] Installation completes without errors
 - [ ] Binary is executable and in PATH
@@ -419,12 +435,14 @@ brew style snag
 - [ ] Formula passes `brew style`
 
 **Common Issues and Fixes**:
+
 - **Wrong checksum**: Update SHA256 in formula
 - **Binary not executable**: Check `chmod +x` in build
 - **Path issues**: Verify `bin.install` command
 - **Missing dependencies**: Add to formula if needed
 
 **Deliverables**:
+
 - Verified working Homebrew formula
 - Installation tested on macOS
 - All audit checks passing
@@ -437,7 +455,7 @@ brew style snag
 
 **Content**:
 
-```markdown
+````markdown
 # Release Process
 
 ## Pre-Release Checklist
@@ -466,6 +484,7 @@ git add .
 git commit -m "chore: prepare for $VERSION release"
 git push
 ```
+````
 
 ### 2. Create Git Tag
 
@@ -561,6 +580,7 @@ Follow [Semantic Versioning](https://semver.org/):
 If critical issues found after release:
 
 1. **Delete broken release**:
+
    ```bash
    gh release delete $VERSION
    git tag -d $VERSION
@@ -574,7 +594,8 @@ If critical issues found after release:
    git tag -a v1.0.1 -m "Release v1.0.1 (fixes critical bug)"
    git push origin v1.0.1
    ```
-```
+
+````
 
 **Deliverables**:
 - Complete release process documentation
@@ -642,9 +663,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/grantcarthew/snag/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/grantcarthew/snag/releases/tag/v1.0.0
-```
+````
 
 **Deliverables**:
+
 - CHANGELOG.md file
 - Release notes for v1.0.0
 - Template for future releases
@@ -654,6 +676,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Description**: Verify Linux builds work correctly
 
 **Testing Environments**:
+
 - Ubuntu 22.04 LTS (recommended)
 - Arch Linux (optional)
 - Debian 12 (optional)
@@ -691,6 +714,7 @@ sudo pacman -S chromium  # Arch
 ```
 
 **Deliverables**:
+
 - Linux binary tested and working
 - Installation process verified on Linux
 - Any platform-specific issues documented
@@ -700,6 +724,7 @@ sudo pacman -S chromium  # Arch
 **Description**: Perform the actual v1.0.0 release
 
 **Pre-Flight Checklist**:
+
 - [ ] All code complete and committed
 - [ ] Documentation complete
 - [ ] CHANGELOG.md updated
@@ -749,6 +774,7 @@ snag --version
 ```
 
 **Deliverables**:
+
 - v1.0.0 release published on GitHub
 - Homebrew formula updated and working
 - Binaries available for all platforms
@@ -757,18 +783,21 @@ snag --version
 ## Distribution Channels
 
 ### Primary Channel: GitHub Releases
+
 - Official source for all releases
 - Contains all platform binaries
 - Includes SHA256 checksums
 - Release notes and changelog
 
 ### Secondary Channel: Homebrew
+
 - Easiest installation method for macOS/Linux users
 - Automatic dependency management
 - Simple upgrade path
 - Integrated with system package manager
 
 ### Future Channels (Post-v1.0.0)
+
 - **apt repository**: Debian/Ubuntu packages
 - **yum/dnf repository**: RedHat/Fedora packages
 - **AUR**: Arch User Repository
@@ -808,16 +837,19 @@ snag --version
 ## Post-Release Maintenance
 
 ### Version Updates
+
 - Patch releases for bug fixes
 - Minor releases for new features
 - Major releases for breaking changes
 
 ### Homebrew Updates
+
 - Update formula for each release
 - Maintain checksums
 - Test installation process
 
 ### Support
+
 - Monitor GitHub issues
 - Respond to bug reports
 - Help users with installation issues

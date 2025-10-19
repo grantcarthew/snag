@@ -15,23 +15,26 @@ Low priority tasks that are not currently scheduled for implementation.
 **File**: `.github/workflows/test.yml`
 
 **Triggers**:
+
 - Push to main branch
 - Pull requests to main
 - Manual workflow dispatch
 
 **Platforms**:
+
 - ubuntu-latest (Chrome pre-installed)
 - macos-latest (Chrome pre-installed)
 
 **Workflow Steps**:
+
 ```yaml
 name: Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -48,7 +51,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.3'
+          go-version: "1.25.3"
 
       - name: Download dependencies
         run: go mod download
@@ -72,6 +75,7 @@ jobs:
 ```
 
 **Benefits**:
+
 - Automated testing on every PR
 - Cross-platform validation (Linux + macOS)
 - Catches regressions early
@@ -79,6 +83,7 @@ jobs:
 - Free for public repositories
 
 **Why Low Priority**:
+
 - All 71 tests passing locally (100% pass rate)
 - Manual testing workflow is sufficient for current development pace
 - Can be added later if team grows or contribution frequency increases
