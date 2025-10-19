@@ -1,293 +1,702 @@
-# snag - Testing Implementation
+# HTML to Markdown Conversion Issues
 
-## Status
+## Overview
 
-**Phase**: Phases 1-4 Complete ✅ | Bug Fixes Complete ✅
-**Progress**: 71 tests passing (100% pass rate)
+This document tracks issues and limitations with the HTML to Markdown conversion library used in the `snag` project. Use this as a reference when investigating library alternatives or creating upstream issues.
+
+**Status**: Solution Identified - Implementation Required
+**Priority**: Medium
+**Created**: 2025-10-18
 **Last Updated**: 2025-10-19
-**Test Runtime**: ~96 seconds
 
-## Quick Reference
+## Executive Summary
+
+**TL;DR**: The issue is REAL but has a SIMPLE FIX.
+
+**Problem**: Tables convert to concatenated text without structure (no pipe characters). Strikethrough tags (`<del>`, `<s>`, `<strike>`) don't convert to proper markdown.
+
+**Root Cause**: We're using `htmltomarkdown.ConvertString()` which only includes base + commonmark plugins. It does NOT include the table or strikethrough plugins.
+
+**Solution**: Switch to `converter.NewConverter()` and explicitly add the table and strikethrough plugins. The library fully supports proper markdown conversion for both - we just need to enable them.
+
+**Effort**: 2-4 hours implementation + testing.
+
+**Discovery**: Deep research into library documentation (2025-10-19) revealed:
+- ✅ Table plugin exists and is fully functional (PR #144, Feb 2025)
+- ✅ Strikethrough plugin exists and is fully functional
+- ✅ Table plugin supports alignment, colspan, rowspan, header promotion
+- ✅ Strikethrough plugin handles `<del>`, `<s>`, and `<strike>` tags
+- ✅ Both well-documented with configuration options
+- ✅ No library bugs - just configuration issue
+
+## Library Information
+
+- **Package**: `github.com/JohannesKaufmann/html-to-markdown/v2`
+- **Version**: v2.4.0
+- **Repository**: https://github.com/JohannesKaufmann/html-to-markdown
+- **Documentation**: https://github.com/JohannesKaufmann/html-to-markdown/tree/v2
+- **License**: MIT
+
+## Current Usage in snag
+
+### Implementation Location
+
+- **File**: `convert.go:66-75`
+- **Function**: `convertToMarkdown(html string) (string, error)`
+- **Code**:
+
+  ```go
+  func (cc *ContentConverter) convertToMarkdown(html string) (string, error) {
+      // Convert HTML to Markdown using the package-level function
+      markdown, err := htmltomarkdown.ConvertString(html)
+      if err != nil {
+          return "", err
+      }
+
+      logger.Success("Converted to Markdown")
+      return markdown, nil
+  }
+  ```
+
+### Current Configuration
+
+- Uses default configuration (no custom options)
+- Called via `htmltomarkdown.ConvertString(html)` without additional options
+- No plugins or custom rules configured
+
+## Known Issues
+
+### Issue 1: Tables Not Converted to Markdown Table Syntax
+
+**Severity**: Medium (Solution Available)
+**Impact**: Tables lose all structural formatting in markdown output when using default configuration
+**Root Cause**: Current implementation uses `htmltomarkdown.ConvertString()` which does not include the table plugin
+
+**Description**:
+When using the default `htmltomarkdown.ConvertString()` function, HTML tables are not converted to markdown table syntax (with pipe `|` characters). Instead, table content is concatenated without structure, making it difficult to read and losing the tabular relationship between data.
+
+**IMPORTANT**: The library DOES support proper table conversion via the **table plugin** (added in v2, PR #144, Feb 2025). Our current implementation simply does not use it.
+
+### Issue 2: Strikethrough Tags Not Converted to Markdown Syntax
+
+**Severity**: Low (Solution Available)
+**Impact**: Strikethrough formatting (`<del>`, `<s>`, `<strike>`) is lost in markdown output
+**Root Cause**: Current implementation uses `htmltomarkdown.ConvertString()` which does not include the strikethrough plugin
+
+**Description**:
+When using the default `htmltomarkdown.ConvertString()` function, HTML strikethrough tags are not converted to GitHub Flavored Markdown strikethrough syntax (`~~text~~`). The text content is preserved but the strikethrough formatting is lost.
+
+**IMPORTANT**: The library DOES support strikethrough conversion via the **strikethrough plugin**. Our current implementation simply does not use it.
+
+**Expected Behavior**:
+
+```markdown
+| Name  | Age | City      |
+| ----- | --- | --------- |
+| Alice | 30  | Sydney    |
+| Bob   | 25  | Melbourne |
+```
+
+**Actual Behavior**:
+
+```markdown
+Name Age City Alice 30 Sydney Bob 25 Melbourne
+```
+
+**Test Case**: `convert_test.go:57-86`
+
+**Reproducible Test**:
 
 ```bash
-# Run all tests
-go test -v
+# Create test HTML file
+cat > /tmp/test_table.html << 'EOF'
+<html><body>
+<table>
+  <thead>
+    <tr><th>Name</th><th>Value</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Item 1</td><td>100</td></tr>
+  </tbody>
+</table>
+</body></html>
+EOF
 
-# Run specific test category
-go test -v -run TestValidate    # Validation tests
-go test -v -run TestConvert     # Conversion tests
-go test -v -run TestLogger      # Logger tests
-go test -v -run TestCLI         # CLI integration tests (no browser)
-go test -v -run TestBrowser     # Browser integration tests (Phase 4)
+# Test conversion
+./snag file:///tmp/test_table.html
 
-# Coverage
-go test -cover
+# Expected: Markdown table with pipes
+# Actual: "NameValue Item 1100"
 ```
 
-## Current Test Coverage
+**Observations**:
 
-**Total Tests**: 71 (all passing ✅)
+- Table content is preserved (text is not lost)
+- Nested formatting within table cells IS preserved (bold, links, code, italic)
+- Table structure (rows, columns, headers) is completely lost
+- No visual separation between cells
+- No indication of which items are headers vs data
 
-### Unit Tests (25 tests)
-- **validate_test.go** (12 tests): URL, format, timeout, port, output path validation
-- **convert_test.go** (6 tests): HTML→Markdown conversion (headings, links, tables, lists, code, minimal)
-- **logger_test.go** (7 tests): Logger levels, stderr routing, mode behavior
+**Example with Nested Formatting**:
 
-### Integration Tests (46 tests)
-- **cli_test.go** (46 tests total: 22 Phase 3 + 26 Phase 4 - 2 overlaps)
+HTML Input:
 
-**Phase 3: CLI Tests (9 tests - no browser required)**
-  - Version/Help/NoArgs (3 tests)
-  - URL validation (1 test with 3 subtests)
-  - Format/Timeout/Port validation (3 tests with 10 subtests)
-  - Format options, output permissions (2 tests with 2 subtests)
-
-**Phase 4: Browser Integration (26 tests)**
-  - Core Fetch Tests (5 tests): simple.html, complex.html, minimal.html, HTML format, output to file
-  - Browser Mode Tests (5 tests): headless, visible, open-browser, custom port, connect existing
-  - Authentication Detection (4 tests): 401, 403, login form, no false positives
-  - Timeout & Wait Tests (4 tests): custom timeout, wait-for selector, wait-for timeout ✅, default timeout
-  - Advanced Flags (5 tests): user agent, close-tab, verbose, quiet, debug
-  - Real-World Tests (3 tests): example.com, httpbin.org, delayed response
-
-## Completed Work
-
-### ✅ Phase 1: Test Infrastructure (Complete)
-- Created `testdata/` directory with 5 HTML fixtures
-- Built binary for black-box testing
-- Implemented test helpers in `cli_test.go`:
-  - `isBrowserAvailable()` - Browser detection
-  - `startTestServer()` - HTTP test server
-  - `runSnag()` - Binary execution wrapper
-  - Assertion helpers: `assertContains`, `assertExitCode`, `assertNoError`, `assertError`
-
-### ✅ Phase 2: Unit Tests (Complete)
-All pure functions have comprehensive unit test coverage:
-- **validate.go**: URL, format, timeout, port, output path validation
-- **convert.go**: HTML to Markdown conversion with proper syntax verification
-- **logger.go**: All log levels, modes, and stderr routing
-
-### ✅ Phase 3: Fast CLI Tests (Complete)
-Black-box integration tests without browser dependency:
-- CLI info (version, help, no args)
-- Input validation (URL, format, timeout, port)
-- Output path permissions
-- Flag acceptance testing
-
-### ✅ Phase 4: Browser Integration Tests (Complete)
-Full browser-based integration tests with Chrome/Chromium:
-- **Core Fetch Tests (5 tests)**: Fetch simple/complex/minimal HTML, format output, file writing
-- **Browser Mode Tests (5 tests)**: Headless, visible, open-browser, custom port, existing instance
-- **Authentication Detection (4 tests)**: HTTP 401/403, login forms, no false positives
-- **Timeout & Wait Tests (4 tests)**: Custom timeout, wait-for selector, timeout handling, defaults
-- **Advanced Flags (5 tests)**: User agent, close-tab, verbose, quiet, debug modes
-- **Real-World Tests (3 tests)**: example.com, httpbin.org, delayed responses
-
-### ✅ Code Quality Improvements
-Through multiple external code reviews, implemented:
-- Validation functions actually called in tests (not just map checks)
-- Combined string assertions for proper markdown syntax verification
-- Portable temp directory creation with proper cleanup
-- Unique temp file names using `os.CreateTemp()`
-- Self-contained validation functions (no package-level dependencies)
-- Case-sensitive format error messages
-- Proper exit code assertions for integration tests
-- Fenced code block syntax verification
-- Comprehensive validation coverage (all new functions tested)
-- Standard markdown heading format validation (with space after `#`)
-
-### ✅ Phase 5: Bug Fixes (Complete)
-**--wait-for timeout handling** (Fixed: 2025-10-19):
-- **Issue**: `--wait-for` with non-existent selector ignored `--timeout` flag, hung indefinitely
-- **Root cause**: fetch.go:73 didn't apply timeout context to Element/WaitVisible calls
-- **Fix**: Added `.Timeout(pf.timeout)` to Element call (fetch.go:75)
-- **Changes**:
-  - fetch.go:47-49: Updated comment to clarify timeout architecture
-  - fetch.go:75: Applied timeout to Element lookup
-  - fetch.go:77-83: Added timeout error handling for Element
-  - fetch.go:89-91: Added timeout error handling for WaitVisible
-  - cli_test.go:814-835: Unskipped TestBrowser_WaitForTimeout
-- **Result**: Test now passes in 5 seconds (respects 2-second timeout)
-- **Impact**: All 71 tests now passing (100% pass rate)
-
-## Test Files Structure
-
-```
-snag/
-├── validate_test.go    # 196 lines, 12 tests - URL/format/timeout/port/path validation
-├── convert_test.go     # 165 lines, 6 tests  - HTML→Markdown conversion
-├── logger_test.go      # 129 lines, 7 tests  - Logger behavior and modes
-├── cli_test.go         # 1055 lines, 35 tests - CLI + Browser integration
-├── testdata/
-│   ├── simple.html     # Basic HTML (headings, paragraphs, links)
-│   ├── complex.html    # Tables, lists, code blocks
-│   ├── minimal.html    # Edge case: bare minimum HTML
-│   ├── login-form.html # Auth detection (password field)
-│   └── dynamic.html    # Dynamic content with delayed element
-└── snag               # Compiled binary for black-box testing
+```html
+<table>
+  <tr>
+    <td><strong>Bold</strong></td>
+    <td><a href="http://example.com">Link</a></td>
+  </tr>
+  <tr>
+    <td><code>code</code></td>
+    <td><em>italic</em></td>
+  </tr>
+</table>
 ```
 
-**Total**: 1545 lines of test code, 71 tests (70 passing, 1 skipped)
+Actual Output:
 
-## Key Validation Improvements
+```markdown
+**Bold**[Link](http://example.com) `code`_italic_
+```
 
-During implementation, tests revealed missing validation that was added:
+Expected Output:
 
-1. **Format Validation** (`validateFormat`)
-   - Validates markdown/html only (case-sensitive)
-   - Clear error messages with case-sensitivity note
+```markdown
+| **Bold** | [Link](http://example.com) |
+| `code` | _italic_ |
+```
 
-2. **Timeout Validation** (`validateTimeout`)
-   - Must be positive integer
-   - Validates before attempting connection
+**Related Code**:
 
-3. **Port Validation** (`validatePort`)
-   - Range: 1-65535
-   - Prevents invalid port numbers early
+- Test: `convert_test.go:57` - `TestConvertToMarkdown_Tables()`
+- Implementation: `convert.go:66` - `convertToMarkdown()`
+- Workaround: None currently implemented
 
-4. **Output Path Validation** (`validateOutputPath`)
-   - Directory existence check
-   - Write permission verification using `os.CreateTemp()`
-   - Prevents errors at write time
+**Temporary Solution**:
+Test updated to verify content preservation instead of structure:
 
-All validation functions have comprehensive test coverage with positive and negative test cases.
-
-## Known Issues & Limitations
-
-### HTML to Markdown Conversion
-
-**Table Conversion Issue** (Documented in `docs/projects/PROJECT-html2markdown.md`):
-- Tables do not convert to markdown table syntax (no pipe characters)
-- Content is preserved but structure is lost
-- Example: `<table>` → `NameValue Item1100` (not `| Name | Value |`)
-- Nested formatting within cells IS preserved (bold, links, code)
-- Investigation needed for library configuration or alternative
-
-**Test Documentation**:
 ```go
 // NOTE: Current html-to-markdown library does not convert tables to proper
 // markdown table syntax. This test verifies table content is preserved.
 // TODO: Consider library configuration or alternative for proper table support.
 ```
 
-## Testing Philosophy
+## Investigation Results ✅
 
-### Black-Box Approach
-- Tests compiled `./snag` binary via `exec.Command()`
-- Validates actual user experience
-- No exposure of internal functions required
-- Catches integration issues
+### 1. Library Configuration Options - COMPLETED
 
-### Pragmatic Choices
-- **No mocking**: Test with real browser when available
-- **Standard library only**: No testify, no BATS
-- **Auto-skip**: Browser tests skip gracefully if Chrome unavailable
-- **Integration over isolation**: Prefer testing real behavior
-- **Appropriate assertions**: Keyword checks for CLI errors (not brittle string matching)
+**Findings**:
 
-### Code Review Decisions
+- ✅ **Table plugin EXISTS**: `github.com/JohannesKaufmann/html-to-markdown/v2/plugin/table`
+- ✅ **Added in v2**: PR #144, merged February 25, 2025
+- ✅ **Fully functional**: Supports alignment, rowspan, colspan, header promotion
+- ✅ **Well documented**: Full API documentation available
 
-Rejected overly strict suggestions:
-- ❌ Exact error string matching (CLI messages aren't APIs)
-- ❌ Removing global logger from tests (standard Go practice, no race conditions)
-- ❌ Ultra-specific error validation in black-box tests
-- ✅ Accepted: Proper markdown syntax verification
-- ✅ Accepted: Comprehensive validation coverage
+**Table Plugin Features**:
 
-## Future Work
+- Converts HTML tables to proper GitHub Flavored Markdown table syntax
+- Supports alignment (left, center, right)
+- Handles `colspan` and `rowspan` attributes
+- Configurable options via `NewTablePlugin(opts...)`
+- Empty row skipping
+- Header row promotion
+- Presentation table handling
 
-All testing work is complete. See:
-- **docs/projects/PROJECT-backlog.md** - Low priority tasks
+**Strikethrough Plugin Features**:
 
-## CI/CD Ready
+- Converts `<del>`, `<s>`, and `<strike>` tags to `~~text~~` syntax
+- Implements GitHub Flavored Markdown strikethrough
+- No configuration needed - works out of the box
 
-Tests are designed for GitHub Actions:
-- Chrome pre-installed on ubuntu-latest and macos-latest
-- No additional dependencies
-- Fast unit tests (~4ms)
-- Moderate integration tests (~8s with browser)
+**Configuration Options Available**:
 
-**Example Workflow**:
-```yaml
-- name: Build binary
-  run: go build -o snag
-
-- name: Run tests
-  run: go test -v -cover ./...
+```go
+table.NewTablePlugin(
+    table.WithSpanCellBehavior(table.SpanBehaviorMirror),  // or SpanBehaviorEmpty
+    table.WithHeaderPromotion(true),                        // promote first row to header
+    table.WithSkipEmptyRows(true),                         // omit empty rows
+    table.WithNewlineBehavior(table.NewlineBehaviorPreserve), // preserve newlines in cells
+    table.WithPresentationTables(false),                   // skip role="presentation" tables
+)
 ```
 
-## Related Documentation
+**Relevant Links**:
 
-- **AGENTS.md**: Project conventions and development workflow
-- **docs/projects/PROJECT-backlog.md**: Low priority tasks
-- **README.md**: User-facing documentation
-- **docs/design.md**: Technical design decisions
+- Table plugin source: https://github.com/JohannesKaufmann/html-to-markdown/tree/main/plugin/table
+- Table plugin docs: https://pkg.go.dev/github.com/JohannesKaufmann/html-to-markdown/v2/plugin/table
+- Strikethrough plugin source: https://github.com/JohannesKaufmann/html-to-markdown/tree/main/plugin/strikethrough
+- Strikethrough plugin docs: https://pkg.go.dev/github.com/JohannesKaufmann/html-to-markdown/v2/plugin/strikethrough
+- Main README: https://github.com/JohannesKaufmann/html-to-markdown#table-plugin
 
-## Success Metrics
+### 2. Alternative Libraries - NOT NEEDED ✅
 
-**Testing Phase Complete Achievement**:
-- ✅ 4 test files created (1545 lines of test code)
-- ✅ 5 HTML fixtures in testdata/
-- ✅ 71 tests total (all passing, 100% pass rate)
-- ✅ Tests auto-skip when browser unavailable
-- ✅ All validation functions tested
-- ✅ All pure functions tested
-- ✅ CLI flag validation complete
-- ✅ Full browser integration test coverage
-- ✅ Real-world endpoint testing (example.com, httpbin.org)
-- ✅ Bug discovered, documented, and fixed: --wait-for timeout handling
+**Conclusion**: No alternative libraries needed. The current library (`html-to-markdown/v2`) fully supports table conversion via the table plugin.
 
-**Testing Complete - All Goals Achieved**:
-- All test phases complete (1-4 + bug fixes)
-- 100% test pass rate (71/71 tests)
-- Comprehensive coverage of all features
-- Ready for production use
+**Previous Considerations** (now obsolete):
+
+- ~~turndown (Node.js)~~ - Would add Node.js dependency unnecessarily
+- ~~Custom table handler~~ - Library already provides this functionality
+- ~~Different library~~ - Current library is excellent, just needs proper configuration
+
+### 3. Upstream Issue - NOT REQUIRED ✅
+
+**Conclusion**: No upstream issue needed. This is not a bug in the library - it's a configuration issue in our implementation.
+
+**Analysis**:
+
+- ✅ Library supports tables via plugin system
+- ✅ Plugin is well-documented and maintained
+- ✅ Plugin added in v2 (we're using v2.4.0)
+- ✅ No known bugs with table conversion
+- ⚠️ Our code simply doesn't use the plugin
+
+**What we found**:
+
+The `htmltomarkdown.ConvertString()` convenience function is intentionally minimal - it only includes base and commonmark plugins. For table support, users must use `converter.NewConverter()` and explicitly add the table plugin. This is documented in the library's README.
+
+## Recommended Solution ✅
+
+### Solution 1: Enable Table and Strikethrough Plugins - VERIFIED AND READY
+
+**Status**: Implementation code verified, ready to apply
+
+**Current Code** (convert.go:66-75):
+```go
+func (cc *ContentConverter) convertToMarkdown(html string) (string, error) {
+    // Convert HTML to Markdown using the package-level function
+    markdown, err := htmltomarkdown.ConvertString(html)
+    if err != nil {
+        return "", err
+    }
+
+    logger.Success("Converted to Markdown")
+    return markdown, nil
+}
+```
+
+**Proposed Fix**:
+
+```go
+import (
+    "github.com/JohannesKaufmann/html-to-markdown/v2/converter"
+    "github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
+    "github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
+    "github.com/JohannesKaufmann/html-to-markdown/v2/plugin/strikethrough"
+    "github.com/JohannesKaufmann/html-to-markdown/v2/plugin/table"
+)
+
+func (cc *ContentConverter) convertToMarkdown(html string) (string, error) {
+    // Create converter with table and strikethrough plugin support
+    conv := converter.NewConverter(
+        converter.WithPlugins(
+            base.NewBasePlugin(),
+            commonmark.NewCommonmarkPlugin(),
+            table.NewTablePlugin(),            // Add table support
+            strikethrough.NewStrikethroughPlugin(), // Add strikethrough support
+        ),
+    )
+
+    markdown, err := conv.ConvertString(html)
+    if err != nil {
+        return "", err
+    }
+
+    logger.Success("Converted to Markdown")
+    return markdown, nil
+}
+```
+
+**Alternative with Configuration Options**:
+
+```go
+func (cc *ContentConverter) convertToMarkdown(html string) (string, error) {
+    conv := converter.NewConverter(
+        converter.WithPlugins(
+            base.NewBasePlugin(),
+            commonmark.NewCommonmarkPlugin(),
+            table.NewTablePlugin(
+                table.WithHeaderPromotion(true),      // Promote first row to header if no <th>
+                table.WithSkipEmptyRows(true),        // Skip completely empty rows
+                table.WithSpanCellBehavior(table.SpanBehaviorEmpty), // How to handle colspan/rowspan
+            ),
+            strikethrough.NewStrikethroughPlugin(), // Converts <del>, <s>, <strike> to ~~text~~
+        ),
+    )
+
+    markdown, err := conv.ConvertString(html)
+    if err != nil {
+        return "", err
+    }
+
+    logger.Success("Converted to Markdown")
+    return markdown, nil
+}
+```
+
+### ~~Solution 2: Custom Table Pre-Processing~~ - NOT NEEDED
+
+**Obsolete**: Library already handles table conversion via plugin. No custom pre-processing required.
+
+### ~~Solution 3: Post-Processing Detection~~ - NOT NEEDED
+
+**Obsolete**: With table plugin enabled, tables will convert properly. Warning not needed.
+
+## Testing Requirements ⚠️ IMPORTANT
+
+### Current Test Coverage - TESTS NEED UPDATING
+
+**Critical**: The existing table test is written to work around the current lack of table support. Once we add the table plugin, this test WILL FAIL because it expects the wrong output format.
+
+**Current State**:
+
+- **File**: `convert_test.go`
+- **Test**: `TestConvertToMarkdown_Tables()` at line 60
+- **Status**: Currently passes (but for the WRONG reason)
+- **Current Behavior**: Test verifies content preservation WITHOUT pipe characters
+- **Problem**: Test expects `"NameValue Item1100"` instead of proper table syntax
+- **Comment in code**: Lines 78-80 acknowledge this is a workaround
+
+**What needs to change**:
+
+1. ✅ **Table test exists** but checks for WRONG output (concatenated text)
+2. ❌ **Strikethrough test does NOT exist** - needs to be created
+
+**After implementation**, the table test will fail with this error:
+```
+expected table headers in markdown, got:
+NameValue Item 1100
+```
+
+This is EXPECTED and GOOD - it means we need to update the test to check for proper table syntax.
+
+### Required Test Updates
+
+#### 1. Update Existing Table Test - MANDATORY
+
+**Current Test Code** (convert_test.go:60-89):
+
+```go
+func TestConvertToMarkdown_Tables(t *testing.T) {
+    html := `<html><body>
+        <table>
+            <thead>
+                <tr><th>Name</th><th>Value</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Item 1</td><td>100</td></tr>
+            </tbody>
+        </table>
+    </body></html>`
+
+    converter := NewContentConverter(FormatMarkdown)
+    md, err := converter.convertToMarkdown(html)
+    if err != nil {
+        t.Fatalf("convertToMarkdown failed: %v", err)
+    }
+
+    // NOTE: Current html-to-markdown library does not convert tables to proper
+    // markdown table syntax. This test verifies table content is preserved.
+    // TODO: Consider library configuration or alternative for proper table support.
+
+    // Check for table content (headers and data are preserved)
+    if !strings.Contains(md, "Name") || !strings.Contains(md, "Value") {
+        t.Errorf("expected table headers in markdown, got:\n%s", md)
+    }
+    if !strings.Contains(md, "Item 1") || !strings.Contains(md, "100") {
+        t.Errorf("expected table data in markdown, got:\n%s", md)
+    }
+}
+```
+
+**THIS TEST WILL FAIL** after we add the table plugin because:
+- It doesn't check for pipe `|` characters
+- It doesn't check for separator row with dashes
+- The TODO comment is outdated
+
+**New Test Code** (replace the above):
+
+The existing `TestConvertToMarkdown_Tables()` test needs to be completely rewritten to verify proper markdown table syntax.
+
+```go
+func TestConvertToMarkdown_Tables(t *testing.T) {
+    html := `<html><body>
+        <table>
+            <thead>
+                <tr><th>Name</th><th>Value</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Item 1</td><td>100</td></tr>
+            </tbody>
+        </table>
+    </body></html>`
+
+    converter := NewContentConverter(FormatMarkdown)
+    md, err := converter.convertToMarkdown(html)
+    if err != nil {
+        t.Fatalf("convertToMarkdown failed: %v", err)
+    }
+
+    // Verify proper markdown table syntax (not just content preservation)
+    if !strings.Contains(md, "|") {
+        t.Errorf("expected markdown table with pipe characters, got:\n%s", md)
+    }
+
+    // Verify header row
+    if !strings.Contains(md, "Name") || !strings.Contains(md, "Value") {
+        t.Errorf("expected table headers 'Name' and 'Value', got:\n%s", md)
+    }
+
+    // Verify data row
+    if !strings.Contains(md, "Item 1") || !strings.Contains(md, "100") {
+        t.Errorf("expected table data 'Item 1' and '100', got:\n%s", md)
+    }
+
+    // Verify separator row (some variation of dashes)
+    if !strings.Contains(md, "---") {
+        t.Errorf("expected table separator with dashes, got:\n%s", md)
+    }
+}
+```
+
+#### 2. Add Strikethrough Test - MANDATORY
+
+**This test does NOT exist** and must be created.
+
+**New Test to Add** (convert_test.go - add after table test):
+
+```go
+func TestConvertToMarkdown_Strikethrough(t *testing.T) {
+    html := `<html><body>
+        <p>This is <del>deleted</del> text.</p>
+        <p>This is <s>strikethrough</s> text.</p>
+        <p>This is <strike>old strikethrough</strike> text.</p>
+    </body></html>`
+
+    converter := NewContentConverter(FormatMarkdown)
+    md, err := converter.convertToMarkdown(html)
+    if err != nil {
+        t.Fatalf("convertToMarkdown failed: %v", err)
+    }
+
+    // Verify strikethrough syntax
+    if !strings.Contains(md, "~~") {
+        t.Errorf("expected strikethrough with ~~ syntax, got:\n%s", md)
+    }
+
+    // Verify content is preserved
+    if !strings.Contains(md, "deleted") || !strings.Contains(md, "strikethrough") {
+        t.Errorf("expected strikethrough content preserved, got:\n%s", md)
+    }
+}
+```
+
+**Additional Test Cases to Consider**:
+
+1. **Advanced Tables** (optional, future):
+   - Table with alignment
+   - Table with colspan/rowspan
+   - Table with nested formatting (bold, links, code)
+   - Table without explicit header
+   - Empty table cells
+
+2. **Advanced Strikethrough** (optional, future):
+   - Nested strikethrough with other formatting
+   - Multiple strikethrough elements in one paragraph
+
+## Impact Assessment
+
+### User Impact
+
+**Severity**: Medium to High (depending on use case)
+
+**Affected Users**:
+
+- Users fetching pages with data tables (reports, documentation, wikis)
+- Users expecting markdown output to preserve table structure
+- Users piping output to markdown renderers
+
+**Workarounds**:
+
+- Use `--format html` flag to get raw HTML output
+- Manual table reconstruction from concatenated text (tedious)
+- Process tables separately with different tool
+
+### Performance Impact
+
+- No performance impact from current behavior
+- Custom solution may add processing overhead
+- Plugin solution should have minimal impact
+
+## Action Plan ✅
+
+### ~~Phase 1: Investigation~~ - COMPLETED ✅
+
+**Duration**: 2 hours (2025-10-19)
+
+1. ✅ **Research library capabilities**
+   - ✅ Read v2 documentation and README
+   - ✅ Discovered table plugin exists and is fully functional
+   - ✅ Reviewed plugin API and configuration options
+   - ✅ Confirmed we're using v2.4.0 which includes table plugin
+
+2. ✅ **Search existing issues**
+   - ✅ No library bugs found - this is a configuration issue on our end
+   - ✅ Library works as designed - table plugin must be explicitly added
+   - ✅ Well-documented in official README
+
+### Phase 2: Implementation (2-4 hours) - READY TO START
+
+**Tasks**:
+
+1. **Update convert.go** (1 hour)
+   - Replace `htmltomarkdown.ConvertString()` with `converter.NewConverter()`
+   - Add imports for converter, base, commonmark, table, and strikethrough plugins
+   - Register all plugins with converter
+   - Choose appropriate table plugin options
+   - Test locally with sample HTML tables and strikethrough text
+
+2. **Update convert_test.go** (1 hour) ⚠️ CRITICAL
+   - **REWRITE** `TestConvertToMarkdown_Tables()` test completely (lines 60-89)
+     - Remove old content-only checks
+     - Add pipe `|` character verification
+     - Add separator row `---` verification
+     - Remove outdated TODO comment (lines 78-80)
+     - Test WILL FAIL initially - this is expected and correct
+   - **CREATE NEW** `TestConvertToMarkdown_Strikethrough()` test
+     - Add after table test
+     - Verify `~~` syntax
+     - Verify all three tag types work
+   - Run tests and verify they pass with new implementation
+   - Consider adding additional advanced test cases
+
+3. **Build and verify** (30 minutes)
+   - Run `go build` to ensure no compilation errors
+   - Run `go test -v` to ensure all tests pass
+   - Manual testing with `./snag` on real web pages with tables and strikethrough text
+
+4. **Update documentation** (30 minutes)
+   - Update AGENTS.md line 229 to mention table and strikethrough plugin usage
+   - Update PROJECT.md to note table and strikethrough support is now working
+   - Remove or update any "table limitation" notes in documentation
+   - Document that `<del>`, `<s>`, and `<strike>` tags now convert to `~~text~~`
+
+### ~~Phase 3: Upstream Contribution~~ - NOT NEEDED ✅
+
+**Conclusion**: No upstream contribution required. Library works perfectly - we just needed to configure it properly.
+
+## Implementation Checklist
+
+**Before starting**:
+- [ ] Read this document completely
+- [ ] Review table plugin API documentation
+- [ ] Understand current convert.go implementation
+
+**Implementation**:
+- [ ] Update imports in convert.go (add table and strikethrough plugins)
+- [ ] Modify convertToMarkdown() function in convert.go
+- [ ] Choose table plugin configuration options
+- [ ] **REWRITE** TestConvertToMarkdown_Tables() test (convert_test.go:60-89)
+  - Remove content-only checks
+  - Add proper table syntax verification
+  - Remove TODO comment at lines 78-80
+- [ ] **CREATE** TestConvertToMarkdown_Strikethrough() test (new in convert_test.go)
+- [ ] Run `go test -v` and verify both tests pass
+- [ ] Build binary and test manually
+
+**Verification**:
+- [ ] **IMPORTANT**: Table test initially FAILS (expected - old test checks wrong thing)
+- [ ] After rewriting table test, all tests pass
+- [ ] Table test now verifies pipe `|` characters
+- [ ] Table test verifies separator row with `---`
+- [ ] Strikethrough test verifies `~~` syntax
+- [ ] Strikethrough test checks all three tags (`<del>`, `<s>`, `<strike>`)
+- [ ] All 6 existing conversion tests still pass (headings, links, lists, code, minimal)
+- [ ] Manual test with real web page containing tables and strikethrough
+- [ ] Output produces valid GFM table syntax
+- [ ] Output produces valid GFM strikethrough syntax
+
+**Documentation**:
+- [ ] Update AGENTS.md
+- [ ] Update PROJECT.md completion status
+- [ ] Mark this document as implemented
+
+## Related Files
+
+### Source Code
+
+- `convert.go` - HTML to Markdown conversion implementation
+- `convert_test.go` - Conversion tests
+- `go.mod` - Dependency declaration
+
+### Documentation
+
+- `AGENTS.md:229` - Mentions html-to-markdown dependency
+- `docs/design.md` - May discuss format conversion decisions
+- `PROJECT.md:76` - TODO for table support investigation
+
+### Tests
+
+- `testdata/complex.html:8-18` - Contains table test fixture
+- `convert_test.go:57-86` - Table conversion test
+
+## References
+
+### Library Resources
+
+- GitHub Repository: https://github.com/JohannesKaufmann/html-to-markdown
+- Go Package Documentation: https://pkg.go.dev/github.com/JohannesKaufmann/html-to-markdown/v2
+- Issues: https://github.com/JohannesKaufmann/html-to-markdown/issues
+- V2 Migration Guide: https://github.com/JohannesKaufmann/html-to-markdown/blob/v2/MIGRATION.md
+
+### Markdown Table Specification
+
+- GitHub Flavored Markdown: https://github.github.com/gfm/#tables-extension-
+- CommonMark Discussion: https://talk.commonmark.org/t/tables-in-pure-markdown/81
+
+### Alternative Libraries
+
+- turndown (JS): https://github.com/mixmark-io/turndown
+- html-to-markdown (Go, older): Various forks on GitHub
+- pandoc (comprehensive): https://pandoc.org/
+
+## Notes
+
+- ✅ Library is actively maintained (latest commit: August 2025)
+- ✅ V2 is a complete rewrite from V1 with enhanced plugin architecture
+- ✅ V2 table support is MORE comprehensive than V1
+- ✅ Table conversion is NOT a limitation - it's a feature that must be explicitly enabled
+- ⚠️ The `ConvertString()` convenience function is intentionally minimal
+- 📚 Table plugin is well-documented in README and pkg.go.dev
+
+**Key Insight**: This is a common pattern in the library's design - core functionality is minimal by default, extended functionality requires explicit plugin registration. This keeps the base library lightweight and allows users to opt-in to features they need.
+
+---
+
+**Investigation Complete**: 2025-10-19
+
+**Findings**:
+1. ✅ Table plugin exists and works perfectly
+2. ✅ Strikethrough plugin exists and works perfectly
+3. ✅ Solution is simple: use `converter.NewConverter()` with both plugins
+4. ✅ No alternative libraries needed
+5. ✅ No upstream issues to file
+6. ⚠️ Implementation required in convert.go
 
 **Next Steps**:
-- See `docs/projects/PROJECT-backlog.md` for low priority tasks
 
-## Testing Commands
+1. Implement solution in convert.go (add plugins)
+2. **REWRITE** table test in convert_test.go (lines 60-89)
+3. **CREATE** strikethrough test in convert_test.go (new)
+4. Verify all tests pass
+5. Update documentation (AGENTS.md, PROJECT.md)
+6. Mark this issue as resolved
 
-```bash
-# Standard workflow
-go build -o snag          # Build binary for integration tests
-go test -v                # Run all tests with output
-go test -cover            # Show coverage percentage
+**Test Update Summary**:
+- ✏️ 1 test to REWRITE: `TestConvertToMarkdown_Tables()`
+- ➕ 1 test to CREATE: `TestConvertToMarkdown_Strikethrough()`
+- ✅ 6 existing tests should still pass unchanged
 
-# Specific test categories
-go test -v -run TestValidate              # All validation tests
-go test -v -run TestConvert               # All conversion tests
-go test -v -run TestLogger                # All logger tests
-go test -v -run TestCLI                   # CLI integration tests (no browser)
-go test -v -run TestBrowser               # Browser integration tests (Phase 4)
-
-# Specific browser test groups
-go test -v -run TestBrowser_Fetch         # Core fetch tests
-go test -v -run TestBrowser_Force         # Browser mode tests
-go test -v -run TestBrowser_Auth          # Authentication detection tests
-go test -v -run TestBrowser_.*Timeout     # Timeout and wait tests
-go test -v -run TestBrowser_RealWorld     # Real-world endpoint tests
-
-# Coverage analysis
-go test -coverprofile=coverage.out
-go tool cover -html=coverage.out -o coverage.html
-
-# Race detection
-go test -race
-
-# Skip long-running tests
-go test -v -short                         # Skips real-world tests
-```
-
-## Key Learnings
-
-1. **Tests Found Real Bugs**:
-   - Missing validation for format/timeout/port (Phase 2-3)
-   - `--wait-for` timeout handling bug (Phase 4)
-2. **Black-Box Testing Works**: Integration tests caught user-facing issues
-3. **Code Reviews Valuable**: Multiple reviews improved test quality significantly
-4. **Pragmatism Required**: Rejected overly strict suggestions for CLI testing
-5. **Library Limitations**: html-to-markdown table issue documented for future fix
-6. **Standard Library Sufficient**: No external test frameworks needed
-7. **Real-World Testing Essential**: Testing against live endpoints (example.com, httpbin.org) validates actual behavior
-8. **Browser Tests Auto-Skip**: Graceful degradation when Chrome unavailable enables CI/CD flexibility
+**Owner**: TBD
+**Actual Investigation Effort**: 2 hours
+**Estimated Implementation Effort**: 2-4 hours
