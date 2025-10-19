@@ -13,9 +13,10 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const (
-	version = "1.0.0"
+// version can be set via ldflags at build time
+var version = "dev"
 
+const (
 	// Output format constants
 	FormatMarkdown = "markdown"
 	FormatHTML     = "html"
