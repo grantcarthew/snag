@@ -70,29 +70,17 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 
 	// If WaitFor selector is specified, wait for it (with timeout)
 	if opts.WaitFor != "" {
-		logger.Verbose("Waiting for selector: %s", opts.WaitFor)
-		// Apply timeout to Element - it inherits to WaitVisible
-		elem, err := pf.page.Timeout(pf.timeout).Element(opts.WaitFor)
+		err := waitForSelector(pf.page, opts.WaitFor, pf.timeout)
 		if err != nil {
+			// Add URL-specific suggestion for timeout errors
 			if errors.Is(err, context.DeadlineExceeded) {
-				logger.Error("Timeout waiting for selector: %s", opts.WaitFor)
 				logger.ErrorWithSuggestion(
 					fmt.Sprintf("Selector not found within %ds", opts.Timeout),
 					fmt.Sprintf("snag --wait-for '%s' --timeout 60 %s", opts.WaitFor, opts.URL),
 				)
-				return "", fmt.Errorf("timeout waiting for selector %s: %w", opts.WaitFor, err)
 			}
-			return "", fmt.Errorf("failed to find selector %s: %w", opts.WaitFor, err)
+			return "", err
 		}
-		err = elem.WaitVisible()
-		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				logger.Error("Timeout waiting for selector to be visible: %s", opts.WaitFor)
-				return "", fmt.Errorf("timeout waiting for selector %s to be visible: %w", opts.WaitFor, err)
-			}
-			return "", fmt.Errorf("selector %s not visible: %w", opts.WaitFor, err)
-		}
-		logger.Verbose("Selector found: %s", opts.WaitFor)
 	}
 
 	// Check for authentication requirements
@@ -174,4 +162,32 @@ func (pf *PageFetcher) getURL() string {
 		return ""
 	}
 	return info.URL
+}
+
+// waitForSelector waits for a CSS selector to appear and be visible on the page
+// This is a shared helper function to avoid code duplication between Fetch and tab operations
+func waitForSelector(page *rod.Page, selector string, timeout time.Duration) error {
+	logger.Verbose("Waiting for selector: %s", selector)
+
+	// Apply timeout to Element - it inherits to WaitVisible
+	elem, err := page.Timeout(timeout).Element(selector)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			logger.Error("Timeout waiting for selector: %s", selector)
+			return fmt.Errorf("timeout waiting for selector %s: %w", selector, err)
+		}
+		return fmt.Errorf("failed to find selector %s: %w", selector, err)
+	}
+
+	err = elem.WaitVisible()
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			logger.Error("Timeout waiting for selector to be visible: %s", selector)
+			return fmt.Errorf("timeout waiting for selector %s to be visible: %w", selector, err)
+		}
+		return fmt.Errorf("selector %s not visible: %w", selector, err)
+	}
+
+	logger.Verbose("Selector found: %s", selector)
+	return nil
 }
