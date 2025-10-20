@@ -111,6 +111,22 @@ rm -f snag snag-*
 - Verbose: `logger.Verbose("Navigating to URL...")`
 - Debug: `logger.Debug("CDP message: ...")`
 
+**License Headers:**
+
+- Add MPL 2.0 header to all Go source files when creating them
+- Apply this header to every new `.go` file created
+- See `LICENSE` file Exhibit A (lines 355-367) for reference
+
+```go
+// Copyright (c) 2025 Grant Carthew
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package main
+```
+
 ## Development Workflow
 
 **Branch Management:**
@@ -346,6 +362,5 @@ Third-party licenses in `LICENSES/` directory.
 
 - **README.md**: User-facing documentation and usage examples
 - **docs/design.md**: Comprehensive design decisions and rationale
-- **docs/notes.md**: Development notes and implementation details
 - **Repository**: https://github.com/grantcarthew/snag
 - **Issues**: https://github.com/grantcarthew/snag/issues
