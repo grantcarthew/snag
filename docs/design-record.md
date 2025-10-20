@@ -1,8 +1,14 @@
-# snag - Design Document
+# snag - Design Record
+
+> **Document Type**: Design Record
+> **Purpose**: Documents the design decisions, rationale, and architecture of the snag CLI tool
+> **Audience**: Contributors, maintainers, and anyone interested in understanding why snag works the way it does
 
 ## Overview
 
 `snag` is a CLI tool for intelligently fetching web page content using a browser engine, with smart session management and format conversion capabilities.
+
+This document captures the design decisions made during snag's development, the alternatives considered, and the rationale behind each choice.
 
 ## Name Rationale
 
@@ -28,24 +34,24 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ## Design Decisions Summary
 
-**All 13 design decisions finalized ✅**
+**14 major design decisions documented below:**
 
-| # | Decision | Choice |
-|---|----------|--------|
-| 1 | CLI Arguments | 16 MVP arguments (position independent) |
-| 2 | Output Formats | Markdown (default), HTML |
-| 3 | Argument Parsing | Position independent (standard Go CLI behavior) |
-| 4 | Platform Support | macOS (arm64/amd64), Linux (amd64/arm64) - no Windows |
-| 5 | Config File | Not for MVP (post-MVP feature) |
-| 6 | HTML→Markdown | `html-to-markdown/v2` (embedded library) |
-| 7 | License Attribution | `LICENSES/` directory |
-| 8 | CLI Framework | `urfave/cli/v2` |
-| 9 | CDP Library | `rod` |
-| 10 | Browser Discovery | rod's `launcher.LookPath()` (Chromium-based only) |
-| 11 | Logging Strategy | Custom logger (4 levels, colors, emojis) |
-| 12 | Error Handling | Exit 0/1, sentinel errors, clear messages |
-| 13 | Project Structure | Flat structure at root |
-| 14 | Testing Strategy | Integration tests with real browser |
+| #   | Decision            | Choice                                                      |
+| --- | ------------------- | ----------------------------------------------------------- |
+| 1   | CLI Arguments       | 16 arguments, standard ordering: `snag [options] <url>`     |
+| 2   | Output Formats      | Markdown (default), HTML                                    |
+| 3   | Argument Parsing    | Options before URL (simplicity over flexibility)            |
+| 4   | Platform Support    | macOS (arm64/amd64), Linux (amd64/arm64) - Windows deferred |
+| 5   | Config File         | No config file support (permanent choice)                   |
+| 6   | HTML→Markdown       | `html-to-markdown/v2` (embedded library)                    |
+| 7   | License Attribution | `LICENSES/` directory                                       |
+| 8   | CLI Framework       | `urfave/cli/v2`                                             |
+| 9   | CDP Library         | `rod`                                                       |
+| 10  | Browser Discovery   | rod's `launcher.LookPath()` (Chromium-based only)           |
+| 11  | Logging Strategy    | Custom logger (4 levels, colors, emojis)                    |
+| 12  | Error Handling      | Exit 0/1, sentinel errors, clear messages                   |
+| 13  | Project Structure   | Flat structure at root                                      |
+| 14  | Testing Strategy    | Integration tests with real browser                         |
 
 See detailed rationale in [Design Decisions Made](#design-decisions-made) section below.
 
@@ -119,11 +125,10 @@ Alternative considered:
 
 **CLI Arguments (MVP - v1.0.0):**
 
-Position independent - flags can appear before or after URL:
+Standard flag ordering - options before URL:
 
 ```bash
-snag <url> [options]
-snag [options] <url>     # Both work identically
+snag [options] <url>
 ```
 
 **Core Arguments:**
@@ -425,87 +430,53 @@ $ snag https://example.com
 
 ## Migration from Current Implementation
 
-**Current (Bash + Node.js):**
+**Design Philosophy:**
 
-- `get-webpage` script (Bash wrapper)
-- `fetch-html.js` (Puppeteer core)
-- Dependencies: Node.js, Puppeteer, html2markdown (Go binary), bash_modules
+- Single-purpose tool: fetch web page content via browser engine
+- Smart session management: connect to existing Chrome or launch new instance
+- Format flexibility: Markdown (default) or raw HTML output
+- Unix philosophy: do one thing well, output to stdout for piping
 
-**Migration Path:**
+**Implementation Benefits:**
 
-1. Port Node.js logic to Go using `rod`
-2. Implement same CLI interface with `urfave/cli`
-3. Add Markdown conversion with `html-to-markdown`
-4. Test feature parity
-5. Distribute as binary
+- No runtime dependencies (single static binary)
+- Small binary size (~5MB)
+- Fast startup (compiled Go vs interpreted JavaScript)
+- Cross-platform support (macOS, Linux)
+- Type-safe error handling
 
-**Advantages:**
+## Design Decisions
 
-- No Node.js/npm required
-- No bash_modules dependency
-- Single 5MB binary vs multi-file installation
-- Faster startup (no Node runtime)
-- Better error messages (Go's type system)
+### 1. CLI Arguments
 
-## Success Criteria
-
-**MVP Complete When:**
-
-- [ ] Fetch URL and output Markdown to stdout
-- [ ] Detect and connect to existing Chrome instance
-- [ ] Launch headless Chrome when needed
-- [ ] Detect authentication requirements
-- [ ] Launch visible Chrome for auth flows
-- [ ] Save output to file with `-o` flag
-- [ ] Support `--format html` for raw output
-- [ ] Support `--format markdown` (default)
-- [ ] Implement `--version` flag
-- [ ] Implement `--quiet` mode
-- [ ] Implement `--user-agent` custom headers
-- [ ] Position-independent argument parsing
-- [ ] Homebrew formula working
-- [ ] Basic documentation (README, --help)
-- [ ] Test suite (unit + integration tests)
-
-**Quality Gates:**
-
-- [ ] Cross-platform builds (macOS arm64/amd64, Linux amd64)
-- [ ] Unit tests for core functions
-- [ ] Integration test with real websites
-- [ ] Error handling for common failures
-- [ ] Clean logging with `--verbose` flag
-
-## Design Decisions Made
-
-### 1. CLI Arguments ✅
-
-- **Decision**: Use 16 arguments for MVP (position independent)
+- **Decision**: Use 16 arguments with standard flag ordering: `snag [options] <url>`
 - **Rationale**:
-  - All arguments from original `get-webpage` preserved
-  - Added `--version`, `--quiet`, `--user-agent` as essential features
-  - Replaced `--html` with `--format` for extensibility
-  - Position independence is Go CLI framework default behavior
-- **Status**: Complete - see CLI Arguments section above
+  - Essential CLI features: `--version`, `--quiet`, `--user-agent`, `--format`
+  - Standard flag-then-argument pattern keeps implementation simple
+  - Avoids parsing complexity of position-independent arguments
+  - Consistent with most CLI tools (curl, wget, etc.)
 
-### 2. Output Formats ✅
+### 2. Output Formats
 
 - **Decision**: MVP supports `markdown` (default) and `html` only
-- **Post-MVP**: `text`, `pdf` as separate enhancement projects
+- **Future Consideration**: `text`, `pdf` as separate enhancement projects
 - **Rationale**:
   - Keeps MVP scope focused
   - `text` and `pdf` add complexity (plain text extraction, Chrome PDF API)
   - Extensible via `--format` flag design
-- **Status**: Complete
 
-### 3. Argument Parsing ✅
+### 3. Argument Parsing
 
-- **Decision**: Position independent flags (standard Go CLI behavior)
-- **Examples**: Both `snag -v example.com` and `snag example.com -v` work
-- **Status**: Complete
+- **Decision**: Standard flag ordering - options before URL: `snag [options] <url>`
+- **Rationale**:
+  - Simpler implementation and maintenance
+  - Consistent with most CLI tools
+  - urfave/cli v2 doesn't natively support position-independent args
+  - Avoiding additional parsing complexity was prioritized
 
-### 4. Platform Support ✅
+### 4. Platform Support
 
-- **Decision**: MVP targets macOS and Linux only; Windows is post-MVP
+- **Decision**: MVP targets macOS and Linux only; Windows is future consideration
 - **MVP Platforms**:
   - darwin/arm64 (macOS Apple Silicon)
   - darwin/amd64 (macOS Intel)
@@ -516,21 +487,18 @@ $ snag https://example.com
   - Primary development/use on macOS and Linux
   - Windows adds complexity (path conventions, file handling)
   - Can add later without breaking existing users
-- **Status**: Complete
 
-### 5. Config File Support ✅
+### 5. Config File Support
 
-- **Decision**: No config file support for MVP; post-MVP feature
-- **Post-MVP Consideration**: `.snagrc` file for default preferences
+- **Decision**: No config file support - permanent design choice
 - **Rationale**:
-  - CLI flags are sufficient for core functionality
+  - CLI flags are sufficient for all use cases
   - Most users will use defaults (30s timeout, markdown format, auto-detect Chromium)
   - Power users can use shell aliases: `alias snag='snag --verbose --timeout 60'`
-  - Adds complexity (file parsing, precedence: flags > env > config > defaults)
-  - Can add in v1.1.0+ if users request it
-- **Status**: Complete
+  - Avoids complexity: file parsing, precedence rules, file location conventions
+  - Keeps tool simple and focused
 
-### 6. HTML→Markdown Conversion ✅
+### 6. HTML→Markdown Conversion
 
 - **Decision**: Embed `github.com/JohannesKaufmann/html-to-markdown/v2` Go library
 - **Library Choice**: `html-to-markdown` v2 (MIT license)
@@ -546,9 +514,8 @@ $ snag https://example.com
   import htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
   markdown, err := htmltomarkdown.ConvertString(htmlContent)
   ```
-- **Status**: Complete
 
-### 7. License Attribution ✅
+### 7. License Attribution
 
 - **Decision**: Use `LICENSES/` directory for third-party license attribution
 - **Approach**:
@@ -558,9 +525,8 @@ $ snag https://example.com
   - Complies with MIT license requirements (attribution for html-to-markdown)
 - **Post-MVP**: Consider `snag --licenses` command to print embedded licenses
 - **Automation**: Use `go-licenses` tool during build/release process
-- **Status**: Complete
 
-### 8. CLI Framework Choice ✅
+### 8. CLI Framework Choice
 
 - **Decision**: Use `github.com/urfave/cli` for CLI framework
 - **Library**: urfave/cli v2 (MIT license)
@@ -577,9 +543,8 @@ $ snag https://example.com
   - Coral: Cobra fork with fewer dependencies but less mature (431 stars)
   - Standard library flag package: Too basic, no subcommand support
 - **Reference**: `reference/urfave-cli/`
-- **Status**: Complete
 
-### 9. CDP Library Choice ✅
+### 9. CDP Library Choice
 
 - **Decision**: Use `github.com/go-rod/rod` for Chrome DevTools Protocol
 - **Library**: rod (MIT license)
@@ -596,9 +561,8 @@ $ snag https://example.com
   - chromedp: Faster raw speed but steeper learning curve, more resource usage
   - Direct CDP: Too low-level, too much work
 - **Reference**: `reference/rod/`
-- **Status**: Complete
 
-### 10. Chrome/Chromium Discovery ✅
+### 10. Chrome/Chromium Discovery
 
 - **Decision**: Use rod's built-in `launcher.LookPath()` for browser discovery
 - **Approach**:
@@ -645,9 +609,8 @@ $ snag https://example.com
   }
   ```
 - **Reference**: `reference/rod/lib/launcher/browser.go:202-251`
-- **Status**: Complete
 
-### 11. Logging & Output Strategy ✅
+### 11. Logging & Output Strategy
 
 - **Decision**: Simple custom logger with colored output, no external dependencies
 - **Output Routing**:
@@ -718,10 +681,7 @@ $ snag https://example.com
   }
   ```
 
-- **Reference**: `reference/get-webpage/bash_modules/terminal.sh` (current implementation)
-- **Status**: Complete
-
-### 12. Error Handling & Exit Codes ✅
+### 12. Error Handling & Exit Codes
 
 - **Decision**: Simple exit codes (0/1) with clear error messages, sentinel errors for internal logic
 - **Exit Codes**:
@@ -779,9 +739,8 @@ $ snag https://example.com
   - No documentation burden for exit codes
   - Go idiomatic (standard error handling patterns)
   - Easy to test (check for specific sentinel errors)
-- **Status**: Complete
 
-### 13. Project Structure ✅
+### 13. Project Structure
 
 - **Decision**: Start with flat structure at repository root, refactor later if needed
 - **Structure**:
@@ -824,9 +783,8 @@ $ snag https://example.com
   - ✅ Clearer for contributors (main.go in root)
   - ✅ Less boilerplate in Homebrew formula
   - ✅ Standard for single-binary tools
-- **Status**: Complete
 
-### 14. Testing Strategy ✅
+### 14. Testing Strategy
 
 - **Decision**: Integration tests with real Chrome/Chromium browser
 - **Test Approach**:
@@ -876,35 +834,25 @@ $ snag https://example.com
   - Real browser catches integration issues early
   - Simple test setup (no complex mocking)
   - Validates end-to-end flow
-- **Status**: Complete
 
-## Open Questions
+## Implementation Notes
 
-**All design decisions complete!**
+The design outlined in this document was successfully implemented with all 14 design decisions realized in the initial release.
 
-Resolved items:
+**Key Implementation Outcomes:**
 
-1. **Tab management priority**: Post-MVP (Phase 2)
-2. **Chrome bundling**: No (too large)
+- Flat project structure (main.go, browser.go, fetch.go, convert.go, logger.go, errors.go, validate.go)
+- Custom logger with 4 levels and color/emoji support
+- Integration tests with real Chrome/Chromium browser
+- Multi-platform builds: darwin/arm64, darwin/amd64, linux/amd64, linux/arm64
+- Single binary distribution (~5MB)
 
-## Next Steps
+**Future Enhancements Under Consideration:**
 
-**Implementation Phase:**
-
-1. Initialize Go module (`go mod init github.com/grantcarthew/snag`)
-2. Create flat project structure (main.go, browser.go, fetch.go, convert.go, logger.go, errors.go)
-3. Implement CLI framework with `urfave/cli` and 16 MVP arguments
-4. Implement custom logger with 4 levels and color support
-5. Implement browser detection and connection using `rod` and `launcher.LookPath()`
-6. Implement page fetch logic with authentication detection
-7. Implement HTML to Markdown conversion using `html-to-markdown/v2`
-8. Add error handling with sentinel errors (exit 0/1)
-9. Write integration tests with real Chrome browser
-10. Create `testdata/` fixtures for testing
-11. Write comprehensive README with usage examples
-12. Set up GitHub Actions for multi-platform builds (darwin/arm64, darwin/amd64, linux/amd64, linux/arm64)
-13. Create Homebrew tap repository and formula
-14. Tag v1.0.0 release
+- Tab management features (Phase 2)
+- Additional output formats (text, pdf)
+- Screenshot capabilities
+- Cookie management
 
 ## References
 
@@ -915,8 +863,3 @@ Resolved items:
 - `httpie` - User-friendly HTTP client
 - `monolith` - Save complete web pages
 - `shot-scraper` - Datasette's screenshot/HTML tool
-
-**Current Implementation:**
-
-- `~/bin/scripts/get-webpage` (Bash wrapper)
-- `~/bin/scripts/lib/chromium/fetch-html.js` (Puppeteer core)
