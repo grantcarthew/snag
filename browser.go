@@ -430,3 +430,34 @@ func (bm *BrowserManager) ListTabs() ([]TabInfo, error) {
 
 	return tabs, nil
 }
+
+// GetTabByIndex returns a specific tab by its index (1-based)
+// Index 1 = first tab, Index 2 = second tab, etc.
+// Returns ErrTabIndexInvalid if index is out of range
+func (bm *BrowserManager) GetTabByIndex(index int) (*rod.Page, error) {
+	if bm.browser == nil {
+		return nil, ErrNoBrowserRunning
+	}
+
+	pages, err := bm.browser.Pages()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pages: %w", err)
+	}
+
+	// Validate index (1-based, so valid range is 1 to len(pages))
+	if index < 1 || index > len(pages) {
+		return nil, fmt.Errorf("%w: tab index %d (valid range: 1-%d)", ErrTabIndexInvalid, index, len(pages))
+	}
+
+	// Convert 1-based index to 0-based
+	arrayIndex := index - 1
+
+	// Log tab selection (safe error handling)
+	if info, err := pages[arrayIndex].Info(); err == nil {
+		logger.Verbose("Selected tab [%d]: %s", index, info.URL)
+	} else {
+		logger.Verbose("Selected tab [%d]", index)
+	}
+
+	return pages[arrayIndex], nil
+}

@@ -33,4 +33,10 @@ var (
 
 	// ErrNoBrowserRunning indicates no browser instance is running with remote debugging
 	ErrNoBrowserRunning = errors.New("no browser instance running with remote debugging")
+
+	// ErrTabIndexInvalid indicates the tab index is out of range
+	ErrTabIndexInvalid = errors.New("tab index out of range")
+
+	// ErrTabURLConflict indicates both --tab flag and URL argument were provided
+	ErrTabURLConflict = errors.New("cannot use --tab with URL argument")
 )
