@@ -185,14 +185,34 @@ git push origin main
 
 ## Step 5: Create Git Tag
 
-Create an annotated tag for the release:
+Create a summary of changes and an annotated tag for the release:
 
 ```bash
-# Create annotated tag
-git tag -a "v${VERSION}" -m "Release v${VERSION}"
+# Get the previous version tag
+PREV_VERSION=$(git tag -l | tail -1)
+echo "Previous version: $PREV_VERSION"
+
+# Show changes since previous version
+git log ${PREV_VERSION}..HEAD --oneline
+
+# Create a one-line summary of changes
+# Review the git log output and write a concise summary
+# Examples:
+#   "Add release process documentation and third-party licenses"
+#   "Fix authentication handling and improve error messages"
+#   "Add tab management features"
+
+# Set your summary
+SUMMARY="Your summary here"
+
+# Create annotated tag with summary
+git tag -a "v${VERSION}" -m "Release v${VERSION} - ${SUMMARY}"
 
 # Verify tag was created
 git tag -l | grep "v${VERSION}"
+
+# View the tag message
+git tag -l -n9 "v${VERSION}"
 
 # Push tag to GitHub
 git push origin "v${VERSION}"
@@ -200,114 +220,44 @@ git push origin "v${VERSION}"
 
 **Verification**:
 - `git tag -l` shows the new tag
+- `git tag -l -n9 v${VERSION}` shows the tag with summary
 - Check https://github.com/grantcarthew/snag/tags
 
 ---
 
-## Step 6: Build Multi-Platform Binaries
+## Step 6: Verify GitHub Source Tarball
 
-Build binaries for all supported platforms:
+GitHub automatically creates a source tarball when you push a tag. Verify it's accessible:
 
 ```bash
-# Create dist directory
-mkdir -p dist
+# Construct tarball URL
+TARBALL_URL="https://github.com/grantcarthew/snag/archive/refs/tags/v${VERSION}.tar.gz"
+echo "Tarball URL: $TARBALL_URL"
 
-# Set version for ldflags
-export VERSION="0.1.0"  # Same as tag without 'v'
+# Verify tarball exists and get SHA256
+curl -sL "$TARBALL_URL" | sha256sum
 
-# Build for macOS ARM64 (Apple Silicon)
-GOOS=darwin GOARCH=arm64 go build \
-  -ldflags "-X main.version=${VERSION}" \
-  -o "dist/snag-darwin-arm64"
+# Or use this one-liner
+TARBALL_SHA256=$(curl -sL "https://github.com/grantcarthew/snag/archive/refs/tags/v${VERSION}.tar.gz" | sha256sum | cut -d' ' -f1)
+echo "Tarball SHA256: $TARBALL_SHA256"
 
-# Build for macOS AMD64 (Intel)
-GOOS=darwin GOARCH=amd64 go build \
-  -ldflags "-X main.version=${VERSION}" \
-  -o "dist/snag-darwin-amd64"
-
-# Build for Linux AMD64
-GOOS=linux GOARCH=amd64 go build \
-  -ldflags "-X main.version=${VERSION}" \
-  -o "dist/snag-linux-amd64"
-
-# Build for Linux ARM64
-GOOS=linux GOARCH=arm64 go build \
-  -ldflags "-X main.version=${VERSION}" \
-  -o "dist/snag-linux-arm64"
-
-# Make all binaries executable
-chmod +x dist/*
-
-# Generate checksums
-cd dist
-sha256sum * > SHA256SUMS
-cat SHA256SUMS
-cd ..
+# Save for next step
+echo "$TARBALL_SHA256" > /tmp/snag-tarball-sha256.txt
 ```
 
 **Verification**:
 ```bash
-# List built binaries
-ls -lh dist/
+# Check tarball downloads successfully
+curl -I "https://github.com/grantcarthew/snag/archive/refs/tags/v${VERSION}.tar.gz"
 
-# Verify version in binary (macOS only)
-dist/snag-darwin-arm64 --version  # or snag-darwin-amd64
-
-# Check file types
-file dist/*
-
-# Expected output:
-# snag-darwin-arm64: Mach-O 64-bit executable arm64
-# snag-darwin-amd64: Mach-O 64-bit executable x86_64
-# snag-linux-amd64:  ELF 64-bit LSB executable, x86-64
-# snag-linux-arm64:  ELF 64-bit LSB executable, ARM aarch64
+# Expected: HTTP/2 200 OK
 ```
+
+**Note**: Homebrew builds from this source tarball during `brew install`. No pre-built binaries needed!
 
 ---
 
-## Step 7: Create GitHub Release
-
-Create a GitHub release with the built binaries.
-
-**Option A: Using GitHub CLI (gh)**:
-
-```bash
-# Ensure gh is installed and authenticated
-gh --version
-
-# Create release with binaries
-gh release create "v${VERSION}" \
-  --title "v${VERSION}" \
-  --notes "See [CHANGELOG.md](https://github.com/grantcarthew/snag/blob/main/CHANGELOG.md) for details." \
-  dist/snag-darwin-arm64 \
-  dist/snag-darwin-amd64 \
-  dist/snag-linux-amd64 \
-  dist/snag-linux-arm64 \
-  dist/SHA256SUMS
-```
-
-**Option B: Manual via GitHub Web UI**:
-
-1. Go to https://github.com/grantcarthew/snag/releases/new
-2. Select tag: `v${VERSION}`
-3. Release title: `v${VERSION}`
-4. Description: Copy from CHANGELOG.md or write release notes
-5. Attach files:
-   - `dist/snag-darwin-arm64`
-   - `dist/snag-darwin-amd64`
-   - `dist/snag-linux-amd64`
-   - `dist/snag-linux-arm64`
-   - `dist/SHA256SUMS`
-6. Click "Publish release"
-
-**Verification**:
-- Visit https://github.com/grantcarthew/snag/releases
-- Confirm new release is visible
-- Verify all 5 files are attached
-
----
-
-## Step 8: Update Homebrew Tap
+## Step 7: Update Homebrew Tap
 
 Update the Homebrew formula in `grantcarthew/homebrew-tap`:
 
@@ -383,7 +333,7 @@ cd -
 
 ---
 
-## Step 9: Test Homebrew Installation
+## Step 8: Test Homebrew Installation
 
 Test the updated formula works:
 
@@ -415,7 +365,7 @@ snag --quiet example.com
 
 ---
 
-## Step 10: Post-Release Tasks
+## Step 9: Post-Release Tasks
 
 Complete these final steps:
 
@@ -527,29 +477,20 @@ export VERSION="0.1.0"
 git add CHANGELOG.md
 git commit -m "chore: prepare for v${VERSION} release"
 git push origin main
-git tag -a "v${VERSION}" -m "Release v${VERSION}"
+
+# Create summary from changes
+PREV_VERSION=$(git tag -l | tail -1)
+git log ${PREV_VERSION}..HEAD --oneline
+SUMMARY="Your one-line summary here"
+git tag -a "v${VERSION}" -m "Release v${VERSION} - ${SUMMARY}"
 git push origin "v${VERSION}"
 
-# 3. Build binaries
-mkdir -p dist
-GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-darwin-arm64"
-GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-darwin-amd64"
-GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-linux-amd64"
-GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-linux-arm64"
-chmod +x dist/*
-cd dist && sha256sum * > SHA256SUMS && cd ..
+# 3. Verify GitHub tarball and get SHA256
+TARBALL_URL="https://github.com/grantcarthew/snag/archive/refs/tags/v${VERSION}.tar.gz"
+TARBALL_SHA256=$(curl -sL "$TARBALL_URL" | sha256sum | cut -d' ' -f1)
+echo "Tarball SHA256: $TARBALL_SHA256"
 
-# 4. Create GitHub release
-gh release create "v${VERSION}" \
-  --title "v${VERSION}" \
-  --notes "See CHANGELOG.md for details." \
-  dist/snag-darwin-arm64 \
-  dist/snag-darwin-amd64 \
-  dist/snag-linux-amd64 \
-  dist/snag-linux-arm64 \
-  dist/SHA256SUMS
-
-# 5. Update Homebrew tap (manually edit Formula/snag.rb)
+# 4. Update Homebrew tap (manually edit Formula/snag.rb)
 cd reference/homebrew-tap
 git pull
 # Edit Formula/snag.rb
@@ -558,13 +499,10 @@ git commit -m "snag: update to ${VERSION}"
 git push origin main
 cd -
 
-# 6. Test installation
+# 5. Test installation
 brew update
 brew reinstall grantcarthew/tap/snag
 snag --version
-
-# 7. Clean up
-rm -rf dist/
 ```
 
 ---
@@ -576,15 +514,10 @@ rm -rf dist/
 - Fix failing tests before proceeding
 - Never release with failing tests
 
-### "Build fails for some platform"
-- Check Go version: `go version` (need 1.21+)
-- Verify GOOS/GOARCH are valid
-- Check for platform-specific code issues
-
-### "GitHub release creation fails"
-- Verify gh CLI is authenticated: `gh auth status`
-- Check tag exists: `git tag -l | grep v${VERSION}`
-- Ensure tag is pushed: `git ls-remote --tags origin`
+### "Tarball download fails"
+- Verify tag is pushed: `git ls-remote --tags origin`
+- Check tag exists on GitHub: https://github.com/grantcarthew/snag/tags
+- Wait a minute for GitHub to generate tarball
 
 ### "Homebrew formula fails audit"
 - Run: `brew audit --strict grantcarthew/tap/snag`
@@ -610,19 +543,17 @@ Copy this for each release:
 
 - [ ] Determined version number: _____
 - [ ] All tests passing
-- [ ] CHANGELOG.md updated
+- [ ] CHANGELOG.md updated (if it exists)
 - [ ] Changes committed to main
-- [ ] Git tag created and pushed
-- [ ] Multi-platform binaries built
-- [ ] SHA256SUMS generated
-- [ ] GitHub release created
-- [ ] All binaries attached to release
+- [ ] Git tag created with summary
+- [ ] Tag pushed to GitHub
+- [ ] GitHub tarball verified
+- [ ] Tarball SHA256 obtained
 - [ ] Homebrew formula updated
 - [ ] Formula committed and pushed
 - [ ] Homebrew installation tested
 - [ ] snag --version shows correct version
 - [ ] Basic functionality verified
-- [ ] Dist directory cleaned up
 - [ ] Release announced (optional)
 ```
 
