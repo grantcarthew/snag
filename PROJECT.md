@@ -2,10 +2,72 @@
 
 > **Project**: snag - Phase 2 Enhancement
 > **Feature**: Tab Management
-> **Status**: Phase 2.3 Complete, Phase 2.4 Pending
+> **Status**: Phase 2.4 Nearly Complete (Documentation phase)
 > **Created**: 2025-10-20
-> **Last Updated**: 2025-10-20
+> **Last Updated**: 2025-10-21
 > **Target Version**: v0.1.0 (Phase 2)
+
+## Session Summary (2025-10-21)
+
+### Completed: Phase 2.4 Documentation Updates
+
+**What was accomplished**:
+- Updated AGENTS.md with comprehensive Phase 2 tab management examples
+- Completely rewrote README.md tab documentation for public repository
+  - Added tab management to "Why snag?" core features
+  - Expanded "Working with Browser Tabs" section in Advanced Usage
+  - Added two new Common Scenarios: "Working with Authenticated Tabs" and "Working with Multiple Open Tabs"
+  - Created new "Tab Operations" section in CLI Reference with detailed pattern explanations
+  - Added comprehensive "Tab Issues" troubleshooting section
+  - Updated "How It Works" to include tab management overview
+- Updated PROJECT.md with progress tracking
+
+**Key Achievement**: Phase 2 documentation is now public-ready and compelling.
+
+**Documentation Quality**:
+- Tab management presented as core feature, not "new" addon
+- Clear, practical examples throughout
+- Easy to read for public audience
+- Pattern matching well-explained (index, exact, contains, regex)
+- No mention of breaking changes (clean presentation)
+
+**Remaining Work**:
+- ✅ Update docs/design-record.md with Phase 2 implementation details - COMPLETED
+- ⏳ Review --help output for --tab flag (consider making pattern types more descriptive)
+- ⏳ Final manual testing session
+
+---
+
+## Session Summary (2025-10-21 Part 2)
+
+### Completed: docs/design-record.md Update
+
+**What was accomplished**:
+- Updated design-record.md with complete Phase 2 implementation documentation
+- Changed Phase 2 status from "Designed" to "Implemented"
+- Updated 22 major design decisions (added decision #22 for performance)
+- Corrected pattern matching order (exact → contains → regex, not regex-first)
+- Updated decision #17 (Pattern Matching) with actual implementation order
+- Updated decision #20 (renamed from "Regex Fallthrough" to "Pattern Simplicity")
+- Added decision #22 (Performance Optimization with caching details)
+- Documented critical bug fix (remote debugging port configuration)
+- Documented design changes during implementation
+- Added test coverage details and code location references
+
+**Key Achievement**: Permanent design decisions document now accurately reflects Phase 2 implementation.
+
+**Documentation Quality**:
+- All design decisions updated with actual implementation details
+- Bug fixes and learnings documented for future reference
+- Performance optimizations explained with metrics
+- Code locations referenced for traceability
+- Implementation changes from original design clearly noted
+
+**Remaining Work for Phase 2**:
+- Review --help output for --tab flag clarity
+- Final manual testing session
+
+---
 
 ## Session Summary (2025-10-20)
 
@@ -164,18 +226,19 @@ snag --tab "(github|gitlab)\.com"
 
 ### Next Steps
 
-**Phase 2.4** (Ready to implement):
-- Update AGENTS.md with Phase 2 examples
-- Update README.md with tab management documentation
-- Update docs/design-record.md with Phase 2 details
-- Final code review and quality checks
-- Consider minor test cleanup (browser cleanup between tests)
+**Phase 2.4** (Nearly complete):
+- ✅ Update AGENTS.md with Phase 2 examples - COMPLETED (2025-10-21)
+- ✅ Update README.md with tab management documentation - COMPLETED (2025-10-21)
+- ⏳ Update docs/design-record.md with Phase 2 details
+- ⏳ Review --help output for --tab flag description clarity
+- ⏳ Final manual testing session
+- Optional: Consider minor test cleanup (browser cleanup between tests)
 
 ## Overview
 
 Phase 2 of snag adds **Tab Management** capabilities: list, select, and fetch content from existing browser tabs without creating new ones. This enables efficient content retrieval from authenticated sessions and reduces tab clutter.
 
-**Status**: ✅ Phase 2.1, 2.2, 2.3 Complete | ⏳ Phase 2.4 Pending (documentation)
+**Status**: ✅ Phase 2.1, 2.2, 2.3 Complete | ⏳ Phase 2.4 Nearly Complete (docs/design-record.md + final testing)
 
 ## Objectives (All Complete ✅)
 
@@ -981,13 +1044,13 @@ func TestTabFlagValidation(t *testing.T)
 - ✅ Two external code reviews applied
 - N/A MPL 2.0 headers on all new files (no new files created)
 
-### Documentation ⏳ PARTIAL
+### Documentation ✅ COMPLETE
 
-- ✅ AGENTS.md updated with Phase 2.1 features
+- ✅ AGENTS.md updated with comprehensive Phase 2 examples (2025-10-21)
 - ✅ PROJECT.md fully updated with all phases
-- ⏳ README.md - needs comprehensive Phase 2 examples
-- ⏳ docs/design-record.md - needs Phase 2 documentation
-- ✅ --help output includes new flags
+- ✅ README.md updated with comprehensive tab management documentation (2025-10-21)
+- ✅ docs/design-record.md updated with Phase 2 implementation details (2025-10-21)
+- ⏳ --help output includes new flags (needs clarity review for --tab)
 - ✅ Error messages are clear and actionable
 
 ### Performance ✅ VALIDATED
@@ -1225,7 +1288,7 @@ func TestTabFlagValidation(t *testing.T)
 2. Single-pass page.Info() caching for performance
 3. Validation at CLI layer only (removed redundant function-level check)
 
-### Phase 2.4: Integration & Documentation ⏳ PENDING
+### Phase 2.4: Integration & Documentation ⏳ IN PROGRESS
 
 - [x] Run full test suite - PASSED (all tests passing)
 - [x] Test all flag combinations - PASSED
@@ -1234,10 +1297,10 @@ func TestTabFlagValidation(t *testing.T)
 - [x] Run `gofmt -l .` - (assumed passing)
 - [x] Code review - COMPLETED (4 external reviews applied with optimizations)
 - [x] Update PROJECT.md - COMPLETED
-- [ ] Update AGENTS.md (comprehensive Phase 2 examples)
-- [ ] Update README.md with tab management documentation
-- [ ] Update docs/design-record.md
-- [ ] Update --help output (if needed)
+- [x] Update AGENTS.md (comprehensive Phase 2 examples) - COMPLETED (2025-10-21)
+- [x] Update README.md with tab management documentation - COMPLETED (2025-10-21)
+- [x] Update docs/design-record.md with Phase 2 implementation details - COMPLETED (2025-10-21)
+- [ ] Review --help output for --tab flag clarity
 - [ ] Final manual testing session
 
 ## Notes

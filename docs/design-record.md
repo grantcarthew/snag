@@ -34,7 +34,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ## Design Decisions Summary
 
-**21 major design decisions documented below:**
+**22 major design decisions documented below:**
 
 ### Phase 1 (MVP) Decisions
 
@@ -61,11 +61,12 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 | --- | --------------------- | ------------------------------------------------------------ |
 | 15  | Flag Assignment       | `-t` moved from `--timeout` to `--tab` (more frequently used) |
 | 16  | Tab Indexing          | 1-based indexing (first tab is [1], not [0])                 |
-| 17  | Pattern Matching      | Progressive fallthrough (regex → exact → contains)           |
+| 17  | Pattern Matching      | Progressive fallthrough (exact → contains → regex)           |
 | 18  | Case Sensitivity      | Case-insensitive matching for all modes                      |
 | 19  | Regex Support         | Full regex patterns (not just wildcards)                     |
-| 20  | Regex Fallthrough     | Always try all matching methods before failing               |
+| 20  | Pattern Simplicity    | No regex detection needed (try all methods in order)         |
 | 21  | Multiple Matches      | First match wins (predictable, simple)                       |
+| 22  | Performance           | Single-pass page.Info() caching (3x improvement)             |
 
 See detailed rationale in [Design Decisions Made](#design-decisions-made) section below.
 
@@ -193,9 +194,9 @@ snag [options] <url>
 
 **Total MVP Arguments:** 16
 
-### Phase 2: Tab Management (Designed - v0.1.0)
+### Phase 2: Tab Management (Implemented - v0.1.0)
 
-**Status**: Design Complete (2025-10-20)
+**Status**: Implementation Complete (2025-10-21)
 
 **Features:**
 
@@ -214,14 +215,15 @@ snag -t <pattern>                   # Match tab by regex/URL pattern
 2. **Tab Indexing**: 1-based indexing (first tab is [1], not [0]) - more intuitive for users
 3. **Pattern Matching**: Progressive fallthrough with full regex support:
    - Integer → Tab index (1-based)
-   - Has regex chars (`* + ? [ ] { } ( ) | ^ $ \`) → Regex match
    - Exact URL match (case-insensitive)
    - Substring/contains match (case-insensitive)
+   - Regex match (case-insensitive, fallback)
    - Error if no matches
 4. **Case Sensitivity**: All matching is case-insensitive for better UX
 5. **Regex Support**: Full regex patterns (not just wildcards) - same complexity, more power
-6. **Fallthrough**: Always try all matching methods before failing (maximize flexibility)
+6. **Pattern Simplicity**: No regex detection needed - try all methods in order for every pattern
 7. **Multiple Matches**: First match wins (predictable, simple)
+8. **Performance**: Single-pass page.Info() caching (3x improvement over naive implementation)
 
 **Use Cases:**
 
@@ -260,20 +262,25 @@ snag -t "github"                         # Contains "github"
 
 **Technical Implementation:**
 
-- New `TabInfo` struct (index, URL, title, ID)
-- `ListTabs()` - Get all tabs from browser
-- `GetTabByIndex(index int)` - Select tab by 1-based index
-- `GetTabByPattern(pattern string)` - Progressive fallthrough matching
-- `hasRegexChars(s string)` - Detect regex metacharacters
+- New `TabInfo` struct (index, URL, title, ID) - browser.go:49-55
+- `ListTabs()` - Get all tabs from browser - browser.go:404-434
+- `GetTabByIndex(index int)` - Select tab by 1-based index - browser.go:434-463
+- `GetTabByPattern(pattern string)` - Progressive fallthrough matching with caching - browser.go:473-544
+- `handleListTabs()` - CLI handler for --list-tabs - main.go:345-383
+- `handleTabFetch()` - CLI handler for --tab - main.go:412-534
 - Browser requirement: Existing Chrome instance with remote debugging
+- Integration tests: cli_test.go (13 tab-related tests)
 
 **Rationale:**
 
 - **1-based indexing**: UI tool for humans, not a programming API
+- **Pattern matching order**: Exact → contains → regex prioritizes common cases for performance
+- **No regex detection**: Simpler code, more predictable behavior (try all methods)
 - **Full regex**: Same implementation cost as wildcards, more flexibility
 - **Progressive fallthrough**: Maximizes chances of finding the right tab
 - **Case-insensitive**: Better UX, users don't worry about capitalization
 - **First match wins**: Simple, predictable, documented behavior
+- **Performance optimization**: Caching eliminates redundant network calls (3x improvement)
 
 ### Phase 3+: Post-MVP Features
 
@@ -943,18 +950,21 @@ $ snag https://example.com
 - **Decision**: Progressive fallthrough matching with 4 stages
 - **Matching Process**:
   1. **Integer check**: Parse as int → Use as tab index (1-based)
-  2. **Regex match**: If contains regex chars → Compile and match (case-insensitive)
-  3. **Exact match**: Try case-insensitive exact URL match
-  4. **Contains match**: Try case-insensitive substring search
-  5. **Error**: If no matches found
-- **Regex chars detected**: `* + ? [ ] { } ( ) | ^ $ \`
-- **URL-safe chars** (not treated as regex): `. / - _ : ? & = # %`
+  2. **Exact match**: Try case-insensitive exact URL match
+  3. **Contains match**: Try case-insensitive substring search
+  4. **Regex match**: Compile and match as fallback (case-insensitive)
+  5. **Error**: If no matches found at any stage
 - **Rationale**:
+  - **Order changed during implementation**: Originally planned regex-first, changed to exact → contains → regex
+  - Most common cases (exact URL, substring) hit first for better performance
+  - Simpler patterns get priority over complex regex
+  - Regex as fallback catches advanced use cases
   - Progressive fallthrough maximizes chances of finding the right tab
   - Simple patterns work automatically (no need to learn regex)
   - Power users can use full regex when needed
   - Forgiving approach: "try everything before failing"
 - **First match wins**: If multiple tabs match, return first one (predictable, simple)
+- **Implementation**: browser.go:473-544 (GetTabByPattern function)
 
 ### 18. Case Sensitivity (Phase 2)
 
@@ -981,15 +991,18 @@ $ snag https://example.com
 - **Alternative Considered**: Wildcard-only (`*`) - rejected as same implementation cost
 - **User Support**: Provide clear examples and error messages for invalid regex
 
-### 20. Regex Fallthrough (Phase 2)
+### 20. Pattern Simplicity (Phase 2)
 
-- **Decision**: Always fall through to exact/contains even after trying regex
+- **Decision**: No regex character detection - simply try all matching methods in order
 - **Rationale**:
-  - If regex chars detected but no match, still try other methods
-  - Catches edge cases at minimal cost (few string comparisons)
-  - More forgiving approach: "try everything"
-  - Users less likely to get unexpected "no match" errors
-- **Example**: `github\.com` might not match as regex but will match as substring
+  - **Simplified during implementation**: Originally planned `hasRegexChars()` detection, removed as unnecessary
+  - Cleaner implementation: just try exact → contains → regex for every pattern
+  - No detection logic needed, no edge cases to handle
+  - User suggestion led to simpler, more elegant solution
+  - Performance impact negligible (string comparisons are fast)
+  - More predictable behavior (always tries all methods)
+- **Alternative Rejected**: Detecting regex chars first, then routing to specific matcher
+- **Implementation**: No `hasRegexChars()` function needed
 
 ### 21. Multiple Matches (Phase 2)
 
@@ -1001,6 +1014,26 @@ $ snag https://example.com
   - Can add `--tab-all` flag in future for multiple matches
 - **Documentation**: Clearly document that first match is returned
 - **Verbose Mode**: Show which tab matched and why
+
+### 22. Performance Optimization (Phase 2)
+
+- **Decision**: Single-pass page.Info() caching in GetTabByPattern()
+- **Problem Identified**: Multiple `page.Info()` calls repeated for same pages (network round-trips)
+- **Solution**: Cache page.Info() results once, iterate over cached data
+- **Impact**: 3x reduction in network calls
+  - Before: 3N calls for N tabs (worst case: exact + contains + regex each call Info())
+  - After: N calls for N tabs (single pass to build cache, then iterate)
+  - Example: 10 tabs = 30 calls → 10 calls
+- **Implementation**:
+  - Local `pageCache` struct stores page, URL, and index
+  - Single loop at browser.go:487-507
+  - All pattern matching operates on cached data
+- **Rationale**:
+  - Identified during code review after initial implementation
+  - Significant performance improvement with minimal code complexity
+  - Network calls are expensive compared to memory operations
+  - Maintains exact same behavior, just faster
+- **Code Location**: browser.go:487-507 (GetTabByPattern function)
 
 ## Implementation Notes
 
@@ -1016,23 +1049,62 @@ The Phase 1 design was successfully implemented with all 14 design decisions rea
 - Multi-platform builds: darwin/arm64, darwin/amd64, linux/amd64, linux/arm64
 - Single binary distribution (~5MB)
 
-### Phase 2 (Tab Management) - Designed
+### Phase 2 (Tab Management) - Implemented
 
-Phase 2 design complete (2025-10-20) with 7 additional design decisions (15-21).
+Phase 2 implementation complete (2025-10-21) with 8 additional design decisions (15-22).
 
-**Design Status**: Ready for implementation
+**Implementation Status**: Complete (documentation phase remaining)
 
-**Key Design Outcomes:**
+**Key Implementation Outcomes:**
 
-- Two new flags: `--list-tabs` (alias `-l`) and `--tab` (alias `-t`)
-- Flag reassignment: `-t` moved from `--timeout` to `--tab`
-- 1-based tab indexing for user-facing operations
-- Progressive fallthrough pattern matching (regex → exact → contains)
-- Full regex support with case-insensitive matching
-- New functions: `ListTabs()`, `GetTabByIndex()`, `GetTabByPattern()`, `hasRegexChars()`
-- New struct: `TabInfo` (index, URL, title, ID)
+- **Two new flags**: `--list-tabs` (alias `-l`) and `--tab` (alias `-t`)
+- **Flag reassignment**: `-t` moved from `--timeout` to `--tab` (breaking change)
+- **1-based tab indexing** for user-facing operations
+- **Progressive fallthrough pattern matching**: exact → contains → regex (order changed during implementation)
+- **Full regex support** with case-insensitive matching
+- **Pattern simplicity**: No regex detection needed, try all methods in order
+- **Performance optimization**: Single-pass page.Info() caching (3x improvement)
+- **New functions**: `ListTabs()`, `GetTabByIndex()`, `GetTabByPattern()`
+- **New struct**: `TabInfo` (index, URL, title, ID)
+- **New error sentinels**: `ErrTabIndexInvalid`, `ErrTabURLConflict`, `ErrNoTabMatch`
 
-**Implementation Plan**: See PROJECT.md for detailed 4-phase implementation plan
+**Critical Bug Fixed During Implementation:**
+
+- **Remote debugging port configuration** (browser.go:259-260)
+- **Problem**: Rod launcher wouldn't set `--remote-debugging-port` when using default port 9222, causing random port selection
+- **Impact**: Browsers launched with `--force-visible` couldn't be reached by `--list-tabs`
+- **Fix**: Always explicitly set remote-debugging-port flag regardless of value
+- **Lesson**: Never rely on framework defaults for critical connection parameters
+
+**Design Changes During Implementation:**
+
+1. **Pattern matching order**: Changed from regex → exact → contains to exact → contains → regex
+   - Reason: Most common cases hit first for better performance
+   - Suggestion from user led to simpler, more intuitive behavior
+
+2. **Regex detection removed**: Originally planned `hasRegexChars()` detection function
+   - Reason: Unnecessary complexity, simpler to try all methods in order
+   - Cleaner code, more predictable behavior
+
+3. **Performance optimization added**: Single-pass page.Info() caching
+   - Reason: Identified during code review, 3x performance improvement
+   - Minimal code complexity for significant benefit
+
+**Test Coverage:**
+
+- 13 tab-related integration tests (all passing)
+- Full test suite: 163.7s runtime (all tests green)
+- Tests cover: listing tabs, index selection, pattern matching (exact/contains/regex), error cases
+- Minor test isolation issues noted (not functional bugs)
+
+**Documentation:**
+
+- ✅ AGENTS.md updated with comprehensive Phase 2 examples
+- ✅ README.md updated with tab management documentation (public-ready)
+- ✅ PROJECT.md updated with session summaries and progress tracking
+- ⏳ docs/design-record.md (this document) - being updated now
+
+**Implementation Details**: See PROJECT.md for detailed session summaries and implementation notes
 
 ### Future Enhancements Under Consideration
 
