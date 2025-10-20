@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-`snag` is a CLI tool written in Go that intelligently fetches web page content using Chrome/Chromium via the Chrome DevTools Protocol (CDP). It provides smart browser session management, authentication handling, and converts HTML to Markdown or raw HTML output.
+`snag` is a CLI tool that intelligently fetches web page content using Chrome/Chromium via the Chrome DevTools Protocol (CDP). Built for AI agents to consume web content efficiently.
 
 **Key Features:**
 
@@ -15,9 +15,9 @@
 **Technology Stack:**
 
 - Language: Go 1.25.3
-- CLI Framework: urfave/cli v2
-- Browser Control: go-rod/rod (Chrome DevTools Protocol)
-- HTML to Markdown: JohannesKaufmann/html-to-markdown v2
+- CLI Framework: github.com/urfave/cli/v2
+- Browser Control: github.com/go-rod/rod (Chrome DevTools Protocol)
+- HTML to Markdown: github.com/JohannesKaufmann/html-to-markdown/v2
 
 ## Setup Commands
 
@@ -32,8 +32,9 @@ go mod download
 # Build binary
 go build -o snag
 
-# Verify build
+# Run snag
 ./snag --version
+./snag --help
 ```
 
 ## Build and Test Commands
@@ -45,19 +46,22 @@ go build -o snag
 # Build with version info
 go build -ldflags "-X main.version=1.0.0" -o snag
 
-# Run tests (integration tests with real browser)
+# Run all tests (integration tests with real browser)
 go test -v
 
 # Run specific test
 go test -v -run TestFetchPage
 
-# Build for multiple platforms
+# Run with coverage
+go test -v -cover
+
+# Cross-platform builds
 GOOS=darwin GOARCH=arm64 go build -o snag-darwin-arm64
 GOOS=darwin GOARCH=amd64 go build -o snag-darwin-amd64
 GOOS=linux GOARCH=amd64 go build -o snag-linux-amd64
 GOOS=linux GOARCH=arm64 go build -o snag-linux-arm64
 
-# Check for code issues
+# Code quality checks
 go vet ./...
 gofmt -l .
 
@@ -77,11 +81,11 @@ rm -f snag snag-*
 **Project-Specific Patterns:**
 
 - Flat project structure at root (main.go, browser.go, fetch.go, convert.go, logger.go, errors.go, validate.go)
-- Custom logger for CLI output (logger.go:1-100)
+- Custom logger for CLI output (logger.go)
 - Sentinel errors for internal logic (errors.go)
 - Exit codes: 0 (success), 1 (any error)
-- Output routing:
-  - stdout: Content only (HTML/Markdown) - enables piping
+- Output routing (critical for piping):
+  - stdout: Content only (HTML/Markdown)
   - stderr: All logs, warnings, errors, progress indicators
 
 **Naming Conventions:**
@@ -166,11 +170,12 @@ go test -v -args --debug
 - Tests execute in headless mode
 - Multi-platform builds: darwin/arm64, darwin/amd64, linux/amd64, linux/arm64
 
-**Requirements:**
+**Test Requirements:**
 
-- Chrome, Chromium, Edge, or Brave browser must be installed
-- Browser must be discoverable via standard installation paths
-- macOS or Linux (Windows not currently supported)
+- Chrome, Chromium, Edge, or Brave browser installed
+- Browser discoverable via standard installation paths
+- Supported platforms: macOS (arm64/amd64), Linux (amd64/arm64)
+- Tests use real browser via rod (no mocking)
 
 ## Security Considerations
 
@@ -213,13 +218,14 @@ snag/
 ├── logger.go        # Custom logger with color/emoji support
 ├── errors.go        # Sentinel error definitions
 ├── validate.go      # Input validation (URL, format)
+├── *_test.go        # Test files (integration tests)
 ├── go.mod           # Go module dependencies
 ├── go.sum           # Dependency checksums
 ├── README.md        # User documentation
-├── CONFIG.md        # Configuration design decisions
-└── docs/
-    ├── design.md    # Comprehensive design document
-    └── notes.md     # Development notes
+├── AGENTS.md        # This file - agent instructions
+├── LICENSES/        # Third-party license files
+├── docs/            # Design documentation
+└── testdata/        # Test fixtures
 ```
 
 **Key Components:**
@@ -253,11 +259,11 @@ snag/
 - macOS (arm64/amd64) or Linux (amd64/arm64)
 - Remote debugging port available (default: 9222)
 
-**No Config Files:**
+**Configuration:**
 
-- All configuration via CLI flags
+- All configuration via CLI flags only
+- No config files (`.snagrc`, etc.)
 - Power users can use shell aliases for defaults
-- No `.snagrc` or config file support in MVP
 
 ## Troubleshooting
 
@@ -334,11 +340,12 @@ See docs/design.md for Phase 2+ features:
 
 Mozilla Public License 2.0
 
-Third-party licenses in `LICENSES/` directory (planned).
+Third-party licenses in `LICENSES/` directory.
 
 ## Additional Resources
 
 - **README.md**: User-facing documentation and usage examples
 - **docs/design.md**: Comprehensive design decisions and rationale
-- **CONFIG.md**: Configuration validation patterns and considerations
+- **docs/notes.md**: Development notes and implementation details
 - **Repository**: https://github.com/grantcarthew/snag
+- **Issues**: https://github.com/grantcarthew/snag/issues
