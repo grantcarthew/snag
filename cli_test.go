@@ -7,15 +7,83 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 )
+
+// TestMain runs before and after all tests to ensure cleanup
+func TestMain(m *testing.M) {
+	// Set up signal handling to cleanup on Ctrl+C
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		fmt.Fprintf(os.Stderr, "\nCleaning up browsers before exit...\n")
+		cleanupOrphanedBrowsers()
+		os.Exit(130) // 128 + 2 (SIGINT)
+	}()
+
+	// Clean up any orphaned Chrome instances before running tests
+	cleanupOrphanedBrowsers()
+
+	// Run tests
+	exitCode := m.Run()
+
+	// Clean up any orphaned Chrome instances after running tests
+	cleanupOrphanedBrowsers()
+
+	os.Exit(exitCode)
+}
+
+// cleanupOrphanedBrowsers kills any Chrome instances with rod temp user-data directories
+func cleanupOrphanedBrowsers() {
+	// Find Chrome processes with rod user-data directories
+	cmd := exec.Command("sh", "-c", "ps aux | grep -E 'Chrome.*--user-data-dir.*T/rod/user-data' | grep -v grep | awk '{print $2}'")
+	output, err := cmd.Output()
+	if err != nil {
+		// No processes found or command failed - that's okay
+		return
+	}
+
+	pidsStr := strings.TrimSpace(string(output))
+	if pidsStr == "" {
+		return
+	}
+
+	pids := strings.Split(pidsStr, "\n")
+	fmt.Fprintf(os.Stderr, "Cleaning up %d orphaned Chrome instance(s)...\n", len(pids))
+
+	for _, pid := range pids {
+		pid = strings.TrimSpace(pid)
+		if pid == "" {
+			continue
+		}
+		// Try graceful kill first
+		exec.Command("kill", pid).Run()
+	}
+
+	// Wait a moment for graceful shutdown
+	exec.Command("sleep", "1").Run()
+
+	// Force kill any remaining
+	for _, pid := range pids {
+		pid = strings.TrimSpace(pid)
+		if pid == "" {
+			continue
+		}
+		exec.Command("kill", "-9", pid).Run()
+	}
+}
 
 // isBrowserAvailable checks if Chrome or Chromium is available on the system
 func isBrowserAvailable() bool {
