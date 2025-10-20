@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-rod/rod"
 	"github.com/urfave/cli/v2"
 )
 
@@ -416,15 +417,6 @@ func handleTabFetch(c *cli.Context) error {
 		return fmt.Errorf("--tab flag requires a value")
 	}
 
-	// For Phase 2.2, we only support integer indexes
-	// Phase 2.3 will add pattern support
-	tabIndex, err := strconv.Atoi(tabValue)
-	if err != nil {
-		return fmt.Errorf("invalid tab index '%s': must be a number (pattern support coming in Phase 2.3)", tabValue)
-	}
-
-	logger.Verbose("Fetching from tab index: %d", tabIndex)
-
 	// Create browser manager in connect-only mode
 	bm := NewBrowserManager(BrowserOptions{
 		Port: c.Int("port"),
@@ -450,17 +442,33 @@ func handleTabFetch(c *cli.Context) error {
 	// Assign browser to manager
 	bm.browser = browser
 
-	// Get the tab by index
-	page, err := bm.GetTabByIndex(tabIndex)
-	if err != nil {
-		if errors.Is(err, ErrTabIndexInvalid) {
-			logger.Error("Tab index out of range")
-			logger.Info("Run 'snag --list-tabs' to see available tabs")
+	// Determine if tab value is an integer index or a pattern
+	var page *rod.Page
+	if tabIndex, err := strconv.Atoi(tabValue); err == nil {
+		// Integer - use as tab index
+		logger.Verbose("Fetching from tab index: %d", tabIndex)
+		page, err = bm.GetTabByIndex(tabIndex)
+		if err != nil {
+			if errors.Is(err, ErrTabIndexInvalid) {
+				logger.Error("Tab index out of range")
+				logger.Info("Run 'snag --list-tabs' to see available tabs")
+			}
+			return err
 		}
-		return err
+		logger.Success("Connected to tab [%d]", tabIndex)
+	} else {
+		// Not an integer - treat as pattern
+		logger.Verbose("Fetching from tab matching pattern: %s", tabValue)
+		page, err = bm.GetTabByPattern(tabValue)
+		if err != nil {
+			if errors.Is(err, ErrNoTabMatch) {
+				logger.Error("No tab matches pattern '%s'", tabValue)
+				logger.Info("Run 'snag --list-tabs' to see available tabs")
+			}
+			return err
+		}
+		logger.Success("Connected to tab matching pattern: %s", tabValue)
 	}
-
-	logger.Success("Connected to tab [%d]", tabIndex)
 
 	// Extract configuration from flags
 	format := c.String("format")

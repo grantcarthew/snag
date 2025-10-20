@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -460,4 +461,87 @@ func (bm *BrowserManager) GetTabByIndex(index int) (*rod.Page, error) {
 	}
 
 	return pages[arrayIndex], nil
+}
+
+// GetTabByPattern returns the first tab matching the given pattern
+// Pattern matching uses progressive fallthrough:
+// 1. Try exact URL match (case-insensitive)
+// 2. Try substring/contains match (case-insensitive)
+// 3. Try regex match (case-insensitive)
+// 4. Return error if no matches
+// Returns ErrNoTabMatch if no tab matches the pattern
+func (bm *BrowserManager) GetTabByPattern(pattern string) (*rod.Page, error) {
+	if bm.browser == nil {
+		return nil, ErrNoBrowserRunning
+	}
+
+	pages, err := bm.browser.Pages()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pages: %w", err)
+	}
+
+	if len(pages) == 0 {
+		return nil, fmt.Errorf("%w: '%s' (no tabs open)", ErrNoTabMatch, pattern)
+	}
+
+	// Fetch page info once for all pages (avoid repeated network calls)
+	type pageCache struct {
+		page  *rod.Page
+		url   string
+		index int
+	}
+
+	var cached []pageCache
+	for i, page := range pages {
+		info, err := page.Info()
+		if err != nil {
+			// Skip pages we can't get info for
+			logger.Warning("Failed to get info for page %d: %v", i+1, err)
+			continue
+		}
+		cached = append(cached, pageCache{
+			page:  page,
+			url:   info.URL,
+			index: i + 1, // 1-based for logging
+		})
+	}
+
+	if len(cached) == 0 {
+		return nil, fmt.Errorf("%w: '%s' (no accessible tabs)", ErrNoTabMatch, pattern)
+	}
+
+	patternLower := strings.ToLower(pattern)
+
+	// Step 1: Try exact match (case-insensitive)
+	for _, pc := range cached {
+		if strings.EqualFold(pc.url, pattern) {
+			logger.Verbose("Matched tab [%d] via exact URL: %s", pc.index, pc.url)
+			return pc.page, nil
+		}
+	}
+
+	// Step 2: Try contains/substring match (case-insensitive)
+	for _, pc := range cached {
+		if strings.Contains(strings.ToLower(pc.url), patternLower) {
+			logger.Verbose("Matched tab [%d] via substring: %s", pc.index, pc.url)
+			return pc.page, nil
+		}
+	}
+
+	// Step 3: Try regex match (case-insensitive)
+	re, err := regexp.Compile("(?i)" + pattern) // (?i) = case-insensitive
+	if err != nil {
+		// Invalid regex pattern - return specific error
+		return nil, fmt.Errorf("invalid regex pattern '%s': %w", pattern, err)
+	}
+
+	for _, pc := range cached {
+		if re.MatchString(pc.url) {
+			logger.Verbose("Matched tab [%d] via regex: %s", pc.index, pc.url)
+			return pc.page, nil
+		}
+	}
+
+	// Step 4: No matches found
+	return nil, fmt.Errorf("%w: '%s'", ErrNoTabMatch, pattern)
 }
