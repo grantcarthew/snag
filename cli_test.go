@@ -1168,3 +1168,123 @@ func TestBrowser_ListTabs(t *testing.T) {
 	_ = stderr2
 	_ = stdout1
 }
+
+// TestCLI_TabNoBrowser tests --tab without browser running
+func TestCLI_TabNoBrowser(t *testing.T) {
+	stdout, stderr, err := runSnag("--tab", "1")
+
+	// Should fail when no browser is running
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	// Error should be helpful
+	assertContains(t, stderr, "No browser instance running")
+
+	_ = stdout
+}
+
+// TestCLI_TabWithURL tests --tab with URL argument (should error)
+func TestCLI_TabWithURL(t *testing.T) {
+	stdout, stderr, err := runSnag("--tab", "1", "https://example.com")
+
+	// Should fail when both --tab and URL are provided
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	// Error should explain the conflict
+	assertContains(t, stderr, "Cannot use --tab with URL argument")
+
+	_ = stdout
+}
+
+// TestCLI_TabInvalidIndex tests --tab with non-numeric value
+func TestCLI_TabInvalidIndex(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// First, open a browser
+	_, _, err1 := runSnag("--force-visible", "https://example.com")
+	assertNoError(t, err1)
+
+	// Try to use --tab with non-numeric value (Phase 2.2 only supports numbers)
+	stdout, stderr, err := runSnag("--tab", "not-a-number")
+
+	// Should fail with clear error about pattern support
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+	assertContains(t, stderr, "invalid tab index")
+	assertContains(t, stderr, "must be a number")
+
+	_ = stdout
+}
+
+// TestBrowser_TabByIndex tests --tab <index> with browser running
+func TestBrowser_TabByIndex(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// First, open a browser with example.com
+	stdout1, stderr1, err1 := runSnag("--force-visible", "https://example.com")
+	assertNoError(t, err1)
+	assertExitCode(t, err1, 0)
+	assertContains(t, stdout1, "Example Domain")
+
+	// Now fetch from tab index 1 (first tab)
+	stdout2, stderr2, err2 := runSnag("--tab", "1")
+	assertNoError(t, err2)
+	assertExitCode(t, err2, 0)
+
+	// Should get content from example.com
+	assertContains(t, stdout2, "Example Domain")
+
+	// Verify logs show connection to tab
+	assertContains(t, stderr2, "Connected to tab [1]")
+
+	_ = stderr1
+}
+
+// TestBrowser_TabOutOfRange tests --tab with index out of range
+func TestBrowser_TabOutOfRange(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// First, open a browser
+	_, _, err1 := runSnag("--force-visible", "https://example.com")
+	assertNoError(t, err1)
+
+	// Try to fetch from tab index 999 (out of range)
+	stdout, stderr, err := runSnag("--tab", "999")
+
+	// Should fail with helpful error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+	assertContains(t, stderr, "Tab index out of range")
+
+	_ = stdout
+}
+
+// TestBrowser_TabWithFormat tests --tab with different output formats
+func TestBrowser_TabWithFormat(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// First, open a browser
+	stdout1, _, err1 := runSnag("--force-visible", "https://example.com")
+	assertNoError(t, err1)
+	assertContains(t, stdout1, "Example Domain")
+
+	// Fetch from tab with HTML format
+	stdout2, stderr2, err2 := runSnag("--tab", "1", "--format", "html")
+	assertNoError(t, err2)
+	assertExitCode(t, err2, 0)
+
+	// Should get HTML (not Markdown)
+	assertContains(t, stdout2, "<html")
+	assertContains(t, stdout2, "</html>")
+
+	_ = stderr2
+}
