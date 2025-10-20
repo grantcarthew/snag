@@ -11,6 +11,7 @@ This document provides complete instructions for releasing snag. Follow each sec
 ## Overview
 
 **Release Steps Summary**:
+
 1. Pre-release checks
 2. Update version numbers
 3. Update CHANGELOG.md
@@ -58,6 +59,7 @@ rm snag
 ```
 
 **Checklist**:
+
 - [ ] All tests passing (71 tests expected)
 - [ ] Build completes without errors
 - [ ] No uncommitted changes: `git status` is clean
@@ -82,7 +84,7 @@ Follow [Semantic Versioning](https://semver.org/):
 
 **Example**: If current is `v0.0.3` and adding features → `v0.1.0`
 
-**Decision**: _______________ (fill in new version number)
+**Decision**: ******\_\_\_****** (fill in new version number)
 
 ---
 
@@ -141,10 +143,12 @@ EOF
 ## [0.1.0] - 2025-10-20
 
 ### Added
+
 - New feature X for better Y
 - Support for Z
 
 ### Fixed
+
 - Bug in component A
 - Issue with B under certain conditions
 
@@ -154,6 +158,7 @@ EOF
 ```
 
 **Verification**:
+
 ```bash
 # Review the CHANGELOG
 cat CHANGELOG.md
@@ -219,6 +224,7 @@ git push origin "v${VERSION}"
 ```
 
 **Verification**:
+
 - `git tag -l` shows the new tag
 - `git tag -l -n9 v${VERSION}` shows the tag with summary
 - Check https://github.com/grantcarthew/snag/tags
@@ -246,6 +252,7 @@ echo "$TARBALL_SHA256" > /tmp/snag-tarball-sha256.txt
 ```
 
 **Verification**:
+
 ```bash
 # Check tarball downloads successfully
 curl -I "https://github.com/grantcarthew/snag/archive/refs/tags/v${VERSION}.tar.gz"
@@ -286,6 +293,7 @@ Open `Formula/snag.rb` and update:
 4. **test** line: Update expected version
 
 **Example**:
+
 ```ruby
 class Snag < Formula
   desc "Intelligently fetch web pages using Chrome via CDP"
@@ -324,6 +332,7 @@ cd -
 ```
 
 **Verification**:
+
 ```bash
 # Check the commit went through
 cd reference/homebrew-tap
@@ -354,11 +363,13 @@ snag --quiet example.com
 ```
 
 **Verification**:
+
 - [ ] `snag --version` shows new version number
 - [ ] `snag` executes without errors
 - [ ] Basic page fetch works
 
 **If installation fails**:
+
 1. Check formula syntax: `brew audit --strict grantcarthew/tap/snag`
 2. Review formula: `brew cat grantcarthew/tap/snag`
 3. Fix issues and push updated formula
@@ -397,6 +408,7 @@ git status
 ### Announce Release
 
 Consider announcing the release:
+
 - [ ] GitHub Discussions (if enabled)
 - [ ] Twitter/X or other social media
 - [ ] Project website or blog
@@ -405,6 +417,7 @@ Consider announcing the release:
 ### Monitor for Issues
 
 After release:
+
 - [ ] Watch GitHub issues for bug reports
 - [ ] Monitor Homebrew installation feedback
 - [ ] Be ready to release a patch if critical bugs found
@@ -449,6 +462,7 @@ cd -
 ## Quick Reference
 
 ### Version Commands
+
 ```bash
 # Check current version
 git tag -l | tail -1
@@ -458,6 +472,7 @@ git tag -l | tail -1
 ```
 
 ### Build Commands
+
 ```bash
 # Quick local build
 go build -o snag
@@ -468,6 +483,7 @@ go build -ldflags "-X main.version=${VERSION}" -o snag
 ```
 
 ### Release Commands
+
 ```bash
 # Complete release in one go
 export VERSION="0.1.0"
@@ -510,16 +526,19 @@ snag --version
 ## Troubleshooting
 
 ### "Tests failing"
+
 - Review test output: `go test -v ./...`
 - Fix failing tests before proceeding
 - Never release with failing tests
 
 ### "Tarball download fails"
+
 - Verify tag is pushed: `git ls-remote --tags origin`
 - Check tag exists on GitHub: https://github.com/grantcarthew/snag/tags
 - Wait a minute for GitHub to generate tarball
 
 ### "Homebrew formula fails audit"
+
 - Run: `brew audit --strict grantcarthew/tap/snag`
 - Fix reported issues
 - Common issues:
@@ -528,6 +547,7 @@ snag --version
   - Ruby syntax errors
 
 ### "Homebrew installation fails"
+
 - Check formula: `brew cat grantcarthew/tap/snag`
 - Try verbose install: `brew install --verbose grantcarthew/tap/snag`
 - Verify tarball exists: `curl -I <tarball-url>`
@@ -539,9 +559,9 @@ snag --version
 Copy this for each release:
 
 ```markdown
-## Release v_____ Checklist
+## Release v**\_** Checklist
 
-- [ ] Determined version number: _____
+- [ ] Determined version number: **\_**
 - [ ] All tests passing
 - [ ] CHANGELOG.md updated (if it exists)
 - [ ] Changes committed to main
