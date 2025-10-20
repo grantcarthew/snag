@@ -7,10 +7,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/urfave/cli/v2"
 )
@@ -91,10 +94,9 @@ func main() {
 
 			// Page Loading
 			&cli.IntFlag{
-				Name:    "timeout",
-				Aliases: []string{"t"},
-				Usage:   "Page load timeout in `SECONDS`",
-				Value:   30,
+				Name:  "timeout",
+				Usage: "Page load timeout in `SECONDS`",
+				Value: 30,
 			},
 			&cli.StringFlag{
 				Name:    "wait-for",
@@ -131,6 +133,11 @@ func main() {
 				Name:    "list-tabs",
 				Aliases: []string{"l"},
 				Usage:   "List all open tabs in the browser",
+			},
+			&cli.StringFlag{
+				Name:    "tab",
+				Aliases: []string{"t"},
+				Usage:   "Fetch from existing tab by `INDEX` or URL pattern",
 			},
 
 			// Logging/Debugging
@@ -190,6 +197,17 @@ func run(c *cli.Context) error {
 	// Handle --list-tabs flag (list tabs and exit)
 	if c.Bool("list-tabs") {
 		return handleListTabs(c)
+	}
+
+	// Handle --tab flag (fetch from existing tab)
+	if c.IsSet("tab") {
+		// Check for conflicting URL argument
+		if c.NArg() > 0 {
+			logger.Error("Cannot use --tab with URL argument")
+			logger.Info("Use either --tab to fetch from existing tab OR provide URL to fetch new page")
+			return ErrTabURLConflict
+		}
+		return handleTabFetch(c)
 	}
 
 	// Validate URL argument
@@ -385,6 +403,116 @@ func handleListTabs(c *cli.Context) error {
 	fmt.Fprintf(os.Stdout, "Available tabs in browser (%d tabs):\n", len(tabs))
 	for _, tab := range tabs {
 		fmt.Fprintf(os.Stdout, "  [%d] %s - %s\n", tab.Index, tab.URL, tab.Title)
+	}
+
+	return nil
+}
+
+// handleTabFetch fetches content from an existing tab by index
+func handleTabFetch(c *cli.Context) error {
+	// Get the tab value
+	tabValue := c.String("tab")
+	if tabValue == "" {
+		return fmt.Errorf("--tab flag requires a value")
+	}
+
+	// For Phase 2.2, we only support integer indexes
+	// Phase 2.3 will add pattern support
+	tabIndex, err := strconv.Atoi(tabValue)
+	if err != nil {
+		return fmt.Errorf("invalid tab index '%s': must be a number (pattern support coming in Phase 2.3)", tabValue)
+	}
+
+	logger.Verbose("Fetching from tab index: %d", tabIndex)
+
+	// Create browser manager in connect-only mode
+	bm := NewBrowserManager(BrowserOptions{
+		Port: c.Int("port"),
+	})
+
+	// Assign to global for signal handler access
+	browserManager = bm
+	// Ensure cleanup on all exit paths
+	defer func() { browserManager = nil }()
+
+	// Connect to existing browser
+	browser, err := bm.connectToExisting()
+	if err != nil {
+		logger.Error("No browser instance running with remote debugging")
+		logger.ErrorWithSuggestion(
+			"Start Chrome with remote debugging enabled",
+			fmt.Sprintf("chrome --remote-debugging-port=%d", c.Int("port")),
+		)
+		logger.Info("Or run: snag --open-browser")
+		return ErrNoBrowserRunning
+	}
+
+	// Assign browser to manager
+	bm.browser = browser
+
+	// Get the tab by index
+	page, err := bm.GetTabByIndex(tabIndex)
+	if err != nil {
+		if errors.Is(err, ErrTabIndexInvalid) {
+			logger.Error("Tab index out of range")
+			logger.Info("Run 'snag --list-tabs' to see available tabs")
+		}
+		return err
+	}
+
+	logger.Success("Connected to tab [%d]", tabIndex)
+
+	// Extract configuration from flags
+	format := c.String("format")
+	timeout := c.Int("timeout")
+	waitFor := c.String("wait-for")
+	outputFile := c.String("output")
+
+	// Validate format
+	if err := validateFormat(format); err != nil {
+		return err
+	}
+
+	// Validate timeout
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	// Validate output file path if provided
+	if outputFile != "" {
+		if err := validateOutputPath(outputFile); err != nil {
+			return err
+		}
+	}
+
+	// Get current page info
+	info, err := page.Info()
+	if err != nil {
+		return fmt.Errorf("failed to get page info: %w", err)
+	}
+
+	logger.Info("Fetching content from: %s", info.URL)
+
+	// Wait for selector if specified
+	if waitFor != "" {
+		err := waitForSelector(page, waitFor, time.Duration(timeout)*time.Second)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Extract HTML content from the current page state
+	html, err := page.HTML()
+	if err != nil {
+		return fmt.Errorf("failed to extract HTML: %w", err)
+	}
+
+	// Create content converter
+	converter := NewContentConverter(format)
+
+	// Process and output content
+	if err := converter.Process(html, outputFile); err != nil {
+		return err
 	}
 
 	return nil
