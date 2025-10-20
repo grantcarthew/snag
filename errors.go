@@ -30,4 +30,7 @@ var (
 
 	// ErrNavigationFailed indicates page navigation failed
 	ErrNavigationFailed = errors.New("page navigation failed")
+
+	// ErrNoBrowserRunning indicates no browser instance is running with remote debugging
+	ErrNoBrowserRunning = errors.New("no browser instance running with remote debugging")
 )
