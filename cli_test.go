@@ -392,6 +392,19 @@ func TestCLI_FormatOptions(t *testing.T) {
 	}
 }
 
+// TestCLI_ListTabsNoBrowser tests --list-tabs without browser running
+func TestCLI_ListTabsNoBrowser(t *testing.T) {
+	stdout, stderr, err := runSnag("--list-tabs")
+
+	// Should fail when no browser is running
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	output := stdout + stderr
+	// Should contain error message about no browser running
+	assertContains(t, output, "No browser")
+}
+
 // TestCLI_OutputFilePermission tests output to unwritable location
 func TestCLI_OutputFilePermission(t *testing.T) {
 	// Create a temporary directory and make it read-only
@@ -1124,4 +1137,34 @@ func TestBrowser_RealWorld_DelayedResponse(t *testing.T) {
 	}
 
 	_ = stderr
+}
+
+// TestBrowser_ListTabs tests --list-tabs with browser running
+func TestBrowser_ListTabs(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// First, open a browser with a visible tab
+	stdout1, stderr1, err1 := runSnag("--force-visible", "https://example.com")
+	assertNoError(t, err1)
+	assertExitCode(t, err1, 0)
+
+	// Now list tabs
+	stdout2, stderr2, err2 := runSnag("--list-tabs")
+
+	assertNoError(t, err2)
+	assertExitCode(t, err2, 0)
+
+	// Should list at least one tab
+	assertContains(t, stdout2, "Available tabs")
+	assertContains(t, stdout2, "[1]")
+
+	// Should show example.com in the list
+	assertContains(t, stdout2, "example.com")
+
+	// Verify logs went to stderr for first command
+	_ = stderr1
+	_ = stderr2
+	_ = stdout1
 }

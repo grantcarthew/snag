@@ -46,6 +46,14 @@ type BrowserOptions struct {
 	UserAgent     string
 }
 
+// TabInfo represents information about a browser tab
+type TabInfo struct {
+	Index int    // Tab index (1-based for display)
+	URL   string // Current URL of the tab
+	Title string // Page title
+	ID    string // Internal target ID (for rod)
+}
+
 // findBrowserPath locates the browser executable and detects its name
 // Returns the path or an error if not found
 func (bm *BrowserManager) findBrowserPath() (string, error) {
@@ -248,10 +256,8 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 		logger.Verbose("Using custom user agent: %s", bm.userAgent)
 	}
 
-	// Set remote debugging port
-	if bm.port != 9222 {
-		l = l.Set("remote-debugging-port", fmt.Sprintf("%d", bm.port))
-	}
+	// Always set remote debugging port explicitly (don't rely on launcher's default)
+	l = l.Set("remote-debugging-port", fmt.Sprintf("%d", bm.port))
 
 	// Launch browser
 	controlURL, err := l.Launch()
@@ -391,4 +397,36 @@ func (bm *BrowserManager) ClosePage(page *rod.Page) {
 // WasLaunched returns true if the browser was launched by this manager
 func (bm *BrowserManager) WasLaunched() bool {
 	return bm.wasLaunched
+}
+
+// ListTabs returns information about all open tabs in the browser
+// This requires an existing browser connection and will not launch a new browser
+func (bm *BrowserManager) ListTabs() ([]TabInfo, error) {
+	if bm.browser == nil {
+		return nil, ErrNoBrowserRunning
+	}
+
+	pages, err := bm.browser.Pages()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pages: %w", err)
+	}
+
+	var tabs []TabInfo
+	for i, page := range pages {
+		info, err := page.Info()
+		if err != nil {
+			// Skip pages that we can't get info for, but log a warning
+			logger.Warning("Failed to get info for page %d: %v", i+1, err)
+			continue
+		}
+
+		tabs = append(tabs, TabInfo{
+			Index: i + 1, // 1-based indexing for display
+			URL:   info.URL,
+			Title: info.Title,
+			ID:    string(page.TargetID),
+		})
+	}
+
+	return tabs, nil
 }

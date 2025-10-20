@@ -127,6 +127,11 @@ func main() {
 				Aliases: []string{"b"},
 				Usage:   "Open Chrome browser in visible state (no URL required)",
 			},
+			&cli.BoolFlag{
+				Name:    "list-tabs",
+				Aliases: []string{"l"},
+				Usage:   "List all open tabs in the browser",
+			},
 
 			// Logging/Debugging
 			&cli.BoolFlag{
@@ -180,6 +185,11 @@ func run(c *cli.Context) error {
 			ForceVisible: true,
 		})
 		return bm.OpenBrowserOnly()
+	}
+
+	// Handle --list-tabs flag (list tabs and exit)
+	if c.Bool("list-tabs") {
+		return handleListTabs(c)
 	}
 
 	// Validate URL argument
@@ -335,4 +345,47 @@ type Config struct {
 	ForceVisible  bool
 	OpenBrowser   bool
 	UserAgent     string
+}
+
+// handleListTabs lists all open tabs in the browser
+func handleListTabs(c *cli.Context) error {
+	// Create browser manager in connect-only mode
+	bm := NewBrowserManager(BrowserOptions{
+		Port: c.Int("port"),
+	})
+
+	// Try to connect to existing browser
+	browser, err := bm.connectToExisting()
+	if err != nil {
+		logger.Error("No browser instance running with remote debugging")
+		logger.ErrorWithSuggestion(
+			"Start Chrome with remote debugging enabled",
+			fmt.Sprintf("chrome --remote-debugging-port=%d", c.Int("port")),
+		)
+		logger.Info("Or run: snag --open-browser")
+		return ErrNoBrowserRunning
+	}
+
+	// Assign browser to manager so ListTabs() can use it
+	bm.browser = browser
+
+	// Get list of tabs
+	tabs, err := bm.ListTabs()
+	if err != nil {
+		return err
+	}
+
+	// Handle case of no tabs
+	if len(tabs) == 0 {
+		fmt.Fprintf(os.Stdout, "No tabs open in browser\n")
+		return nil
+	}
+
+	// Format and print tabs to stdout
+	fmt.Fprintf(os.Stdout, "Available tabs in browser (%d tabs):\n", len(tabs))
+	for _, tab := range tabs {
+		fmt.Fprintf(os.Stdout, "  [%d] %s - %s\n", tab.Index, tab.URL, tab.Title)
+	}
+
+	return nil
 }
