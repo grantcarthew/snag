@@ -2,15 +2,73 @@
 
 > **Project**: snag - Phase 2 Enhancement
 > **Feature**: Tab Management
-> **Status**: Planning
+> **Status**: Phase 2.1 Complete, Phase 2.2 In Progress
 > **Created**: 2025-10-20
+> **Last Updated**: 2025-10-20
 > **Target Version**: v0.1.0 (Phase 2)
+
+## Session Summary (2025-10-20)
+
+### Completed: Phase 2.1 - Tab Listing Feature
+
+**What was built**:
+- `--list-tabs` (`-l`) flag to list all open browser tabs
+- `TabInfo` struct to represent tab metadata (index, URL, title, ID)
+- `ListTabs()` function to retrieve tabs from browser via rod
+- `handleListTabs()` CLI handler with connect-only mode
+- Integration tests validating both error and success cases
+
+**Key Achievement**: First tab management feature working end-to-end with full test coverage.
+
+**Critical Bug Discovered & Fixed**:
+- **Issue**: When using default port 9222, rod's launcher wouldn't explicitly set `--remote-debugging-port`, causing it to pick a random port
+- **Impact**: Browsers launched with `--force-visible` couldn't be reached by `--list-tabs`
+- **Root Cause**: Code only set debugging port when `!= 9222` (browser.go:260-262)
+- **Fix**: Always explicitly set `remote-debugging-port` flag regardless of value
+- **Location**: browser.go:259-260
+- **Lesson**: Never rely on framework defaults for critical connection parameters
+
+### Key Learnings
+
+1. **Remote Debugging Port Configuration**:
+   - ALWAYS explicitly set `--remote-debugging-port` flag
+   - Don't assume framework defaults match your expectations
+   - Test with both default and custom ports
+
+2. **Tab Management Prerequisites**:
+   - Tab features (`--list-tabs`, `--tab`) require existing browser connection
+   - Will NOT auto-launch browser (design decision)
+   - Fail fast with clear error messages guiding user to `--open-browser`
+
+3. **Testing Strategy**:
+   - Integration tests more valuable than unit tests for browser operations
+   - Test both error paths (no browser) and success paths (with browser)
+   - Manual testing revealed the port configuration bug
+
+4. **1-Based vs 0-Based Indexing**:
+   - User-facing: 1-based (tabs [1], [2], [3]...)
+   - Internal: 0-based (converted in TabInfo struct)
+   - Better UX for CLI tool vs programming API
+
+### Next Steps
+
+**Phase 2.2** (Ready to implement):
+- Add `--tab <index>` flag to fetch from specific tab by index
+- Move `-t` alias from `--timeout` to `--tab`
+- Implement `GetTabByIndex()` function
+- Add `handleTabFetch()` handler
+- Integration tests for tab fetching
+
+**Phase 2.3** (Subsequent):
+- Pattern matching with `--tab <pattern>`
+- Progressive fallthrough (integer → regex → exact → substring)
+- Full regex support with case-insensitive matching
 
 ## Overview
 
 This document defines the implementation plan for Phase 2 of snag: **Tab Management**. This enhancement adds the ability to list, select, and fetch content from existing browser tabs, avoiding unnecessary tab creation and enabling efficient content retrieval from already-authenticated sessions.
 
-**Current State**: snag can connect to existing Chrome instances and fetch URLs by creating new tabs/pages.
+**Current State**: snag can connect to existing Chrome instances and fetch URLs by creating new tabs/pages. ✅ Phase 2.1 adds `--list-tabs` to view existing tabs.
 
 **Goal**: Enable snag to work with existing tabs in the browser without creating new ones.
 
@@ -797,35 +855,35 @@ func TestTabFlagValidation(t *testing.T)
 
 ### Functionality
 
-- ✅ `--list-tabs` lists all open tabs with correct information
-- ✅ `--tab <index>` fetches content from specific tab
-- ✅ `--tab <pattern>` matches and fetches from tab by URL pattern
-- ✅ All existing flags work with --tab (--format, --output, etc.)
-- ✅ Proper error handling with clear messages
-- ✅ No new tabs created when using --tab
+- ✅ **Phase 2.1 Complete**: `--list-tabs` lists all open tabs with correct information
+- ⏳ **Phase 2.2 Next**: `--tab <index>` fetches content from specific tab
+- ⏳ **Phase 2.3 Pending**: `--tab <pattern>` matches and fetches from tab by URL pattern
+- ⏳ All existing flags work with --tab (--format, --output, etc.)
+- ✅ Proper error handling with clear messages (Phase 2.1)
+- ⏳ No new tabs created when using --tab
 
 ### Quality
 
-- ✅ All unit tests pass
-- ✅ All integration tests pass
-- ✅ Code coverage maintained or improved
+- ✅ All unit tests pass (Phase 2.1)
+- ✅ All integration tests pass (Phase 2.1)
+- ✅ Code coverage maintained (Phase 2.1)
 - ✅ No regressions in Phase 1 functionality
 - ✅ Code follows project style guidelines (gofmt, vet)
-- ✅ MPL 2.0 headers on all new files
+- N/A MPL 2.0 headers on all new files (no new files created)
 
 ### Documentation
 
-- ✅ AGENTS.md updated with new features
-- ✅ README.md updated with examples
-- ✅ docs/design-record.md updated
-- ✅ --help output includes new flags
-- ✅ Error messages are clear and actionable
+- ✅ AGENTS.md updated with new features (Phase 2.1)
+- ⏳ README.md updated with examples (pending Phase 2 completion)
+- ⏳ docs/design-record.md updated (pending Phase 2 completion)
+- ✅ --help output includes new flags (Phase 2.1)
+- ✅ Error messages are clear and actionable (Phase 2.1)
 
 ### Performance
 
-- ✅ Listing tabs is fast (< 1 second for 50+ tabs)
-- ✅ Tab selection is fast (< 100ms)
-- ✅ No memory leaks with repeated operations
+- ✅ Listing tabs is fast (< 1 second) - Phase 2.1 validated
+- ⏳ Tab selection is fast (< 100ms) - Phase 2.2/2.3
+- ⏳ No memory leaks with repeated operations - Phase 2.2/2.3
 
 ## Risks and Mitigations
 
@@ -970,18 +1028,34 @@ func TestTabFlagValidation(t *testing.T)
 
 ## Implementation Checklist
 
-### Phase 2.1: Tab Listing
+### Phase 2.1: Tab Listing ✅ COMPLETE
 
-- [ ] Add `TabInfo` struct to `browser.go`
-- [ ] Implement `ListTabs()` function in `browser.go`
-- [ ] Add `--list-tabs` flag to `main.go`
-- [ ] Implement `handleListTabs()` in `main.go`
-- [ ] Add routing logic in `run()` function
-- [ ] Add `ErrNoBrowserRunning` to `errors.go`
-- [ ] Write unit tests for `ListTabs()`
-- [ ] Write integration test for `--list-tabs` command
-- [ ] Manual testing with Chrome
-- [ ] Update AGENTS.md with examples
+- [x] Add `TabInfo` struct to `browser.go` (browser.go:49-55)
+- [x] Implement `ListTabs()` function in `browser.go` (browser.go:404-434)
+- [x] Add `--list-tabs` flag to `main.go` (main.go:130-134)
+- [x] Implement `handleListTabs()` in `main.go` (main.go:345-383)
+- [x] Add routing logic in `run()` function (main.go:190-193)
+- [x] Add `ErrNoBrowserRunning` to `errors.go` (errors.go:34-35)
+- [x] Write unit tests for `ListTabs()` - N/A (integration tests only)
+- [x] Write integration test for `--list-tabs` command (cli_test.go:395-406, 1142-1170)
+- [x] Manual testing with Chrome - PASSED
+- [x] Update AGENTS.md with examples (AGENTS.md:58-62)
+
+**Critical Bug Fix Applied**:
+- Fixed browser.go:259-260 to **always set remote-debugging-port explicitly**
+- Previously, when port was 9222 (default), rod launcher would pick random port
+- This caused `--list-tabs` to fail connecting to browsers launched with `--force-visible`
+- **Resolution**: Always set `remote-debugging-port` flag regardless of port value
+
+**Test Results**:
+- `TestCLI_ListTabsNoBrowser`: PASSED (validates error when no browser running)
+- `TestBrowser_ListTabs`: PASSED (validates tab listing with real browser)
+
+**Implementation Notes**:
+- Tab indexes are 1-based for user display (converted from 0-based internally)
+- Output goes to stdout for piping compatibility
+- Requires existing browser with remote debugging enabled
+- Will NOT launch new browser (connect-only mode)
 
 ### Phase 2.2: Tab Selection by Index
 

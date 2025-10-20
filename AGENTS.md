@@ -55,6 +55,12 @@ go test -v -run TestFetchPage
 # Run with coverage
 go test -v -cover
 
+# Test tab management features
+snag --open-browser        # Open persistent browser
+snag --list-tabs           # List all open tabs
+snag https://example.com   # Fetch URL (creates new tab)
+snag --list-tabs           # List tabs again (should show example.com)
+
 # Cross-platform builds
 GOOS=darwin GOARCH=arm64 go build -o snag-darwin-arm64
 GOOS=darwin GOARCH=amd64 go build -o snag-darwin-amd64
