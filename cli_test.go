@@ -1207,6 +1207,8 @@ func TestCLI_TabWithURL(t *testing.T) {
 }
 
 // TestCLI_TabInvalidIndex tests --tab with non-numeric value
+// TestCLI_TabInvalidIndex is deprecated - Phase 2.3 treats non-numeric values as patterns
+// This test is kept for backwards compatibility but now tests pattern matching behavior
 func TestCLI_TabInvalidIndex(t *testing.T) {
 	if !isBrowserAvailable() {
 		t.Skip("Browser not available, skipping browser integration test")
@@ -1219,14 +1221,14 @@ func TestCLI_TabInvalidIndex(t *testing.T) {
 	_, _, err1 := runSnag("--force-visible", "https://example.com")
 	assertNoError(t, err1)
 
-	// Try to use --tab with non-numeric value (Phase 2.2 only supports numbers)
+	// Try to use --tab with non-numeric value (now treated as pattern in Phase 2.3)
 	stdout, stderr, err := runSnag("--tab", "not-a-number")
 
-	// Should fail with clear error about pattern support
+	// Should fail with "no tab matches pattern" error (not "invalid index")
 	assertError(t, err)
 	assertExitCode(t, err, 1)
-	assertContains(t, stderr, "invalid tab index")
-	assertContains(t, stderr, "must be a number")
+	assertContains(t, stderr, "No tab matches pattern")
+	assertContains(t, stderr, "snag --list-tabs")
 
 	_ = stdout
 }
@@ -1308,4 +1310,113 @@ func TestBrowser_TabWithFormat(t *testing.T) {
 	assertContains(t, stdout2, "</html>")
 
 	_ = stderr2
+}
+
+// TestBrowser_TabByExactMatch tests --tab with exact URL match (case-insensitive)
+func TestBrowser_TabByExactMatch(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// Ensure clean state - kill any existing browsers
+	cleanupOrphanedBrowsers()
+
+	// First, open a browser with example.com
+	stdout1, _, err1 := runSnag("--force-visible", "https://example.com/")
+	assertNoError(t, err1)
+	assertContains(t, stdout1, "Example Domain")
+
+	// Fetch using exact URL match (case-insensitive)
+	stdout2, stderr2, err2 := runSnag("--tab", "HTTPS://EXAMPLE.COM/")
+	assertNoError(t, err2)
+	assertExitCode(t, err2, 0)
+
+	// Should get content from example.com
+	assertContains(t, stdout2, "Example Domain")
+
+	// Verify logs show pattern matching with exact pattern
+	assertContains(t, stderr2, "Connected to tab matching pattern: HTTPS://EXAMPLE.COM/")
+
+	_ = stderr2
+}
+
+// TestBrowser_TabBySubstring tests --tab with substring/contains match
+func TestBrowser_TabBySubstring(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// Ensure clean state - kill any existing browsers
+	cleanupOrphanedBrowsers()
+
+	// First, open a browser with example.com
+	stdout1, _, err1 := runSnag("--force-visible", "https://example.com")
+	assertNoError(t, err1)
+	assertContains(t, stdout1, "Example Domain")
+
+	// Fetch using substring match (contains "example")
+	stdout2, stderr2, err2 := runSnag("--tab", "example")
+	assertNoError(t, err2)
+	assertExitCode(t, err2, 0)
+
+	// Should get content from example.com
+	assertContains(t, stdout2, "Example Domain")
+
+	// Verify logs show pattern matching
+	assertContains(t, stderr2, "Connected to tab matching pattern: example")
+
+	_ = stderr2
+}
+
+// TestBrowser_TabByRegex tests --tab with regex pattern match
+func TestBrowser_TabByRegex(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// Ensure clean state - kill any existing browsers
+	cleanupOrphanedBrowsers()
+
+	// First, open a browser with example.com
+	stdout1, _, err1 := runSnag("--force-visible", "https://example.com")
+	assertNoError(t, err1)
+	assertContains(t, stdout1, "Example Domain")
+
+	// Fetch using regex pattern (https://.*\.com)
+	stdout2, stderr2, err2 := runSnag("--tab", "https://.*\\.com")
+	assertNoError(t, err2)
+	assertExitCode(t, err2, 0)
+
+	// Should get content from example.com
+	assertContains(t, stdout2, "Example Domain")
+
+	// Verify logs show pattern matching with regex pattern
+	assertContains(t, stderr2, "Connected to tab matching pattern: https://.*\\.com")
+
+	_ = stderr2
+}
+
+// TestBrowser_TabNoMatch tests --tab with pattern that doesn't match any tab
+func TestBrowser_TabNoMatch(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// Ensure clean state - kill any existing browsers
+	cleanupOrphanedBrowsers()
+
+	// First, open a browser
+	_, _, err1 := runSnag("--force-visible", "https://example.com")
+	assertNoError(t, err1)
+
+	// Try to fetch from tab with non-matching pattern
+	stdout, stderr, err := runSnag("--tab", "nonexistent-pattern-xyz")
+
+	// Should fail with helpful error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+	assertContains(t, stderr, "No tab matches pattern")
+	assertContains(t, stderr, "snag --list-tabs")
+
+	_ = stdout
 }
