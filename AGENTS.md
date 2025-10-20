@@ -286,22 +286,26 @@ snag/
 **Common Issues:**
 
 1. **"No Chromium-based browser found"**
+
    - Install Chrome, Chromium, Edge, or Brave
    - rod's `launcher.LookPath()` checks standard installation paths
    - Supported browsers: Chrome, Chromium, Edge, Brave (Chromium-based only)
    - Firefox is NOT supported (deprecated CDP support)
 
 2. **"Connection refused on port 9222"**
+
    - Another process may be using the debugging port
    - Try different port: `snag --port 9223 <url>`
    - Check if Chrome is running with `--remote-debugging-port`
 
 3. **"Page load timeout exceeded"**
+
    - Increase timeout: `snag --timeout 60 <url>`
    - Check network connectivity
    - Try verbose mode: `snag --verbose <url>`
 
 4. **"Authentication required"**
+
    - Use visible mode: `snag --force-visible <url>`
    - Manually authenticate in the browser window
    - Run command again - snag will connect to existing session
