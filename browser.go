@@ -25,15 +25,16 @@ const (
 
 // BrowserManager handles browser lifecycle and connection
 type BrowserManager struct {
-	browser       *rod.Browser
-	launcher      *launcher.Launcher
-	port          int
-	wasLaunched   bool
-	userAgent     string
-	forceHeadless bool
-	forceVisible  bool
-	openBrowser   bool
-	browserName   string // Detected browser name (Chrome, Chromium, Edge, Brave, etc.)
+	browser          *rod.Browser
+	launcher         *launcher.Launcher
+	port             int
+	wasLaunched      bool
+	launchedHeadless bool // True if we launched the browser in headless mode
+	userAgent        string
+	forceHeadless    bool
+	forceVisible     bool
+	openBrowser      bool
+	browserName      string // Detected browser name (Chrome, Chromium, Edge, Brave, etc.)
 }
 
 // BrowserOptions contains options for browser management
@@ -197,6 +198,7 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 
 	bm.browser = browser
 	bm.wasLaunched = true
+	bm.launchedHeadless = headless
 	return browser, nil
 }
 
@@ -237,6 +239,7 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 	l := launcher.New().
 		Bin(path).
 		Headless(headless).
+		Leakless(headless). // Only kill browser on exit if headless; visible browsers persist
 		Set("disable-blink-features", "AutomationControlled")
 
 	// Set custom user agent if provided
@@ -346,16 +349,17 @@ func (bm *BrowserManager) NewPage() (*rod.Page, error) {
 	return page, nil
 }
 
-// Close closes the browser if it was launched by us
+// Close closes the browser if it was launched by us in headless mode
 // Cleanup is best-effort and does not return errors
 func (bm *BrowserManager) Close() {
 	if bm.browser == nil {
 		return
 	}
 
-	// Only close browser if we launched it
-	if bm.wasLaunched {
-		logger.Verbose("Closing browser...")
+	// Only close browser if we launched it AND it's headless
+	// Visible browsers are left running for user convenience (e.g., authenticated sessions)
+	if bm.wasLaunched && bm.launchedHeadless {
+		logger.Verbose("Closing headless browser...")
 		if err := bm.browser.Close(); err != nil {
 			logger.Warning("Failed to close browser: %v", err)
 		}
@@ -364,6 +368,8 @@ func (bm *BrowserManager) Close() {
 		if bm.launcher != nil {
 			bm.launcher.Cleanup()
 		}
+	} else if bm.wasLaunched && !bm.launchedHeadless {
+		logger.Verbose("Leaving visible browser running")
 	} else {
 		logger.Verbose("Leaving existing browser instance running")
 	}
