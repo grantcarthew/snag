@@ -9,6 +9,7 @@ This document tracks configuration-related design decisions and potential improv
 **Status**: Under consideration
 
 **Current Implementation**:
+
 - `Config` struct is a simple data holder (main.go:268-279)
 - Validation logic inline in `run()` function (main.go:185-193)
 - URL validation in separate `validate.go` module
@@ -18,11 +19,13 @@ This document tracks configuration-related design decisions and potential improv
 **Options**:
 
 1. **Keep current approach** (validation inline)
+
    - Pro: Simple, clear, logging/errors at call site
    - Pro: Only one field currently validated
    - Con: Mixed concerns in `run()` function
 
 2. **Add to validate.go** (functional approach)
+
    ```go
    func validateConfig(config *Config) error {
        if !validFormats[config.Format] {
@@ -31,6 +34,7 @@ This document tracks configuration-related design decisions and potential improv
        return nil
    }
    ```
+
    - Pro: Consistent with existing `validateURL()` pattern
    - Pro: All validation in one module
    - Con: Separates validation from error logging/suggestions

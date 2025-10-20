@@ -184,6 +184,7 @@
 **See [PROJECT-testing.md](PROJECT-testing.md) for complete testing plan.**
 
 **Summary**:
+
 - Create testdata/ directory with HTML fixtures
 - Implement test HTTP server for controlled tests
 - Write integration tests for core functionality
@@ -199,6 +200,7 @@
 **See [PROJECT-documentation.md](PROJECT-documentation.md) for complete documentation plan.**
 
 **Summary**:
+
 - Add comprehensive troubleshooting section to README
 - Create LICENSES/ directory with third-party licenses
 - Add advanced usage examples
@@ -206,6 +208,7 @@
 - Review and polish all documentation
 
 **Current State** (25% complete):
+
 - ✅ Basic README.md with all CLI flags documented
 - ✅ Common usage examples and auth workflow
 - ⏳ Missing: troubleshooting section
@@ -218,6 +221,7 @@
 **See [PROJECT-release.md](PROJECT-release.md) for complete release plan.**
 
 **Summary**:
+
 - Create GitHub Actions workflow for multi-platform builds
 - Build binaries for 4 platforms (macOS/Linux, ARM64/AMD64)
 - Set up Homebrew tap and formula
@@ -306,6 +310,7 @@ require (
 **See [PROJECT-testing.md](PROJECT-testing.md) for detailed testing plan (10 tasks).**
 
 Quick summary:
+
 1. Create test infrastructure and fixtures
 2. Write integration tests for core functionality
 3. Test auth detection, timeouts, browser modes
@@ -317,6 +322,7 @@ Quick summary:
 **See [PROJECT-documentation.md](PROJECT-documentation.md) for detailed documentation plan (8 tasks).**
 
 Quick summary:
+
 1. Add troubleshooting section to README
 2. Create LICENSES/ directory with third-party licenses
 3. Add advanced usage examples
@@ -328,6 +334,7 @@ Quick summary:
 **See [PROJECT-release.md](PROJECT-release.md) for detailed release plan (10 tasks).**
 
 Quick summary:
+
 1. Set up GitHub Actions for multi-platform builds
 2. Create Homebrew tap and formula
 3. Test on all platforms (macOS and Linux)
