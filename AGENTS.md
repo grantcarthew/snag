@@ -348,13 +348,69 @@ snag --quiet https://example.com
 
 **Future Enhancements:**
 
-See docs/design.md for Phase 2+ features:
+See docs/design-record.md for Phase 2+ features:
 
 - Tab management (`--list-tabs`, `--tab <index>`)
 - Additional formats (text, PDF)
 - Screenshot support
 - Cookie management
 - Proxy support
+
+## Release Process
+
+**For AI Agents**: When performing a release, follow the comprehensive step-by-step guide in `docs/release-process.md`.
+
+**Release Steps Summary**:
+
+1. Pre-release checks (tests, build verification)
+2. Determine version number (semver)
+3. Update CHANGELOG.md (create if doesn't exist)
+4. Commit and tag release
+5. Build multi-platform binaries (darwin/linux, arm64/amd64)
+6. Create GitHub release with binaries
+7. Update Homebrew tap formula
+8. Test installation
+9. Post-release tasks
+
+**Quick Release Command Reference**:
+
+```bash
+# Set version
+export VERSION="0.0.4"
+
+# Tag and build
+git tag -a "v${VERSION}" -m "Release v${VERSION}"
+git push origin "v${VERSION}"
+
+# Build binaries
+mkdir -p dist
+GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-darwin-arm64"
+GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-darwin-amd64"
+GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-linux-amd64"
+GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-linux-arm64"
+cd dist && sha256sum * > SHA256SUMS && cd ..
+
+# Create GitHub release (using gh CLI)
+gh release create "v${VERSION}" --title "v${VERSION}" \
+  --notes "Release v${VERSION}" \
+  dist/snag-darwin-arm64 \
+  dist/snag-darwin-amd64 \
+  dist/snag-linux-amd64 \
+  dist/snag-linux-arm64 \
+  dist/SHA256SUMS
+
+# Update Homebrew tap (manual edit required)
+# See docs/release-process.md Step 8 for detailed instructions
+```
+
+**Important Notes**:
+
+- Always run tests before releasing: `go test -v ./...`
+- Homebrew tap is at `./reference/homebrew-tap/`
+- Update `Formula/snag.rb` with new version and tarball SHA256
+- Test installation: `brew reinstall grantcarthew/tap/snag`
+
+**Full documentation**: `docs/release-process.md`
 
 ## License
 
@@ -365,6 +421,7 @@ Third-party licenses in `LICENSES/` directory.
 ## Additional Resources
 
 - **README.md**: User-facing documentation and usage examples
-- **docs/design.md**: Comprehensive design decisions and rationale
+- **docs/design-record.md**: Comprehensive design decisions and rationale
+- **docs/release-process.md**: Step-by-step release guide for AI agents
 - **Repository**: https://github.com/grantcarthew/snag
 - **Issues**: https://github.com/grantcarthew/snag/issues
