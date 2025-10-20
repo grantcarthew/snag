@@ -34,7 +34,9 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ## Design Decisions Summary
 
-**14 major design decisions documented below:**
+**21 major design decisions documented below:**
+
+### Phase 1 (MVP) Decisions
 
 | #   | Decision            | Choice                                                      |
 | --- | ------------------- | ----------------------------------------------------------- |
@@ -52,6 +54,18 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 | 12  | Error Handling      | Exit 0/1, sentinel errors, clear messages                   |
 | 13  | Project Structure   | Flat structure at root                                      |
 | 14  | Testing Strategy    | Integration tests with real browser                         |
+
+### Phase 2 (Tab Management) Decisions
+
+| #   | Decision              | Choice                                                       |
+| --- | --------------------- | ------------------------------------------------------------ |
+| 15  | Flag Assignment       | `-t` moved from `--timeout` to `--tab` (more frequently used) |
+| 16  | Tab Indexing          | 1-based indexing (first tab is [1], not [0])                 |
+| 17  | Pattern Matching      | Progressive fallthrough (regex → exact → contains)           |
+| 18  | Case Sensitivity      | Case-insensitive matching for all modes                      |
+| 19  | Regex Support         | Full regex patterns (not just wildcards)                     |
+| 20  | Regex Fallthrough     | Always try all matching methods before failing               |
+| 21  | Multiple Matches      | First match wins (predictable, simple)                       |
 
 See detailed rationale in [Design Decisions Made](#design-decisions-made) section below.
 
@@ -179,21 +193,87 @@ snag [options] <url>
 
 **Total MVP Arguments:** 16
 
-### Phase 2: Tab Management (Future)
+### Phase 2: Tab Management (Designed - v0.1.0)
 
-**Proposed:**
+**Status**: Design Complete (2025-10-20)
+
+**Features:**
 
 ```bash
-snag --list-tabs                    # List all open tabs
-snag --tab <index>                  # Get content from specific tab
-snag --tab <url-pattern>            # Match tab by URL pattern
+snag --list-tabs                    # List all open tabs (1-based indexing)
+snag -l                             # Short alias
+
+snag --tab <index>                  # Get content from specific tab (1-based)
+snag -t <index>                     # Short alias
+snag -t <pattern>                   # Match tab by regex/URL pattern
 ```
+
+**Key Design Decisions:**
+
+1. **Flag Assignment**: Moved `-t` alias from `--timeout` to `--tab` (more frequently used)
+2. **Tab Indexing**: 1-based indexing (first tab is [1], not [0]) - more intuitive for users
+3. **Pattern Matching**: Progressive fallthrough with full regex support:
+   - Integer → Tab index (1-based)
+   - Has regex chars (`* + ? [ ] { } ( ) | ^ $ \`) → Regex match
+   - Exact URL match (case-insensitive)
+   - Substring/contains match (case-insensitive)
+   - Error if no matches
+4. **Case Sensitivity**: All matching is case-insensitive for better UX
+5. **Regex Support**: Full regex patterns (not just wildcards) - same complexity, more power
+6. **Fallthrough**: Always try all matching methods before failing (maximize flexibility)
+7. **Multiple Matches**: First match wins (predictable, simple)
 
 **Use Cases:**
 
-- Get content from already-open authenticated tab
-- Fetch from multiple tabs in parallel
-- Avoid opening new tabs unnecessarily
+- Get content from already-open authenticated tab without creating new tabs
+- Work with existing browser sessions (preserves cookies, auth state)
+- Pattern-based tab selection (regex, exact match, or substring)
+- List all tabs to see what's available
+
+**Examples:**
+
+```bash
+# List tabs (1-based indexing)
+snag --list-tabs
+# Output:
+#   [1] https://github.com/grantcarthew/snag - snag repo
+#   [2] https://go.dev/doc/ - Go docs
+#   [3] https://app.internal.com/dashboard - Dashboard
+
+# Fetch by index (1-based)
+snag -t 1                                # First tab
+snag -t 3                                # Third tab
+
+# Fetch by exact URL (case-insensitive)
+snag -t https://github.com/grantcarthew/snag
+snag -t GITHUB.COM                       # Case-insensitive
+
+# Fetch by regex pattern
+snag -t "github\.com/.*"                 # Regex: github.com/ + anything
+snag -t ".*/dashboard"                   # Regex: ends with /dashboard
+snag -t "(github|gitlab)\.com"           # Regex: alternation
+
+# Fetch by substring (fallback)
+snag -t "dashboard"                      # Contains "dashboard"
+snag -t "github"                         # Contains "github"
+```
+
+**Technical Implementation:**
+
+- New `TabInfo` struct (index, URL, title, ID)
+- `ListTabs()` - Get all tabs from browser
+- `GetTabByIndex(index int)` - Select tab by 1-based index
+- `GetTabByPattern(pattern string)` - Progressive fallthrough matching
+- `hasRegexChars(s string)` - Detect regex metacharacters
+- Browser requirement: Existing Chrome instance with remote debugging
+
+**Rationale:**
+
+- **1-based indexing**: UI tool for humans, not a programming API
+- **Full regex**: Same implementation cost as wildcards, more flexibility
+- **Progressive fallthrough**: Maximizes chances of finding the right tab
+- **Case-insensitive**: Better UX, users don't worry about capitalization
+- **First match wins**: Simple, predictable, documented behavior
 
 ### Phase 3+: Post-MVP Features
 
@@ -835,9 +915,98 @@ $ snag https://example.com
   - Simple test setup (no complex mocking)
   - Validates end-to-end flow
 
+### 15. Flag Assignment (Phase 2)
+
+- **Decision**: Move `-t` alias from `--timeout` to `--tab`
+- **Rationale**:
+  - `--tab` will be used far more frequently than custom timeouts
+  - Most users will use default 30s timeout (rarely need to change)
+  - Shorter alias should go to more commonly used flag
+  - Power users who need custom timeouts can type `--timeout 60`
+- **Breaking Change**: Yes (users using `-t` for timeout will need to use `--timeout`)
+- **Migration**: Document in release notes, minimal impact expected
+
+### 16. Tab Indexing (Phase 2)
+
+- **Decision**: Use 1-based indexing (first tab is [1], not [0])
+- **Rationale**:
+  - snag is a UI tool for humans, not a programming API
+  - 1-based indexing is more intuitive for end users
+  - Matches how users think about lists ("first tab", "second tab")
+  - Most CLI tools that list items use 1-based indexing
+  - Internal arrays still use 0-based (just offset for display/input)
+- **Implementation**: Convert user input (1-based) to array index (0-based) internally
+- **Output**: Display tabs as [1], [2], [3], etc.
+
+### 17. Pattern Matching (Phase 2)
+
+- **Decision**: Progressive fallthrough matching with 4 stages
+- **Matching Process**:
+  1. **Integer check**: Parse as int → Use as tab index (1-based)
+  2. **Regex match**: If contains regex chars → Compile and match (case-insensitive)
+  3. **Exact match**: Try case-insensitive exact URL match
+  4. **Contains match**: Try case-insensitive substring search
+  5. **Error**: If no matches found
+- **Regex chars detected**: `* + ? [ ] { } ( ) | ^ $ \`
+- **URL-safe chars** (not treated as regex): `. / - _ : ? & = # %`
+- **Rationale**:
+  - Progressive fallthrough maximizes chances of finding the right tab
+  - Simple patterns work automatically (no need to learn regex)
+  - Power users can use full regex when needed
+  - Forgiving approach: "try everything before failing"
+- **First match wins**: If multiple tabs match, return first one (predictable, simple)
+
+### 18. Case Sensitivity (Phase 2)
+
+- **Decision**: All pattern matching is case-insensitive
+- **Implementation**:
+  - Regex: Use `(?i)` flag
+  - Exact match: Use `strings.EqualFold()`
+  - Contains match: Convert both strings to lowercase
+- **Rationale**:
+  - Better user experience (don't worry about capitalization)
+  - URLs are typically lowercase but users might type them differently
+  - Matches user expectations (most search is case-insensitive)
+  - No performance penalty (minimal overhead)
+
+### 19. Regex Support (Phase 2)
+
+- **Decision**: Support full regex patterns (not just wildcards)
+- **Rationale**:
+  - Implementation complexity is identical (using `regexp` package internally anyway)
+  - Maximum flexibility for power users
+  - Simple users can still use basic patterns (substring matching fallback)
+  - Can document common patterns in README
+  - No artificial limitations
+- **Alternative Considered**: Wildcard-only (`*`) - rejected as same implementation cost
+- **User Support**: Provide clear examples and error messages for invalid regex
+
+### 20. Regex Fallthrough (Phase 2)
+
+- **Decision**: Always fall through to exact/contains even after trying regex
+- **Rationale**:
+  - If regex chars detected but no match, still try other methods
+  - Catches edge cases at minimal cost (few string comparisons)
+  - More forgiving approach: "try everything"
+  - Users less likely to get unexpected "no match" errors
+- **Example**: `github\.com` might not match as regex but will match as substring
+
+### 21. Multiple Matches (Phase 2)
+
+- **Decision**: First match wins when multiple tabs match pattern
+- **Rationale**:
+  - Simple and predictable behavior
+  - Consistent with other tools (grep, find, etc.)
+  - Users can use `--list-tabs` to see tab order
+  - Can add `--tab-all` flag in future for multiple matches
+- **Documentation**: Clearly document that first match is returned
+- **Verbose Mode**: Show which tab matched and why
+
 ## Implementation Notes
 
-The design outlined in this document was successfully implemented with all 14 design decisions realized in the initial release.
+### Phase 1 (MVP) - Implemented
+
+The Phase 1 design was successfully implemented with all 14 design decisions realized in the initial release.
 
 **Key Implementation Outcomes:**
 
@@ -847,12 +1016,36 @@ The design outlined in this document was successfully implemented with all 14 de
 - Multi-platform builds: darwin/arm64, darwin/amd64, linux/amd64, linux/arm64
 - Single binary distribution (~5MB)
 
-**Future Enhancements Under Consideration:**
+### Phase 2 (Tab Management) - Designed
 
-- Tab management features (Phase 2)
+Phase 2 design complete (2025-10-20) with 7 additional design decisions (15-21).
+
+**Design Status**: Ready for implementation
+
+**Key Design Outcomes:**
+
+- Two new flags: `--list-tabs` (alias `-l`) and `--tab` (alias `-t`)
+- Flag reassignment: `-t` moved from `--timeout` to `--tab`
+- 1-based tab indexing for user-facing operations
+- Progressive fallthrough pattern matching (regex → exact → contains)
+- Full regex support with case-insensitive matching
+- New functions: `ListTabs()`, `GetTabByIndex()`, `GetTabByPattern()`, `hasRegexChars()`
+- New struct: `TabInfo` (index, URL, title, ID)
+
+**Implementation Plan**: See PROJECT.md for detailed 4-phase implementation plan
+
+### Future Enhancements Under Consideration
+
+**Phase 2.5+:**
+- `--tab-all <pattern>` - Fetch from all matching tabs
+- `--list-tabs --format json` - JSON output for scripting
+- Tab filtering and sorting options
+
+**Phase 3+:**
 - Additional output formats (text, pdf)
 - Screenshot capabilities
 - Cookie management
+- Proxy support
 
 ## References
 
