@@ -45,10 +45,10 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-// cleanupOrphanedBrowsers kills any Chrome instances with rod temp user-data directories
+// cleanupOrphanedBrowsers kills any Chrome/Chromium instances with remote debugging
 func cleanupOrphanedBrowsers() {
-	// Find Chrome processes with rod user-data directories
-	cmd := exec.Command("sh", "-c", "ps aux | grep -E 'Chrome.*--user-data-dir.*T/rod/user-data' | grep -v grep | awk '{print $2}'")
+	// Find Chrome/Chromium processes with remote-debugging-port
+	cmd := exec.Command("sh", "-c", "ps aux | grep -iE '(chrome|chromium).*--remote-debugging-port' | grep -v grep | awk '{print $2}'")
 	output, err := cmd.Output()
 	if err != nil {
 		// No processes found or command failed - that's okay
@@ -61,7 +61,7 @@ func cleanupOrphanedBrowsers() {
 	}
 
 	pids := strings.Split(pidsStr, "\n")
-	fmt.Fprintf(os.Stderr, "Cleaning up %d orphaned Chrome instance(s)...\n", len(pids))
+	fmt.Fprintf(os.Stderr, "Cleaning up %d orphaned browser instance(s)...\n", len(pids))
 
 	for _, pid := range pids {
 		pid = strings.TrimSpace(pid)
@@ -72,8 +72,8 @@ func cleanupOrphanedBrowsers() {
 		exec.Command("kill", pid).Run()
 	}
 
-	// Wait a moment for graceful shutdown
-	exec.Command("sleep", "1").Run()
+	// Wait longer for graceful shutdown
+	exec.Command("sleep", "2").Run()
 
 	// Force kill any remaining
 	for _, pid := range pids {
@@ -83,6 +83,9 @@ func cleanupOrphanedBrowsers() {
 		}
 		exec.Command("kill", "-9", pid).Run()
 	}
+
+	// Final wait to ensure processes are fully gone
+	exec.Command("sleep", "1").Run()
 }
 
 // isBrowserAvailable checks if Chrome or Chromium is available on the system
@@ -1145,6 +1148,9 @@ func TestBrowser_ListTabs(t *testing.T) {
 		t.Skip("Browser not available, skipping browser integration test")
 	}
 
+	// Ensure clean state - kill any existing browsers
+	cleanupOrphanedBrowsers()
+
 	// First, open a browser with a visible tab
 	stdout1, stderr1, err1 := runSnag("--force-visible", "https://example.com")
 	assertNoError(t, err1)
@@ -1171,6 +1177,9 @@ func TestBrowser_ListTabs(t *testing.T) {
 
 // TestCLI_TabNoBrowser tests --tab without browser running
 func TestCLI_TabNoBrowser(t *testing.T) {
+	// Ensure no browsers are running from previous tests
+	cleanupOrphanedBrowsers()
+
 	stdout, stderr, err := runSnag("--tab", "1")
 
 	// Should fail when no browser is running
@@ -1203,6 +1212,9 @@ func TestCLI_TabInvalidIndex(t *testing.T) {
 		t.Skip("Browser not available, skipping browser integration test")
 	}
 
+	// Ensure clean state - kill any existing browsers
+	cleanupOrphanedBrowsers()
+
 	// First, open a browser
 	_, _, err1 := runSnag("--force-visible", "https://example.com")
 	assertNoError(t, err1)
@@ -1224,6 +1236,9 @@ func TestBrowser_TabByIndex(t *testing.T) {
 	if !isBrowserAvailable() {
 		t.Skip("Browser not available, skipping browser integration test")
 	}
+
+	// Ensure clean state - kill any existing browsers
+	cleanupOrphanedBrowsers()
 
 	// First, open a browser with example.com
 	stdout1, stderr1, err1 := runSnag("--force-visible", "https://example.com")
@@ -1251,6 +1266,9 @@ func TestBrowser_TabOutOfRange(t *testing.T) {
 		t.Skip("Browser not available, skipping browser integration test")
 	}
 
+	// Ensure clean state - kill any existing browsers
+	cleanupOrphanedBrowsers()
+
 	// First, open a browser
 	_, _, err1 := runSnag("--force-visible", "https://example.com")
 	assertNoError(t, err1)
@@ -1271,6 +1289,9 @@ func TestBrowser_TabWithFormat(t *testing.T) {
 	if !isBrowserAvailable() {
 		t.Skip("Browser not available, skipping browser integration test")
 	}
+
+	// Ensure clean state - kill any existing browsers
+	cleanupOrphanedBrowsers()
 
 	// First, open a browser
 	stdout1, _, err1 := runSnag("--force-visible", "https://example.com")
