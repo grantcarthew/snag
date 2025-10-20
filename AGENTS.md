@@ -10,6 +10,8 @@
 - Launch headless or visible browser modes
 - Handle authenticated sessions gracefully
 - Convert HTML to Markdown (default) or output raw HTML
+- Tab management: List, select, and fetch from existing browser tabs (Phase 2)
+- Pattern matching: Select tabs by index, exact URL, substring, or regex
 - Single binary distribution, no runtime dependencies
 
 **Technology Stack:**
@@ -55,11 +57,30 @@ go test -v -run TestFetchPage
 # Run with coverage
 go test -v -cover
 
-# Test tab management features
-snag --open-browser        # Open persistent browser
-snag --list-tabs           # List all open tabs
-snag https://example.com   # Fetch URL (creates new tab)
-snag --list-tabs           # List tabs again (should show example.com)
+# Test basic content fetching
+snag https://example.com                # Fetch page as Markdown
+snag --format html https://example.com  # Fetch as HTML
+snag -o output.md https://example.com   # Save to file
+
+# Test tab management features (Phase 2)
+snag --open-browser                     # Open persistent browser (with DevTools enabled)
+snag --list-tabs                        # List all open tabs
+snag https://example.com                # Fetch URL (creates new tab)
+snag --list-tabs                        # List tabs again (should show example.com)
+
+# Tab selection by index (1-based)
+snag --tab 1                            # Fetch from first tab
+snag -t 2                               # Fetch from second tab (short form)
+
+# Tab selection by pattern
+snag -t "example.com"                   # Exact URL match (case-insensitive)
+snag -t "example"                       # Substring/contains match
+snag -t "https://.*\.com"               # Regex pattern match
+
+# Tab features with output options
+snag -t 1 --format html                 # Fetch tab 1 as HTML
+snag -t "github" -o repo.md             # Fetch tab matching "github", save to file
+snag -t 1 --wait-for ".content"         # Wait for selector in existing tab
 
 # Cross-platform builds
 GOOS=darwin GOARCH=arm64 go build -o snag-darwin-arm64
@@ -164,40 +185,23 @@ Types: `feat`, `fix`, `docs`, `chore`, `test`, `refactor`
 
 ## Testing Instructions
 
-**Test Strategy:**
+**Strategy:**
 
-- Integration tests with real Chrome/Chromium browser
-- Test fixtures in `testdata/` directory (when added)
-- No mocking - test against real browser via rod
+- Integration tests with real Chrome/Chromium (no mocking)
+- Tab tests may show minor isolation issues (not functional bugs)
 
 **Running Tests:**
 
 ```bash
-# Run all tests
-go test -v
-
-# Run specific test
-go test -v -run TestFetchPage
-
-# Run with coverage
-go test -v -cover
-
-# Verbose test output with debug logging
-go test -v -args --debug
+go test -v                           # All tests
+go test -v -run TestBrowser_ListTabs # Specific test
+go test -v -cover                    # With coverage
 ```
 
-**CI/CD:**
+**Requirements:**
 
-- Tests run in GitHub Actions with Chrome pre-installed
-- Tests execute in headless mode
-- Multi-platform builds: darwin/arm64, darwin/amd64, linux/amd64, linux/arm64
-
-**Test Requirements:**
-
-- Chrome, Chromium, Edge, or Brave browser installed
-- Browser discoverable via standard installation paths
-- Supported platforms: macOS (arm64/amd64), Linux (amd64/arm64)
-- Tests use real browser via rod (no mocking)
+- Chrome, Chromium, Edge, or Brave installed
+- 13 tab-related tests must pass
 
 ## Security Considerations
 
@@ -227,196 +231,172 @@ go test -v -args --debug
 - Logs written to stderr (prevents content leakage)
 - File output uses standard file permissions
 
-## Architecture and Components
+## Architecture
 
-**File Organization:**
+**File Structure:**
+
+- `main.go` - CLI (urfave/cli), flags, handlers
+- `browser.go` - Browser/tab management (rod)
+- `fetch.go` - Page fetching, CDP operations
+- `convert.go` - HTML to Markdown
+- `logger.go` - Custom logger (4 levels, stderr only)
+- `errors.go` - Sentinel errors
+- `validate.go` - Input validation
+
+**Key Tab Code Locations:**
 
 ```
-snag/
-├── main.go          # CLI entry point, urfave/cli setup, config struct
-├── browser.go       # Browser management, rod integration
-├── fetch.go         # Page fetching logic, CDP operations
-├── convert.go       # HTML to Markdown conversion
-├── logger.go        # Custom logger with color/emoji support
-├── errors.go        # Sentinel error definitions
-├── validate.go      # Input validation (URL, format)
-├── *_test.go        # Test files (integration tests)
-├── go.mod           # Go module dependencies
-├── go.sum           # Dependency checksums
-├── README.md        # User documentation
-├── AGENTS.md        # This file - agent instructions
-├── LICENSES/        # Third-party license files
-├── docs/            # Design documentation
-└── testdata/        # Test fixtures
+browser.go:404-434    # ListTabs()
+browser.go:434-463    # GetTabByIndex()
+browser.go:473-544    # GetTabByPattern() with page.Info() caching
+main.go:345-383       # handleListTabs()
+main.go:412-534       # handleTabFetch()
 ```
 
-**Key Components:**
+**Browser Modes:**
 
-- **CLI Interface** (main.go): urfave/cli framework with 16 flags
-- **Browser Manager** (browser.go): Detect, launch, and connect to Chrome via rod
-- **Page Fetcher** (fetch.go): Navigate, wait, extract HTML content
-- **Content Converter** (convert.go): HTML to Markdown using html-to-markdown/v2 with table and strikethrough plugins
-- **Logger** (logger.go): Custom colored output with 4 levels
-- **Validator** (validate.go): Input validation for URLs and configuration
+1. Connect to existing Chrome (auto-detect)
+2. Launch headless (if none found)
+3. Launch visible (`--force-visible` for auth)
+4. Open only (`--open-browser`)
 
-**Browser Operation Modes:**
+**Tab Management (Phase 2):**
 
-1. **Connect Mode**: Auto-detect existing Chrome with remote debugging enabled
-2. **Headless Mode**: Launch headless Chrome if no instance found
-3. **Visible Mode**: Launch visible Chrome for authentication (`--force-visible`)
-4. **Open Browser Mode**: Just open browser without fetching (`--open-browser`)
+Phase 2 adds efficient tab management capabilities to work with existing browser tabs:
+
+- **List Tabs** (`--list-tabs`, `-l`): Display all open tabs with index, URL, and title
+- **Select by Index** (`--tab <index>`, `-t <index>`): Fetch content from specific tab (1-based indexing)
+- **Select by Pattern** (`--tab <pattern>`, `-t <pattern>`): Match tabs by URL (exact/substring/regex)
+
+**Tab Selection Examples:**
+
+```bash
+# List all open tabs
+$ snag --list-tabs
+Available tabs in Chrome (3 tabs):
+  [1] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
+  [2] https://example.com - Example Domain
+  [3] https://go.dev/doc/ - Documentation - The Go Programming Language
+
+# Fetch from tab by index (1-based)
+snag --tab 1        # First tab
+snag -t 3           # Third tab
+
+# Fetch by exact URL (case-insensitive)
+snag -t "https://github.com/grantcarthew/snag"
+snag -t "EXAMPLE.COM"  # Case-insensitive match
+
+# Fetch by substring/contains
+snag -t "github"       # Contains "github"
+snag -t "dashboard"    # Contains "dashboard"
+
+# Fetch by regex pattern
+snag -t "https://.*\.com"              # Regex: https:// + anything + .com
+snag -t ".*/dashboard"                 # Regex: any URL ending with /dashboard
+snag -t "(github|gitlab)\.com"         # Regex: github.com or gitlab.com
+
+# With output options
+snag -t 1 --format html                # HTML format
+snag -t "docs" -o reference.md         # Save to file
+snag -t 2 --wait-for ".loaded"         # Wait for selector
+```
+
+**Pattern Matching Rules (Progressive Fallthrough):**
+
+1. **Integer** → Tab index (1-based, e.g., "1" = first tab)
+2. **Exact match** → Case-insensitive URL match (`strings.EqualFold`)
+3. **Contains match** → Case-insensitive substring (`strings.Contains`)
+4. **Regex match** → Case-insensitive regex (`(?i)` flag)
+5. **Error** → No match found (`ErrNoTabMatch`)
+
+First matching tab wins if multiple tabs match.
+
+**Key Implementation Details:**
+
+- Tab features require existing browser connection (won't auto-launch)
+- `--tab` and `<url>` argument are mutually exclusive
+- Tab indexes are 1-based for user display (converted internally to 0-based)
+- All pattern matching is case-insensitive
+- Performance optimized: Single-pass page.Info() caching (browser.go:487-507)
+- Tab listing output goes to stdout (enables piping)
+
+**Use Cases:**
+
+1. **Authenticated Sessions**: Fetch from authenticated tabs without re-authentication
+2. **Reduce Tab Clutter**: Reuse existing tabs instead of creating new ones
+3. **Quick Access**: List tabs to find content quickly
+4. **Pattern Workflows**: Match tabs by URL patterns for automation
 
 ## Dependencies
 
-**Direct Dependencies:**
-
 - `github.com/urfave/cli/v2` - CLI framework
-- `github.com/go-rod/rod` - Chrome DevTools Protocol library
-- `github.com/JohannesKaufmann/html-to-markdown/v2` - HTML to Markdown conversion
-- `golang.org/x/net` - Network utilities
-
-**Runtime Requirements:**
-
-- Chrome, Chromium, Microsoft Edge, or Brave browser
-- macOS (arm64/amd64) or Linux (amd64/arm64)
-- Remote debugging port available (default: 9222)
-
-**Configuration:**
-
-- All configuration via CLI flags only
-- No config files (`.snagrc`, etc.)
-- Power users can use shell aliases for defaults
+- `github.com/go-rod/rod` - Chrome DevTools Protocol
+- `github.com/JohannesKaufmann/html-to-markdown/v2` - Conversion
+- Chromium-based browser required at runtime
 
 ## Troubleshooting
 
-**Common Issues:**
+**Quick fixes:**
 
-1. **"No Chromium-based browser found"**
+- Browser not found: Install Chromium-based browser (Firefox NOT supported)
+- Connection refused: Try different port `--port 9223`
+- Timeout: Increase with `--timeout 60`
+- Auth required: Use `--force-visible`, authenticate manually, reconnect
+- Empty output: Try `--format html` or `--wait-for <selector>`
+- Tab errors: Run `snag --list-tabs` first to see available tabs
 
-   - Install Chrome, Chromium, Edge, or Brave
-   - rod's `launcher.LookPath()` checks standard installation paths
-   - Supported browsers: Chrome, Chromium, Edge, Brave (Chromium-based only)
-   - Firefox is NOT supported (deprecated CDP support)
-
-2. **"Connection refused on port 9222"**
-
-   - Another process may be using the debugging port
-   - Try different port: `snag --port 9223 <url>`
-   - Check if Chrome is running with `--remote-debugging-port`
-
-3. **"Page load timeout exceeded"**
-
-   - Increase timeout: `snag --timeout 60 <url>`
-   - Check network connectivity
-   - Try verbose mode: `snag --verbose <url>`
-
-4. **"Authentication required"**
-
-   - Use visible mode: `snag --force-visible <url>`
-   - Manually authenticate in the browser window
-   - Run command again - snag will connect to existing session
-
-5. **Empty or incorrect output**
-   - Try `--format html` to see raw HTML
-   - Use `--wait-for <selector>` for dynamic content
-   - Enable debug logging: `snag --debug <url>` (output to stderr)
-
-**Debug Mode:**
+**Debug logging:**
 
 ```bash
-# Enable verbose logging to stderr
-snag --verbose https://example.com
-
-# Enable debug logging with CDP messages
-snag --debug https://example.com
-
-# Quiet mode (only errors and content)
-snag --quiet https://example.com
+snag --verbose <url>   # Verbose logs to stderr
+snag --debug <url>     # CDP message logs
 ```
 
 ## Design Philosophy
 
 **Core Principles:**
 
-- **Simplicity**: Single binary, no config files, sensible defaults
-- **Smart defaults**: Auto-detect browser, default to Markdown, 30s timeout
-- **Passive observer**: Fetch content, don't automate (not Puppeteer/Playwright)
-- **Unix philosophy**: Do one thing well, pipe-friendly (stdout = content, stderr = logs)
-- **Clear errors**: Actionable error messages with suggestions
+- Single binary, no config files
+- Passive observer (fetch content, don't automate)
+- Unix philosophy: stdout = content, stderr = logs
+- Clear, actionable error messages
 
 **Non-Goals:**
 
-- Browser automation (clicking, form filling, multi-step workflows)
+- Browser automation (use Puppeteer/Playwright instead)
 - Web scraping framework
 - JavaScript execution/testing
-- Screenshot capture (post-MVP feature)
-- Performance profiling
 
-**Future Enhancements:**
+## Important Implementation Notes
 
-See docs/design-record.md for Phase 2+ features:
+**Critical Bug Fix - Remote Debugging Port:**
 
-- Tab management (`--list-tabs`, `--tab <index>`)
-- Additional formats (text, PDF)
-- Screenshot support
-- Cookie management
-- Proxy support
+- ALWAYS explicitly set `--remote-debugging-port` flag (browser.go:259-260)
+- Rod's launcher won't set it for default port 9222, causing random port selection
+- Test with both default and custom ports
+
+**Tab Indexing:**
+
+- User-facing: 1-based (tabs [1], [2], [3]...)
+- Internal: 0-based (converted in TabInfo struct and GetTabByIndex)
+
+**Performance - GetTabByPattern():**
+
+- Caches `page.Info()` results in single pass (browser.go:487-507)
+- Reduces network calls from 3N to N (3x improvement for 10 tabs)
+- Do not modify pattern matching without preserving this optimization
 
 ## Release Process
 
-**For AI Agents**: When performing a release, follow the comprehensive step-by-step guide in `docs/release-process.md`.
+Follow the comprehensive guide in `docs/release-process.md`.
 
-**Release Steps Summary**:
-
-1. Pre-release checks (tests, build verification)
-2. Determine version number (semver)
-3. Update CHANGELOG.md (create if doesn't exist)
-4. Commit and tag release
-5. Build multi-platform binaries (darwin/linux, arm64/amd64)
-6. Create GitHub release with binaries
-7. Update Homebrew tap formula
-8. Test installation
-9. Post-release tasks
-
-**Quick Release Command Reference**:
+**Quick reference**:
 
 ```bash
-# Set version
 export VERSION="0.0.4"
-
-# Tag and build
-git tag -a "v${VERSION}" -m "Release v${VERSION}"
-git push origin "v${VERSION}"
-
-# Build binaries
-mkdir -p dist
-GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-darwin-arm64"
-GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-darwin-amd64"
-GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-linux-amd64"
-GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=${VERSION}" -o "dist/snag-linux-arm64"
-cd dist && sha256sum * > SHA256SUMS && cd ..
-
-# Create GitHub release (using gh CLI)
-gh release create "v${VERSION}" --title "v${VERSION}" \
-  --notes "Release v${VERSION}" \
-  dist/snag-darwin-arm64 \
-  dist/snag-darwin-amd64 \
-  dist/snag-linux-amd64 \
-  dist/snag-linux-arm64 \
-  dist/SHA256SUMS
-
-# Update Homebrew tap (manual edit required)
-# See docs/release-process.md Step 8 for detailed instructions
+go test -v ./...                    # Run tests first
+# Then follow docs/release-process.md for full steps
 ```
-
-**Important Notes**:
-
-- Always run tests before releasing: `go test -v ./...`
-- Homebrew tap is at `./reference/homebrew-tap/`
-- Update `Formula/snag.rb` with new version and tarball SHA256
-- Test installation: `brew reinstall grantcarthew/tap/snag`
-
-**Full documentation**: `docs/release-process.md`
 
 ## License
 
