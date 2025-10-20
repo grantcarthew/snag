@@ -35,7 +35,7 @@ snag example.com
 snag docs.example.com > docs.md
 ```
 
-That's it! snag auto-detects your Chromium based browser and handles everything else.
+That's it! snag auto-detects your Chromium-based browser and handles everything else.
 
 ## Installation
 
@@ -67,7 +67,7 @@ brew install chromium
 brew install chromium
 ```
 
-**Supported browsers:** Chrome, Chromium, Microsoft Edge, Brave, other Chromium based browsers
+**Supported browsers:** Chrome, Chromium, Microsoft Edge, Brave, other Chromium-based browsers
 
 ### Install snag
 
@@ -457,9 +457,9 @@ Still having issues?
 
 ### Smart Browser Management
 
-1. **Session Detection**: Auto-detects existing Chromium based browser instance with remote debugging enabled
+1. **Session Detection**: Auto-detects existing Chromium-based browser instance with remote debugging enabled
 2. **Mode Selection**:
-   - If Chromium browser running → Connect to existing session (preserves auth/cookies)
+   - If Chromium browser is running → Connect to existing session (preserves auth/cookies)
    - If no browser found → Launch headless mode
    - If `--force-visible` → Launch visible mode for authentication
 3. **Tab Management**: Keep tabs open in visible mode, close in headless mode (or use `--close-tab`)
