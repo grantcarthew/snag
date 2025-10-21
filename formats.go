@@ -145,7 +145,7 @@ func (cc *ContentConverter) writeToFile(content string, filename string) error {
 	return nil
 }
 
-// ProcessPage processes content from a Rod page for binary formats (PDF, screenshot)
+// ProcessPage processes content from a Rod page for binary formats (PDF, PNG)
 func (cc *ContentConverter) ProcessPage(page *rod.Page, outputFile string) error {
 	var data []byte
 	var err error
@@ -160,14 +160,14 @@ func (cc *ContentConverter) ProcessPage(page *rod.Page, outputFile string) error
 		}
 		logger.Debug("Generated %d bytes of PDF", len(data))
 
-	case "png":
-		// Capture screenshot
-		logger.Verbose("Capturing screenshot...")
+	case FormatPNG:
+		// Capture PNG screenshot
+		logger.Verbose("Capturing PNG screenshot...")
 		data, err = cc.captureScreenshot(page)
 		if err != nil {
-			return fmt.Errorf("failed to capture screenshot: %w", err)
+			return fmt.Errorf("failed to capture PNG screenshot: %w", err)
 		}
-		logger.Debug("Captured %d bytes of screenshot", len(data))
+		logger.Debug("Captured %d bytes of PNG", len(data))
 
 	default:
 		return fmt.Errorf("unsupported binary format: %s", cc.format)

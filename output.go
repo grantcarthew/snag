@@ -73,7 +73,7 @@ func GenerateURLSlug(urlStr string) string {
 }
 
 // GetFileExtension returns the file extension for a given format.
-// Supported formats: markdown, html, text, pdf, png (for screenshots)
+// Supported formats: md, html, text, pdf, png
 func GetFileExtension(format string) string {
 	switch format {
 	case FormatMarkdown:
@@ -84,7 +84,7 @@ func GetFileExtension(format string) string {
 		return ".txt"
 	case FormatPDF:
 		return ".pdf"
-	case "png":
+	case FormatPNG:
 		return ".png"
 	default:
 		return ".md" // Default to markdown
