@@ -85,6 +85,11 @@ func main() {
 				Usage:   "Save output to `FILE` instead of stdout",
 			},
 			&cli.StringFlag{
+				Name:    "output-dir",
+				Aliases: []string{"d"},
+				Usage:   "Save files with auto-generated names to `DIRECTORY`",
+			},
+			&cli.StringFlag{
 				Name:    "format",
 				Aliases: []string{"f"},
 				Usage:   "Output `FORMAT`: markdown | html | text | pdf",
@@ -257,6 +262,7 @@ func run(c *cli.Context) error {
 	config := &Config{
 		URL:           validatedURL,
 		OutputFile:    c.String("output"),
+		OutputDir:     c.String("output-dir"),
 		Format:        c.String("format"),
 		Screenshot:    c.Bool("screenshot"),
 		Timeout:       c.Int("timeout"),
@@ -270,6 +276,13 @@ func run(c *cli.Context) error {
 	}
 
 	logger.Debug("Config: format=%s, timeout=%d, port=%d", config.Format, config.Timeout, config.Port)
+
+	// Validate conflicting output flags
+	if config.OutputFile != "" && config.OutputDir != "" {
+		logger.Error("Cannot use --output and --output-dir together")
+		logger.Info("Use --output for specific filename OR --output-dir for auto-generated filename")
+		return fmt.Errorf("conflicting flags: --output and --output-dir")
+	}
 
 	// Validate format
 	if err := validateFormat(config.Format); err != nil {
@@ -293,7 +306,18 @@ func run(c *cli.Context) error {
 		}
 	}
 
+	// Validate output directory if provided
+	if config.OutputDir != "" {
+		if err := validateDirectory(config.OutputDir); err != nil {
+			return err
+		}
+	}
+
 	logger.Verbose("Configuration: format=%s, timeout=%ds, port=%d", config.Format, config.Timeout, config.Port)
+
+	// Handle --output-dir: Generate filename after page is fetched
+	// Note: For single URL fetches with -d, we need to fetch first to get the title
+	// This will be handled in snag() function after page load
 
 	// Execute the snag operation
 	return snag(config)
@@ -358,6 +382,34 @@ func snag(config *Config) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	// Handle --output-dir: Generate filename from page title
+	if config.OutputDir != "" {
+		// Get page info for title
+		info, err := page.Info()
+		if err != nil {
+			return fmt.Errorf("failed to get page info: %w", err)
+		}
+
+		// Determine format for filename generation
+		filenameFormat := config.Format
+		if config.Screenshot {
+			filenameFormat = "png"
+		}
+
+		// Generate filename
+		timestamp := time.Now()
+		filename := GenerateFilename(info.Title, filenameFormat, timestamp, config.URL)
+
+		// Resolve conflicts
+		finalFilename, err := ResolveConflict(config.OutputDir, filename)
+		if err != nil {
+			return fmt.Errorf("failed to resolve filename conflict: %w", err)
+		}
+
+		// Set OutputFile to full path
+		config.OutputFile = filepath.Join(config.OutputDir, finalFilename)
 	}
 
 	// Handle screenshot capture (binary format)
@@ -427,7 +479,10 @@ func handleAllTabs(c *cli.Context) error {
 	screenshot := c.Bool("screenshot")
 	timeout := c.Int("timeout")
 	waitFor := c.String("wait-for")
-	outputDir := "." // Default to current working directory
+	outputDir := c.String("output-dir")
+	if outputDir == "" {
+		outputDir = "." // Default to current working directory
+	}
 
 	// Validate format
 	if err := validateFormat(format); err != nil {
@@ -436,6 +491,11 @@ func handleAllTabs(c *cli.Context) error {
 
 	// Validate timeout
 	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	// Validate output directory
+	if err := validateDirectory(outputDir); err != nil {
 		return err
 	}
 
