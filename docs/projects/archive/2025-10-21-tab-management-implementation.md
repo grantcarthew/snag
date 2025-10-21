@@ -2,7 +2,7 @@
 
 > **Project**: snag - Phase 2 Enhancement
 > **Feature**: Tab Management
-> **Status**: Phase 2.4 Nearly Complete (Documentation phase)
+> **Status**: ✅ Phase 2 COMPLETE
 > **Created**: 2025-10-20
 > **Last Updated**: 2025-10-21
 > **Target Version**: v0.1.0 (Phase 2)
@@ -66,6 +66,42 @@
 **Remaining Work for Phase 2**:
 - Review --help output for --tab flag clarity
 - Final manual testing session
+
+---
+
+## Session Summary (2025-10-21 Part 3)
+
+### Completed: Phase 2.4 Final Polish & Testing
+
+**What was accomplished**:
+- Reviewed and updated `--help` output for clarity
+  - Changed `--tab INDEX` → `--tab PATTERN` (more accurate placeholder)
+  - Updated description to "Fetch from existing tab by PATTERN (tab number or string)"
+  - Changed `--format value` → `--format FORMAT` (consistent uppercase placeholders)
+- Updated CLI reference documentation in README.md and docs/design-record.md to match
+- Implemented auto-list tabs on errors feature
+  - Created `displayTabList()` helper function for reusable tab formatting
+  - Tab index out of range errors now auto-display available tabs
+  - Pattern match failures now auto-display available tabs
+  - Added extra newline spacing for better readability
+  - Keeps suggestion text: "Run 'snag --list-tabs' to see available tabs"
+- Completed comprehensive manual testing session
+  - Help output verified
+  - Tab listing tested
+  - Tab selection by index tested
+  - Tab selection by pattern tested
+  - Error cases tested (out of range, no match)
+  - Format flag compatibility tested
+
+**Key Achievement**: Phase 2 is production-ready with excellent UX polish.
+
+**User Experience Improvements**:
+- Consistent help text with uppercase placeholders (PATTERN, FORMAT, FILE, etc.)
+- Immediate, actionable feedback on tab errors - users see what's available without running another command
+- Clean, well-spaced error output
+- Maintains Unix philosophy (errors/tab list to stderr, content to stdout)
+
+**Final Status**: ✅ Phase 2 COMPLETE - All objectives met, all tests passing, documentation complete
 
 ---
 
@@ -226,19 +262,25 @@ snag --tab "(github|gitlab)\.com"
 
 ### Next Steps
 
-**Phase 2.4** (Nearly complete):
-- ✅ Update AGENTS.md with Phase 2 examples - COMPLETED (2025-10-21)
-- ✅ Update README.md with tab management documentation - COMPLETED (2025-10-21)
-- ⏳ Update docs/design-record.md with Phase 2 details
-- ⏳ Review --help output for --tab flag description clarity
-- ⏳ Final manual testing session
+**Phase 2 COMPLETE** ✅
+
+All Phase 2.4 tasks completed (2025-10-21):
+- ✅ Update AGENTS.md with Phase 2 examples - COMPLETED
+- ✅ Update README.md with tab management documentation - COMPLETED
+- ✅ Update docs/design-record.md with Phase 2 details - COMPLETED
+- ✅ Review --help output for --tab flag description clarity - COMPLETED
+- ✅ Final manual testing session - COMPLETED
+- ✅ Added auto-list tabs on error feature - BONUS FEATURE
+
+**Future Considerations** (Post-Phase 2):
 - Optional: Consider minor test cleanup (browser cleanup between tests)
+- See "Future Enhancements (Post Phase 2)" section for Phase 2.5+ ideas
 
 ## Overview
 
 Phase 2 of snag adds **Tab Management** capabilities: list, select, and fetch content from existing browser tabs without creating new ones. This enables efficient content retrieval from authenticated sessions and reduces tab clutter.
 
-**Status**: ✅ Phase 2.1, 2.2, 2.3 Complete | ⏳ Phase 2.4 Nearly Complete (docs/design-record.md + final testing)
+**Status**: ✅ Phase 2 COMPLETE - All phases (2.1, 2.2, 2.3, 2.4) successfully implemented and tested
 
 ## Objectives (All Complete ✅)
 
@@ -1047,11 +1089,11 @@ func TestTabFlagValidation(t *testing.T)
 ### Documentation ✅ COMPLETE
 
 - ✅ AGENTS.md updated with comprehensive Phase 2 examples (2025-10-21)
-- ✅ PROJECT.md fully updated with all phases
+- ✅ PROJECT.md fully updated with all phases (2025-10-21)
 - ✅ README.md updated with comprehensive tab management documentation (2025-10-21)
 - ✅ docs/design-record.md updated with Phase 2 implementation details (2025-10-21)
-- ⏳ --help output includes new flags (needs clarity review for --tab)
-- ✅ Error messages are clear and actionable
+- ✅ --help output updated with clear, consistent placeholders (PATTERN, FORMAT) (2025-10-21)
+- ✅ Error messages are clear and actionable with auto-display of available tabs (2025-10-21)
 
 ### Performance ✅ VALIDATED
 
@@ -1288,7 +1330,7 @@ func TestTabFlagValidation(t *testing.T)
 2. Single-pass page.Info() caching for performance
 3. Validation at CLI layer only (removed redundant function-level check)
 
-### Phase 2.4: Integration & Documentation ⏳ IN PROGRESS
+### Phase 2.4: Integration & Documentation ✅ COMPLETE
 
 - [x] Run full test suite - PASSED (all tests passing)
 - [x] Test all flag combinations - PASSED
@@ -1300,8 +1342,9 @@ func TestTabFlagValidation(t *testing.T)
 - [x] Update AGENTS.md (comprehensive Phase 2 examples) - COMPLETED (2025-10-21)
 - [x] Update README.md with tab management documentation - COMPLETED (2025-10-21)
 - [x] Update docs/design-record.md with Phase 2 implementation details - COMPLETED (2025-10-21)
-- [ ] Review --help output for --tab flag clarity
-- [ ] Final manual testing session
+- [x] Review --help output for --tab flag clarity - COMPLETED (2025-10-21)
+- [x] Final manual testing session - COMPLETED (2025-10-21)
+- [x] BONUS: Implemented auto-list tabs on error feature - COMPLETED (2025-10-21)
 
 ## Notes
 
