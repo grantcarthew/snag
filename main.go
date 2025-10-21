@@ -20,10 +20,11 @@ var version = "dev"
 
 const (
 	// Output format constants for --format flag
-	FormatMarkdown = "markdown"
+	FormatMarkdown = "md"
 	FormatHTML     = "html"
 	FormatText     = "text"
 	FormatPDF      = "pdf"
+	FormatPNG      = "png"
 )
 
 var (
@@ -67,7 +68,7 @@ func main() {
 		},
 		Description: `snag fetches web page content using Chrome/Chromium via the Chrome DevTools Protocol.
    It can connect to existing browser sessions, launch headless browsers, or open
-   visible browsers for authenticated sessions. Output can be Markdown or HTML.
+   visible browsers for authenticated sessions. Output formats: Markdown, HTML, text, PDF, or PNG.
 
    The perfect companion for AI agents to gain context from web pages.`,
 		ArgsUsage: "<url>",
@@ -86,13 +87,8 @@ func main() {
 			&cli.StringFlag{
 				Name:    "format",
 				Aliases: []string{"f"},
-				Usage:   "Output `FORMAT`: markdown | html | text | pdf",
+				Usage:   "Output `FORMAT`: md | html | text | pdf | png",
 				Value:   FormatMarkdown,
-			},
-			&cli.BoolFlag{
-				Name:    "screenshot",
-				Aliases: []string{"s"},
-				Usage:   "Capture full-page screenshot (PNG format)",
 			},
 
 			// Page Loading
@@ -252,13 +248,15 @@ func run(c *cli.Context) error {
 		return fmt.Errorf("conflicting flags: --force-headless and --force-visible")
 	}
 
+	// Normalize format (handles case-insensitive input and aliases)
+	format := normalizeFormat(c.String("format"))
+
 	// Extract configuration from flags
 	config := &Config{
 		URL:           validatedURL,
 		OutputFile:    c.String("output"),
 		OutputDir:     c.String("output-dir"),
-		Format:        c.String("format"),
-		Screenshot:    c.Bool("screenshot"),
+		Format:        format,
 		Timeout:       c.Int("timeout"),
 		WaitFor:       c.String("wait-for"),
 		Port:          c.Int("port"),

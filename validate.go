@@ -121,7 +121,26 @@ func validateOutputPath(path string) error {
 	return nil
 }
 
-// validateFormat checks if format is valid (markdown, html, text, or pdf)
+// normalizeFormat converts format to lowercase and handles aliases
+// Aliases: "markdown" → "md", "txt" → "text"
+func normalizeFormat(format string) string {
+	// Convert to lowercase for case-insensitive matching
+	format = strings.ToLower(format)
+
+	// Handle aliases
+	aliases := map[string]string{
+		"markdown": FormatMarkdown, // "markdown" → "md"
+		"txt":      FormatText,     // "txt" → "text"
+	}
+
+	if normalized, ok := aliases[format]; ok {
+		return normalized
+	}
+
+	return format
+}
+
+// validateFormat checks if format is valid (md, html, text, pdf, or png)
 func validateFormat(format string) error {
 	// Define valid formats locally for better testability and self-containment
 	validFormats := map[string]bool{
@@ -129,12 +148,13 @@ func validateFormat(format string) error {
 		FormatHTML:     true,
 		FormatText:     true,
 		FormatPDF:      true,
+		FormatPNG:      true,
 	}
 
 	if !validFormats[format] {
 		logger.Error("Invalid format: %s", format)
 		logger.ErrorWithSuggestion(
-			fmt.Sprintf("Format must be '%s', '%s', '%s', or '%s'", FormatMarkdown, FormatHTML, FormatText, FormatPDF),
+			fmt.Sprintf("Format must be '%s', '%s', '%s', '%s', or '%s'", FormatMarkdown, FormatHTML, FormatText, FormatPDF, FormatPNG),
 			fmt.Sprintf("snag <url> --format %s", FormatMarkdown),
 		)
 		return fmt.Errorf("invalid format: %s", format)
