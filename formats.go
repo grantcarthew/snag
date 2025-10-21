@@ -145,7 +145,7 @@ func (cc *ContentConverter) writeToFile(content string, filename string) error {
 	return nil
 }
 
-// ProcessPage processes content from a Rod page for binary formats (PDF)
+// ProcessPage processes content from a Rod page for binary formats (PDF, screenshot)
 func (cc *ContentConverter) ProcessPage(page *rod.Page, outputFile string) error {
 	var data []byte
 	var err error
@@ -159,6 +159,15 @@ func (cc *ContentConverter) ProcessPage(page *rod.Page, outputFile string) error
 			return fmt.Errorf("failed to generate PDF: %w", err)
 		}
 		logger.Debug("Generated %d bytes of PDF", len(data))
+
+	case "png":
+		// Capture screenshot
+		logger.Verbose("Capturing screenshot...")
+		data, err = cc.captureScreenshot(page)
+		if err != nil {
+			return fmt.Errorf("failed to capture screenshot: %w", err)
+		}
+		logger.Debug("Captured %d bytes of screenshot", len(data))
 
 	default:
 		return fmt.Errorf("unsupported binary format: %s", cc.format)
@@ -189,6 +198,19 @@ func (cc *ContentConverter) generatePDF(page *rod.Page) ([]byte, error) {
 	}
 
 	return pdfData, nil
+}
+
+// captureScreenshot captures a full-page PNG screenshot of the current page
+func (cc *ContentConverter) captureScreenshot(page *rod.Page) ([]byte, error) {
+	// Capture full-page screenshot as PNG
+	screenshotData, err := page.Screenshot(true, &proto.PageCaptureScreenshot{
+		Format: proto.PageCaptureScreenshotFormatPng,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("screenshot capture failed: %w", err)
+	}
+
+	return screenshotData, nil
 }
 
 // writeBinaryToStdout writes binary data to stdout
