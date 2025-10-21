@@ -89,7 +89,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    "format",
 				Aliases: []string{"f"},
-				Usage:   "Output format: markdown | html",
+				Usage:   "Output `FORMAT`: markdown | html",
 				Value:   FormatMarkdown,
 			},
 
@@ -138,7 +138,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    "tab",
 				Aliases: []string{"t"},
-				Usage:   "Fetch from existing tab by `INDEX` or URL pattern",
+				Usage:   "Fetch from existing tab by `PATTERN` (tab number or string)",
 			},
 
 			// Logging/Debugging
