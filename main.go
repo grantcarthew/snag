@@ -412,6 +412,35 @@ func snag(config *Config) error {
 		config.OutputFile = filepath.Join(config.OutputDir, finalFilename)
 	}
 
+	// For binary formats without -o or -d: auto-generate filename in current directory
+	// Binary formats (PDF, screenshot) should NEVER output to stdout (corrupts terminal)
+	if config.OutputFile == "" && (config.Format == FormatPDF || config.Screenshot) {
+		// Get page info for title
+		info, err := page.Info()
+		if err != nil {
+			return fmt.Errorf("failed to get page info: %w", err)
+		}
+
+		// Determine format for filename generation
+		filenameFormat := config.Format
+		if config.Screenshot {
+			filenameFormat = "png"
+		}
+
+		// Generate filename
+		timestamp := time.Now()
+		filename := GenerateFilename(info.Title, filenameFormat, timestamp, config.URL)
+
+		// Resolve conflicts in current directory
+		finalFilename, err := ResolveConflict(".", filename)
+		if err != nil {
+			return fmt.Errorf("failed to resolve filename conflict: %w", err)
+		}
+
+		config.OutputFile = finalFilename
+		logger.Info("Auto-generated filename: %s", finalFilename)
+	}
+
 	// Handle screenshot capture (binary format)
 	if config.Screenshot {
 		converter := NewContentConverter("png")
@@ -777,6 +806,29 @@ func handleTabFetch(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	// For binary formats without -o or -d: auto-generate filename in current directory
+	// Binary formats (PDF, screenshot) should NEVER output to stdout (corrupts terminal)
+	if outputFile == "" && (format == FormatPDF || screenshot) {
+		// Determine format for filename generation
+		filenameFormat := format
+		if screenshot {
+			filenameFormat = "png"
+		}
+
+		// Generate filename
+		timestamp := time.Now()
+		filename := GenerateFilename(info.Title, filenameFormat, timestamp, info.URL)
+
+		// Resolve conflicts in current directory
+		finalFilename, err := ResolveConflict(".", filename)
+		if err != nil {
+			return fmt.Errorf("failed to resolve filename conflict: %w", err)
+		}
+
+		outputFile = finalFilename
+		logger.Info("Auto-generated filename: %s", finalFilename)
 	}
 
 	// Handle screenshot capture (binary format)
