@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
@@ -86,8 +87,13 @@ func main() {
 			&cli.StringFlag{
 				Name:    "format",
 				Aliases: []string{"f"},
-				Usage:   "Output `FORMAT`: markdown | html",
+				Usage:   "Output `FORMAT`: markdown | html | text | pdf",
 				Value:   FormatMarkdown,
+			},
+			&cli.BoolFlag{
+				Name:    "screenshot",
+				Aliases: []string{"s"},
+				Usage:   "Capture full-page screenshot (PNG format)",
 			},
 
 			// Page Loading
@@ -136,6 +142,11 @@ func main() {
 				Name:    "tab",
 				Aliases: []string{"t"},
 				Usage:   "Fetch from existing tab by `PATTERN` (tab number or string)",
+			},
+			&cli.BoolFlag{
+				Name:    "all-tabs",
+				Aliases: []string{"a"},
+				Usage:   "Process all open browser tabs (saves with auto-generated filenames)",
 			},
 
 			// Logging/Debugging
@@ -197,6 +208,17 @@ func run(c *cli.Context) error {
 		return handleListTabs(c)
 	}
 
+	// Handle --all-tabs flag (process all tabs)
+	if c.Bool("all-tabs") {
+		// Check for conflicting URL argument
+		if c.NArg() > 0 {
+			logger.Error("Cannot use --all-tabs with URL argument")
+			logger.Info("Use --all-tabs alone to process all existing tabs")
+			return fmt.Errorf("conflicting flags: --all-tabs and URL argument")
+		}
+		return handleAllTabs(c)
+	}
+
 	// Handle --tab flag (fetch from existing tab)
 	if c.IsSet("tab") {
 		// Check for conflicting URL argument
@@ -236,6 +258,7 @@ func run(c *cli.Context) error {
 		URL:           validatedURL,
 		OutputFile:    c.String("output"),
 		Format:        c.String("format"),
+		Screenshot:    c.Bool("screenshot"),
 		Timeout:       c.Int("timeout"),
 		WaitFor:       c.String("wait-for"),
 		Port:          c.Int("port"),
@@ -337,6 +360,15 @@ func snag(config *Config) error {
 		return err
 	}
 
+	// Handle screenshot capture (binary format)
+	if config.Screenshot {
+		converter := NewContentConverter("png")
+		if err := converter.ProcessPage(page, config.OutputFile); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	// Create content converter
 	converter := NewContentConverter(config.Format)
 
@@ -361,7 +393,10 @@ func snag(config *Config) error {
 type Config struct {
 	URL           string
 	OutputFile    string
+	OutputDir     string
 	Format        string
+	Screenshot    bool
+	AllTabs       bool
 	Timeout       int
 	WaitFor       string
 	Port          int
@@ -383,6 +418,156 @@ func displayTabList(tabs []TabInfo, w io.Writer) {
 	for _, tab := range tabs {
 		fmt.Fprintf(w, "  [%d] %s - %s\n", tab.Index, tab.URL, tab.Title)
 	}
+}
+
+// handleAllTabs processes all open browser tabs with auto-generated filenames
+func handleAllTabs(c *cli.Context) error {
+	// Extract configuration from flags
+	format := c.String("format")
+	screenshot := c.Bool("screenshot")
+	timeout := c.Int("timeout")
+	waitFor := c.String("wait-for")
+	outputDir := "." // Default to current working directory
+
+	// Validate format
+	if err := validateFormat(format); err != nil {
+		return err
+	}
+
+	// Validate timeout
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	// Create browser manager in connect-only mode
+	bm := NewBrowserManager(BrowserOptions{
+		Port: c.Int("port"),
+	})
+
+	// Assign to global for signal handler access
+	browserManager = bm
+	defer func() { browserManager = nil }()
+
+	// Connect to existing browser
+	browser, err := bm.connectToExisting()
+	if err != nil {
+		logger.Error("No browser instance running with remote debugging")
+		logger.ErrorWithSuggestion(
+			"Start Chrome with remote debugging enabled",
+			fmt.Sprintf("chrome --remote-debugging-port=%d", c.Int("port")),
+		)
+		logger.Info("Or run: snag --open-browser")
+		return ErrNoBrowserRunning
+	}
+
+	// Assign browser to manager
+	bm.browser = browser
+
+	// Get list of all tabs
+	tabs, err := bm.ListTabs()
+	if err != nil {
+		return err
+	}
+
+	if len(tabs) == 0 {
+		logger.Info("No tabs open in browser")
+		return nil
+	}
+
+	// Create single timestamp for entire batch
+	timestamp := time.Now()
+
+	logger.Info("Processing %d tabs...", len(tabs))
+
+	// Track success/failure counts
+	successCount := 0
+	failureCount := 0
+
+	// Process each tab
+	for i, tab := range tabs {
+		tabNum := i + 1
+		logger.Info("[%d/%d] Processing: %s", tabNum, len(tabs), tab.URL)
+
+		// Get page object for this tab
+		page, err := bm.GetTabByIndex(tabNum)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to get tab: %v", tabNum, len(tabs), err)
+			failureCount++
+			continue
+		}
+
+		// Wait for selector if specified
+		if waitFor != "" {
+			err := waitForSelector(page, waitFor, time.Duration(timeout)*time.Second)
+			if err != nil {
+				logger.Error("[%d/%d] Wait failed: %v", tabNum, len(tabs), err)
+				failureCount++
+				continue
+			}
+		}
+
+		// Determine format for filename generation
+		filenameFormat := format
+		if screenshot {
+			filenameFormat = "png"
+		}
+
+		// Generate filename from page title and URL
+		filename := GenerateFilename(tab.Title, filenameFormat, timestamp, tab.URL)
+
+		// Resolve filename conflicts
+		finalFilename, err := ResolveConflict(outputDir, filename)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to resolve filename conflict: %v", tabNum, len(tabs), err)
+			failureCount++
+			continue
+		}
+
+		outputPath := filepath.Join(outputDir, finalFilename)
+
+		// Process content (screenshot or format)
+		if screenshot {
+			converter := NewContentConverter("png")
+			if err := converter.ProcessPage(page, outputPath); err != nil {
+				logger.Error("[%d/%d] Failed to capture screenshot: %v", tabNum, len(tabs), err)
+				failureCount++
+				continue
+			}
+		} else if format == FormatPDF {
+			converter := NewContentConverter(format)
+			if err := converter.ProcessPage(page, outputPath); err != nil {
+				logger.Error("[%d/%d] Failed to generate PDF: %v", tabNum, len(tabs), err)
+				failureCount++
+				continue
+			}
+		} else {
+			// Text formats (markdown, html, text)
+			html, err := page.HTML()
+			if err != nil {
+				logger.Error("[%d/%d] Failed to extract HTML: %v", tabNum, len(tabs), err)
+				failureCount++
+				continue
+			}
+
+			converter := NewContentConverter(format)
+			if err := converter.Process(html, outputPath); err != nil {
+				logger.Error("[%d/%d] Failed to process content: %v", tabNum, len(tabs), err)
+				failureCount++
+				continue
+			}
+		}
+
+		successCount++
+	}
+
+	// Summary
+	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
+
+	if failureCount > 0 {
+		return fmt.Errorf("batch processing completed with %d failures", failureCount)
+	}
+
+	return nil
 }
 
 // handleListTabs lists all open tabs in the browser
@@ -496,6 +681,7 @@ func handleTabFetch(c *cli.Context) error {
 
 	// Extract configuration from flags
 	format := c.String("format")
+	screenshot := c.Bool("screenshot")
 	timeout := c.Int("timeout")
 	waitFor := c.String("wait-for")
 	outputFile := c.String("output")
@@ -531,6 +717,15 @@ func handleTabFetch(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	// Handle screenshot capture (binary format)
+	if screenshot {
+		converter := NewContentConverter("png")
+		if err := converter.ProcessPage(page, outputFile); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	// Create content converter
