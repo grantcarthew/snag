@@ -158,7 +158,7 @@ snag [options] <url>
 
 ```
   -o, --output <file>        Save output to file instead of stdout
-  --format <type>            Output format: markdown (default) | html
+  --format <FORMAT>          Output format: markdown (default) | html
 ```
 
 **Page Loading:**
