@@ -9,6 +9,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strconv"
@@ -366,6 +367,19 @@ type Config struct {
 	UserAgent     string
 }
 
+// displayTabList formats and displays a list of tabs to the specified writer
+func displayTabList(tabs []TabInfo, w io.Writer) {
+	if len(tabs) == 0 {
+		fmt.Fprintf(w, "No tabs open in browser\n")
+		return
+	}
+
+	fmt.Fprintf(w, "Available tabs in browser (%d tabs):\n", len(tabs))
+	for _, tab := range tabs {
+		fmt.Fprintf(w, "  [%d] %s - %s\n", tab.Index, tab.URL, tab.Title)
+	}
+}
+
 // handleListTabs lists all open tabs in the browser
 func handleListTabs(c *cli.Context) error {
 	// Create browser manager in connect-only mode
@@ -394,17 +408,8 @@ func handleListTabs(c *cli.Context) error {
 		return err
 	}
 
-	// Handle case of no tabs
-	if len(tabs) == 0 {
-		fmt.Fprintf(os.Stdout, "No tabs open in browser\n")
-		return nil
-	}
-
-	// Format and print tabs to stdout
-	fmt.Fprintf(os.Stdout, "Available tabs in browser (%d tabs):\n", len(tabs))
-	for _, tab := range tabs {
-		fmt.Fprintf(os.Stdout, "  [%d] %s - %s\n", tab.Index, tab.URL, tab.Title)
-	}
+	// Display tabs to stdout
+	displayTabList(tabs, os.Stdout)
 
 	return nil
 }
@@ -452,6 +457,13 @@ func handleTabFetch(c *cli.Context) error {
 			if errors.Is(err, ErrTabIndexInvalid) {
 				logger.Error("Tab index out of range")
 				logger.Info("Run 'snag --list-tabs' to see available tabs")
+
+				// Display available tabs to help the user
+				if tabs, listErr := bm.ListTabs(); listErr == nil {
+					fmt.Fprintln(os.Stderr, "")
+					displayTabList(tabs, os.Stderr)
+					fmt.Fprintln(os.Stderr, "")
+				}
 			}
 			return err
 		}
@@ -464,6 +476,13 @@ func handleTabFetch(c *cli.Context) error {
 			if errors.Is(err, ErrNoTabMatch) {
 				logger.Error("No tab matches pattern '%s'", tabValue)
 				logger.Info("Run 'snag --list-tabs' to see available tabs")
+
+				// Display available tabs to help the user
+				if tabs, listErr := bm.ListTabs(); listErr == nil {
+					fmt.Fprintln(os.Stderr, "")
+					displayTabList(tabs, os.Stderr)
+					fmt.Fprintln(os.Stderr, "")
+				}
 			}
 			return err
 		}
