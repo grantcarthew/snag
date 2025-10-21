@@ -11,6 +11,7 @@ Modern AI agents need web content in clean, token-efficient formats. snag solves
 - **Markdown output** - AI models work better with markdown than HTML (70% fewer tokens)
 - **Real browser rendering** - Handles JavaScript, dynamic content, lazy loading automatically
 - **Authentication support** - Access private/authenticated pages through persistent browser sessions
+- **Tab management** - List, select, and reuse existing browser tabs without creating new ones
 - **Content archival** - Build reference libraries of web content for future AI agent use
 - **Simple CLI interface** - One command, clean output, no complex automation scripts
 
@@ -155,6 +156,50 @@ snag --wait-for "#main-content" https://single-page-app.com
 snag --timeout 90 --wait-for ".loaded" https://heavy-site.com
 ```
 
+### Working with Authenticated Tabs
+
+```bash
+# Step 1: Open browser and log in to your sites
+snag --open-browser
+
+# (Manually log in to your private sites in the browser window)
+
+# Step 2: List tabs to see what's available
+snag --list-tabs
+
+# Example output:
+#   Available tabs in Chrome (4 tabs):
+#     [1] about:blank - New Tab
+#     [2] https://github.com/myorg/private-repo - My Private Repo
+#     [3] https://app.example.com/dashboard - Dashboard
+#     [4] https://internal.company.com/docs - Internal Documentation
+
+# Step 3: Fetch from authenticated tabs without re-logging in
+snag -t 2 -o private-repo.md
+snag -t "dashboard" -o dashboard.md
+snag -t "internal" -o internal-docs.md
+
+# All fetches reuse the existing authenticated session!
+```
+
+### Working with Multiple Open Tabs
+
+```bash
+# Collect documentation from tabs you already have open
+snag -t "python" > python-docs.md
+snag -t "golang" > golang-docs.md
+snag -t "rust" > rust-docs.md
+
+# Use patterns to match specific tabs
+snag -t "github.com/.*" > github-content.md
+snag -t ".*/dashboard" > dashboard.md
+
+# Fetch by index if you know the tab position
+for i in 1 2 3 4; do
+  snag -t $i -o "tab-$i.md"
+done
+```
+
 ### Batch Processing URLs
 
 ```bash
@@ -267,7 +312,64 @@ snag --debug https://problematic-site.com 2> debug.log
 snag --force-visible https://problematic-site.com
 ```
 
-### Tab Management
+### Working with Browser Tabs
+
+snag can list and fetch content from existing browser tabs, making it easy to reuse authenticated sessions and reduce tab clutter.
+
+**List all open tabs:**
+
+```bash
+# See what tabs are currently open
+snag --list-tabs
+snag -l
+
+# Example output:
+#   Available tabs in Chrome (3 tabs):
+#     [1] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
+#     [2] https://docs.python.org/3/ - 3.13.1 Documentation
+#     [3] https://app.example.com/dashboard - Dashboard (authenticated)
+```
+
+**Fetch from specific tab by index:**
+
+```bash
+# Fetch from first tab
+snag --tab 1
+snag -t 1
+
+# Fetch from third tab and save to file
+snag -t 3 -o docs.md
+
+# Get HTML instead of markdown
+snag -t 2 --format html
+```
+
+**Fetch from tab by URL pattern:**
+
+```bash
+# Exact URL match (case-insensitive)
+snag -t "https://docs.python.org/3/"
+snag -t "GITHUB.COM/grantcarthew/snag"
+
+# Contains/substring match
+snag -t "dashboard"
+snag -t "python"
+
+# Regex pattern match
+snag -t "https://.*\.com"
+snag -t ".*/dashboard"
+snag -t "(github|gitlab)\.com"
+```
+
+Pattern matching tries in order: exact URL match → contains match → regex match. First matching tab wins.
+
+**Why use tabs?**
+
+- Reuse authenticated sessions without re-logging in
+- Fetch from multiple pages without creating new tabs
+- Quick access to content you already have open
+
+**Tab closing behavior:**
 
 ```bash
 # Close tab after fetching (default in headless mode)
@@ -293,9 +395,21 @@ snag --port 9223 https://example.com
 ### Core Arguments
 
 ```
-<url>                      URL to fetch (required, unless --open-browser)
+<url>                      URL to fetch (required, unless using --list-tabs or --tab)
 --version                  Display version information
 -h, --help                 Show help message and exit
+```
+
+### Tab Operations
+
+```
+-l, --list-tabs            List all open tabs in the browser
+-t, --tab <pattern>        Fetch from existing tab by index (1, 2, 3...) or URL pattern
+                           Patterns can be:
+                             - Index number: 1, 2, 3 (tab position)
+                             - Exact URL: https://example.com (case-insensitive)
+                             - Substring: dashboard, github, docs (contains match)
+                             - Regex: https://.*\.com, .*/dashboard, (github|gitlab)\.com
 ```
 
 ### Output Control
@@ -308,7 +422,7 @@ snag --port 9223 https://example.com
 ### Page Loading
 
 ```
--t, --timeout <seconds>    Page load timeout in seconds (default: 30)
+--timeout <seconds>        Page load timeout in seconds (default: 30)
 -w, --wait-for <selector>  Wait for CSS selector before extracting content
 ```
 
@@ -319,7 +433,7 @@ snag --port 9223 https://example.com
 -c, --close-tab            Close the browser tab after fetching content
 --force-headless           Force headless mode even if Chromium is running
 --force-visible            Force visible mode for authentication
---open-browser             Open Chromium browser in visible state (no URL required)
+-b, --open-browser         Open Chromium browser in visible state (no URL required)
 ```
 
 ### Logging/Debugging
@@ -370,7 +484,42 @@ Solutions:
 
 - Use `--force-visible` to manually log in: `snag --force-visible https://example.com`
 - Open browser with `snag --open-browser`, log in, then run snag again
+- Use `--list-tabs` to find authenticated tabs, then `--tab` to fetch from them
 - Browser session persists authentication across snag calls
+
+### Tab Issues
+
+**"No Chrome instance running" when using --list-tabs or --tab**
+
+Tab features require an existing browser with remote debugging enabled.
+
+Solutions:
+
+- Open browser first: `snag --open-browser`
+- Or manually start Chrome/Chromium: `chromium --remote-debugging-port=9222`
+- Then run `snag --list-tabs` to verify connection
+
+**"Tab index out of range" or "No tab matches pattern"**
+
+Cannot find the specified tab.
+
+Solutions:
+
+- Run `snag --list-tabs` to see available tabs and their indexes
+- Tab indexes are 1-based (first tab is 1, not 0)
+- For patterns, try simpler matches: `snag -t "example"` instead of complex regex
+- Remember: pattern matching is case-insensitive
+
+**Pattern not matching expected tab**
+
+Your pattern matches a different tab than expected.
+
+Solutions:
+
+- Use `--list-tabs` to see exact URLs of open tabs
+- Be more specific with your pattern: use full URL instead of substring
+- Remember: first matching tab wins if multiple tabs match
+- Use index if you know the exact tab position: `snag -t 3`
 
 ### Timeout Issues
 
@@ -462,7 +611,11 @@ Still having issues?
    - If Chromium browser is running → Connect to existing session (preserves auth/cookies)
    - If no browser found → Launch headless mode
    - If `--force-visible` → Launch visible mode for authentication
-3. **Tab Management**: Keep tabs open in visible mode, close in headless mode (or use `--close-tab`)
+3. **Tab Management**:
+   - List tabs with `--list-tabs` to see what's currently open
+   - Fetch from specific tabs using `--tab` (by index or URL pattern)
+   - Tabs stay open in visible mode, close in headless mode (or use `--close-tab`)
+   - Reuse authenticated sessions without creating new tabs
 
 ### Output Routing
 
