@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
@@ -15,6 +16,8 @@ import (
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/strikethrough"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/table"
+	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/proto"
 	"github.com/k3a/html2text"
 )
 
@@ -23,7 +26,7 @@ const (
 	BytesPerKB      = 1024.0 // Bytes in a kilobyte
 )
 
-// ContentConverter handles HTML to Markdown conversion and output
+// ContentConverter handles content format conversion and output
 type ContentConverter struct {
 	format string
 }
@@ -137,6 +140,90 @@ func (cc *ContentConverter) writeToFile(content string, filename string) error {
 
 	// Calculate size in KB
 	sizeKB := float64(len(content)) / BytesPerKB
+	logger.Success("Saved to %s (%.1f KB)", filename, sizeKB)
+
+	return nil
+}
+
+// ProcessPage processes content from a Rod page for binary formats (PDF)
+func (cc *ContentConverter) ProcessPage(page *rod.Page, outputFile string) error {
+	var data []byte
+	var err error
+
+	switch cc.format {
+	case FormatPDF:
+		// Generate PDF from page
+		logger.Verbose("Generating PDF...")
+		data, err = cc.generatePDF(page)
+		if err != nil {
+			return fmt.Errorf("failed to generate PDF: %w", err)
+		}
+		logger.Debug("Generated %d bytes of PDF", len(data))
+
+	default:
+		return fmt.Errorf("unsupported binary format: %s", cc.format)
+	}
+
+	// Output binary data
+	if outputFile != "" {
+		return cc.writeBinaryToFile(data, outputFile)
+	}
+
+	return cc.writeBinaryToStdout(data)
+}
+
+// generatePDF generates a PDF from the current page using Chrome's print-to-PDF
+func (cc *ContentConverter) generatePDF(page *rod.Page) ([]byte, error) {
+	// Use Chrome's print-to-PDF with default settings (locale-aware paper size)
+	stream, err := page.PDF(&proto.PagePrintToPDF{
+		PrintBackground: true, // Include background graphics
+	})
+	if err != nil {
+		return nil, fmt.Errorf("PDF generation failed: %w", err)
+	}
+
+	// Read the PDF data from the stream
+	pdfData, err := io.ReadAll(stream)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read PDF data: %w", err)
+	}
+
+	return pdfData, nil
+}
+
+// writeBinaryToStdout writes binary data to stdout
+func (cc *ContentConverter) writeBinaryToStdout(data []byte) error {
+	logger.Verbose("Writing binary data to stdout...")
+
+	// Write to stdout
+	_, err := os.Stdout.Write(data)
+	if err != nil {
+		return fmt.Errorf("failed to write to stdout: %w", err)
+	}
+
+	// Log success to stderr (so it doesn't mix with content)
+	logger.Debug("Wrote %d bytes to stdout", len(data))
+
+	return nil
+}
+
+// writeBinaryToFile writes binary data to a file
+func (cc *ContentConverter) writeBinaryToFile(data []byte, filename string) error {
+	logger.Verbose("Writing binary data to file: %s", filename)
+
+	// Check if file exists and warn in verbose mode
+	if _, err := os.Stat(filename); err == nil {
+		logger.Verbose("Overwriting existing file: %s", filename)
+	}
+
+	// Write to file
+	err := os.WriteFile(filename, data, DefaultFileMode)
+	if err != nil {
+		return fmt.Errorf("failed to write to file %s: %w", filename, err)
+	}
+
+	// Calculate size in KB
+	sizeKB := float64(len(data)) / BytesPerKB
 	logger.Success("Saved to %s (%.1f KB)", filename, sizeKB)
 
 	return nil
