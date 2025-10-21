@@ -327,7 +327,7 @@ func snag(config *Config) error {
 	// Create page fetcher
 	fetcher := NewPageFetcher(page, config.Timeout)
 
-	// Fetch the page
+	// Fetch the page (navigates and loads content)
 	html, err := fetcher.Fetch(FetchOptions{
 		URL:     config.URL,
 		Timeout: config.Timeout,
@@ -340,7 +340,16 @@ func snag(config *Config) error {
 	// Create content converter
 	converter := NewContentConverter(config.Format)
 
-	// Process and output content
+	// Handle binary formats (PDF) that need the page object
+	if config.Format == FormatPDF {
+		// Generate PDF from the already-loaded page
+		if err := converter.ProcessPage(page, config.OutputFile); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// For text formats, process the HTML
 	if err := converter.Process(html, config.OutputFile); err != nil {
 		return err
 	}
@@ -524,14 +533,23 @@ func handleTabFetch(c *cli.Context) error {
 		}
 	}
 
-	// Extract HTML content from the current page state
+	// Create content converter
+	converter := NewContentConverter(format)
+
+	// Handle binary formats (PDF) that need the page object
+	if format == FormatPDF {
+		// Generate PDF from the page
+		if err := converter.ProcessPage(page, outputFile); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// For text formats, extract HTML and process
 	html, err := page.HTML()
 	if err != nil {
 		return fmt.Errorf("failed to extract HTML: %w", err)
 	}
-
-	// Create content converter
-	converter := NewContentConverter(format)
 
 	// Process and output content
 	if err := converter.Process(html, outputFile); err != nil {
