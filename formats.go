@@ -15,6 +15,7 @@ import (
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/strikethrough"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/table"
+	"github.com/k3a/html2text"
 )
 
 const (
@@ -54,6 +55,12 @@ func (cc *ContentConverter) Process(html string, outputFile string) error {
 		}
 		logger.Debug("Converted to %d bytes of Markdown", len(content))
 
+	case FormatText:
+		// Extract plain text
+		logger.Verbose("Extracting plain text...")
+		content = cc.extractPlainText(html)
+		logger.Debug("Extracted %d bytes of plain text", len(content))
+
 	default:
 		return fmt.Errorf("unsupported format: %s", cc.format)
 	}
@@ -83,8 +90,18 @@ func (cc *ContentConverter) convertToMarkdown(html string) (string, error) {
 		return "", err
 	}
 
-	logger.Success("Converted to Markdown")
 	return markdown, nil
+}
+
+// extractPlainText extracts plain text from HTML
+func (cc *ContentConverter) extractPlainText(htmlContent string) string {
+	// Use k3a/html2text with Unix line breaks for consistency
+	text := html2text.HTML2TextWithOptions(
+		htmlContent,
+		html2text.WithUnixLineBreaks(),
+	)
+
+	return text
 }
 
 // writeToStdout writes content to stdout
