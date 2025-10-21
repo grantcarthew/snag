@@ -1,6 +1,6 @@
 # Snag Phase 3: Output Management & Batch Operations
 
-**Status**: Implementation In Progress (Step 3 of 15 Complete)
+**Status**: Implementation In Progress (Step 4 of 15 Complete)
 
 This document tracks Phase 3 implementation for Snag: enhanced file output options, additional format support (text/PDF), screenshot capture, and batch tab operations.
 
@@ -11,6 +11,7 @@ This document tracks Phase 3 implementation for Snag: enhanced file output optio
 ### ✅ Completed Tasks
 
 **Step 1: Output Management Module** ✅
+
 - Created `output.go` with file naming functions
   - `SlugifyTitle()` - URL-safe slug generation (max 80 chars)
   - `GenerateURLSlug()` - Fallback slug from URL hostname
@@ -31,6 +32,7 @@ This document tracks Phase 3 implementation for Snag: enhanced file output optio
   - Removed duplicate validFormats map from main.go
 
 **Step 2: Text Format Support** ✅
+
 - Renamed `convert.go` → `formats.go` (git history preserved)
 - Renamed `convert_test.go` → `formats_test.go`
 - Added dependency: `github.com/k3a/html2text` v1.2.1
@@ -48,6 +50,7 @@ This document tracks Phase 3 implementation for Snag: enhanced file output optio
   - Clean separation: utilities transform data, `Process()` handles logging
 
 **Step 3: PDF Generation Support** ✅
+
 - Implemented PDF generation using Chrome's print-to-PDF
 - Added `ProcessPage()` method for binary formats needing Rod page object
 - Implemented `generatePDF()` using `page.PDF()` and CDP `Page.printToPDF`
@@ -68,15 +71,34 @@ This document tracks Phase 3 implementation for Snag: enhanced file output optio
   - Works with file output (`-o test.pdf`)
   - Works with stdout redirect (`> page.pdf`)
 
+**Step 4: Screenshot Capture Support** ✅
+
+- Added screenshot case to `ProcessPage()` method in `formats.go`
+- Implemented `captureScreenshot()` function using Rod's `page.Screenshot()`
+- **Screenshot settings**:
+  - Full-page PNG capture (first parameter `true`)
+  - PNG format via `proto.PageCaptureScreenshotFormatPng`
+  - Returns byte array directly (not StreamReader like PDF)
+- Reuses existing binary output methods:
+  - `writeBinaryToStdout()` - Binary PNG to stdout
+  - `writeBinaryToFile()` - Binary PNG to file
+- **Extension mapping**: `.png` already in `GetFileExtension()` (output.go:87-88)
+- **Testing**: Build successful (20 MB binary)
+  - Code compiles without errors
+  - Screenshot function signature matches PDF pattern
+  - Ready for CLI integration in Step 7
+
 **Files Created/Modified**:
-- `output.go` (new, 165 lines)
-- `formats.go` (renamed from convert.go, +95 lines for PDF + text)
+
+- `output.go` (new, 160 lines)
+- `formats.go` (renamed from convert.go, +108 lines for PDF + text + screenshot)
 - `formats_test.go` (renamed from convert_test.go)
 - `validate.go` (+99 lines)
 - `main.go` (+4 format constants, +18 lines for PDF handling)
 - `go.mod` (+1 dependency: k3a/html2text)
 
 **Testing**:
+
 - All 30+ existing tests pass
 - Build successful (20 MB binary)
 - Manual testing verified:
@@ -88,13 +110,13 @@ This document tracks Phase 3 implementation for Snag: enhanced file output optio
 
 ### 🚧 Pending Implementation
 
-**Step 4-15: Remaining Features**
-1. ⏳ **Next**: Implement screenshot capture (`--screenshot` / `-s`)
-2. Implement batch tab operations (`--all-tabs` / `-a`)
-3. Add CLI flags and handlers for all new features
-4. Add `--output-dir` / `-d` flag implementation
-5. Integrate all features into main CLI flow
-6. Write comprehensive tests for all functionality
+**Step 5-15: Remaining Features**
+
+1. ⏳ **Next**: Implement batch tab operations (`--all-tabs` / `-a`)
+2. Add CLI flags and handlers for all new features
+3. Add `--output-dir` / `-d` flag implementation
+4. Integrate all features into main CLI flow
+5. Write comprehensive tests for all functionality
 
 ---
 
@@ -103,6 +125,7 @@ This document tracks Phase 3 implementation for Snag: enhanced file output optio
 ### Module Organization (Finalized)
 
 **Actual implementation**:
+
 - `output.go` - File naming, slugification, conflict resolution
 - `formats.go` - Format conversion (markdown, html, text, pdf, screenshot)
 - `validate.go` - Input/directory/path validation
@@ -113,16 +136,19 @@ This document tracks Phase 3 implementation for Snag: enhanced file output optio
 ### Binary vs Text Format Architecture
 
 **Design pattern established**:
+
 - `Process(html, outputFile)` - For text formats (markdown, html, text)
 - `ProcessPage(page, outputFile)` - For binary formats (pdf, screenshot)
 
 **Why separate methods**:
+
 - Text formats only need HTML string
 - Binary formats need live Rod page object
 - Cleaner separation of concerns
 - Avoids unnecessary HTML extraction for binary formats
 
 **Implementation**:
+
 ```go
 // Main flow pattern
 html, err := fetcher.Fetch(...)  // Navigate and load page once
@@ -139,6 +165,7 @@ if format == FormatPDF {
 **Selected**: `github.com/k3a/html2text` (154 ⭐)
 
 **Why**:
+
 - Zero non-standard dependencies (aligns with single binary philosophy)
 - Outputs actual plain text (not markdown-flavored)
 - Lightweight (334 lines vs 549+ lines)
@@ -152,6 +179,7 @@ if format == FormatPDF {
 **Question**: Letter vs A4 default?
 
 **Solution**: Use Chrome's default (locale-aware)
+
 - Chrome respects system locale automatically
 - A4 in Australia, Europe, Asia, most of world
 - Letter in US, Canada, Mexico
@@ -163,6 +191,7 @@ if format == FormatPDF {
 ### Code Quality Improvements
 
 **External code reviews caught**:
+
 1. ✅ Regex compilation inefficiency - Fixed with package-level variables
 2. ✅ Constant consistency issues - All formats now use constants
 3. ✅ Infinite loop risk in `ResolveConflict()` - Added proper error handling
@@ -176,6 +205,7 @@ if format == FormatPDF {
 ### Format Constants Design
 
 **Constants defined**:
+
 ```go
 FormatMarkdown = "markdown"
 FormatHTML     = "html"
@@ -196,6 +226,7 @@ FormatPDF      = "pdf"
 **Status**: Foundation complete (validation functions), CLI integration pending
 
 **Implementation**:
+
 - Directory validation: ✅ `validateDirectory()` in validate.go
 - Path escape prevention: ✅ `validateOutputPathEscape()` in validate.go
 - File naming: ✅ Functions in output.go
@@ -208,6 +239,7 @@ FormatPDF      = "pdf"
 **Status**: ✅ Complete
 
 **Implementation**:
+
 - Format constant: ✅ `FormatText` in main.go
 - Extraction function: ✅ `extractPlainText()` in formats.go
 - Validation: ✅ `validateFormat()` updated
@@ -217,6 +249,7 @@ FormatPDF      = "pdf"
 **Testing**: Manual verification successful
 
 **Example**:
+
 ```bash
 $ snag --format text https://example.com
 Test Title
@@ -229,6 +262,7 @@ This is bold text.
 **Status**: ✅ Complete
 
 **Implementation**:
+
 - Format constant: ✅ `FormatPDF` in main.go
 - PDF generation: ✅ `generatePDF()` in formats.go
 - Binary output: ✅ `ProcessPage()` method with binary I/O
@@ -237,6 +271,7 @@ This is bold text.
 - Integration: ✅ Works in both `run()` and `handleTabFetch()`
 
 **Technical details**:
+
 - Uses Rod's `page.PDF()` method
 - Chrome DevTools Protocol `Page.printToPDF`
 - Locale-aware paper size (A4/Letter)
@@ -244,12 +279,14 @@ This is bold text.
 - Returns StreamReader, read with `io.ReadAll()`
 
 **Testing**:
+
 - ✅ Generates valid PDF (version 1.4)
 - ✅ File output works (`-o test.pdf`)
 - ✅ Stdout redirect works (`> page.pdf`)
 - ✅ Binary magic bytes correct (`%PDF-1.4`)
 
 **Example**:
+
 ```bash
 $ snag --format pdf https://example.com > page.pdf
 $ snag -f pdf -o report.pdf https://example.com
@@ -257,20 +294,30 @@ $ snag -f pdf -o report.pdf https://example.com
 
 ### Feature 4: Screenshot Capture (`--screenshot` / `-s`)
 
-**Status**: ⏳ Next step (Step 4)
+**Status**: ✅ Core functionality complete, CLI integration pending
 
-**Planned approach**:
-- Add screenshot case to `ProcessPage()` method
-- Use Rod's `page.Screenshot()` method
-- Full page PNG capture
-- Reuse binary output methods
-- CLI flag integration in Step 7
+**Implementation**:
+
+- Screenshot case: ✅ Added to `ProcessPage()` in formats.go
+- Capture function: ✅ `captureScreenshot()` using `page.Screenshot()`
+- Full-page capture: ✅ First parameter `true` for full page
+- Format: ✅ PNG via `proto.PageCaptureScreenshotFormatPng`
+- Binary output: ✅ Reuses existing binary I/O methods
+- Extension: ✅ `.png` mapped in `GetFileExtension()`
+- CLI flag: ⏳ Pending (Step 7)
+
+**Technical details**:
+
+- Uses Rod's `page.Screenshot(true, &proto.PageCaptureScreenshot{...})`
+- Returns `[]byte` directly (unlike PDF which uses StreamReader)
+- Simpler implementation than PDF (no stream reading needed)
 
 ### Feature 5: Batch Tab Operations (`--all-tabs` / `-a`)
 
 **Status**: ⏳ Pending (Step 5+)
 
 **Planned approach**:
+
 - Iterate all browser tabs
 - Single timestamp for all files
 - Continue-on-error strategy
@@ -298,6 +345,7 @@ $ snag -f pdf -o report.pdf https://example.com
 **Performance**: Regex patterns compiled once at package level
 
 **Examples**:
+
 ```
 "Example Domain"              → "example-domain"
 "GitHub - Project Page"       → "github-project-page"
@@ -315,6 +363,7 @@ $ snag -f pdf -o report.pdf https://example.com
 ### URL Fallback (Implemented)
 
 When page title is empty:
+
 - Extract hostname from URL
 - Apply same slugification rules
 - Examples: `example.com` → `example-com`
@@ -323,13 +372,13 @@ When page title is empty:
 
 ## Format Support Summary
 
-| Format | Flag | Extension | Status | Output Type |
-|--------|------|-----------|--------|-------------|
-| Markdown | `--format markdown` | `.md` | ✅ Existing | Text |
-| HTML | `--format html` | `.html` | ✅ Existing | Text |
-| Text | `--format text` | `.txt` | ✅ Complete | Text |
-| PDF | `--format pdf` | `.pdf` | ✅ Complete | Binary |
-| Screenshot | `--screenshot` | `.png` | ⏳ Step 4 | Binary |
+| Format     | Flag                | Extension | Status       | Output Type |
+| ---------- | ------------------- | --------- | ------------ | ----------- |
+| Markdown   | `--format markdown` | `.md`     | ✅ Existing  | Text        |
+| HTML       | `--format html`     | `.html`   | ✅ Existing  | Text        |
+| Text       | `--format text`     | `.txt`    | ✅ Complete  | Text        |
+| PDF        | `--format pdf`      | `.pdf`    | ✅ Complete  | Binary      |
+| Screenshot | `--screenshot`      | `.png`    | ✅ Core done | Binary      |
 
 **Format aliases**: `txt` accepted as alias for `text` (via validation)
 
@@ -338,17 +387,20 @@ When page title is empty:
 ## Validation Rules (Implemented)
 
 ### Directory Validation
+
 - ✅ Check directory exists
 - ✅ Check directory is writable
 - ✅ Do NOT auto-create directories
 - ✅ Support relative and absolute paths
 
 ### Path Security
+
 - ✅ Prevent `../` escape attacks
 - ✅ Validate combined `-o` + `-d` paths
 - ✅ Use `filepath.Clean()` and absolute path checks
 
 ### Format Validation
+
 - ✅ Support: `markdown`, `html`, `text`, `pdf`
 - ✅ Validate against constants
 - ✅ Clear error messages
@@ -363,6 +415,7 @@ When page title is empty:
 **Existing tests**: All 30+ Phase 1/2 tests passing
 
 **Planned tests** (Step 8):
+
 1. Naming system tests (slugification, conflicts, fallbacks)
 2. Format conversion tests (text, pdf)
 3. Screenshot capture tests
@@ -375,9 +428,11 @@ When page title is empty:
 ## Dependencies
 
 **Added in Phase 3**:
+
 - `github.com/k3a/html2text` v1.2.1 - Plain text extraction
 
 **Existing**:
+
 - `github.com/urfave/cli/v2` - CLI framework
 - `github.com/go-rod/rod` - Chrome DevTools Protocol
 - `github.com/JohannesKaufmann/html-to-markdown/v2` - Markdown conversion
@@ -398,12 +453,14 @@ When page title is empty:
 ### Format Processing Pattern
 
 **Text formats** (markdown, html, text):
+
 ```go
 html, err := fetcher.Fetch(opts)
 converter.Process(html, outputFile)
 ```
 
 **Binary formats** (pdf, screenshot):
+
 ```go
 html, err := fetcher.Fetch(opts)  // Still need to load page
 converter.ProcessPage(page, outputFile)
@@ -412,6 +469,7 @@ converter.ProcessPage(page, outputFile)
 ### Code Organization
 
 **formats.go structure**:
+
 - `Process()` - Text format conversion (string → string)
 - `ProcessPage()` - Binary format generation (page → []byte)
 - Individual converters: `convertToMarkdown()`, `extractPlainText()`, `generatePDF()`
@@ -427,30 +485,35 @@ converter.ProcessPage(page, outputFile)
 <summary>Click to expand original Phase 3 specifications</summary>
 
 ### Output Directory (`--output-dir` / `-d`)
+
 - Save files with auto-generated names
 - Validate directory exists and is writable
 - Combine with `-o` flag for subdirectories
 - Security: Path escape validation
 
 ### Text Format (`--format text` / `--format txt`)
+
 - Extract plain text from HTML
 - Strip all tags, scripts, styles
 - Preserve basic text structure
 - Unix line breaks for consistency
 
 ### PDF Export (`--format pdf`)
+
 - Chrome print-to-PDF rendering
 - Preserves styles, fonts, images
 - Binary output support
 - Locale-aware default paper size
 
 ### Screenshot Capture (`--screenshot` / `-s`)
+
 - Full-page PNG screenshots
 - Auto-generated filenames
 - Save to CWD or specified directory
 - Rod's Page.Screenshot() method
 
 ### Batch Tab Operations (`--all-tabs` / `-a`)
+
 - Process all browser tabs
 - Single timestamp for batch
 - Continue-on-error handling
@@ -458,12 +521,14 @@ converter.ProcessPage(page, outputFile)
 - All formats supported
 
 ### File Naming Rules
+
 - Pattern: `yyyy-mm-dd-hhmmss-{title-slug}.{ext}`
 - 80 character slug limit
 - URL hostname fallback
 - Conflict resolution with counters
 
 ### Validation Rules
+
 - Directory existence and writability
 - Path escape prevention
 - Format validation
