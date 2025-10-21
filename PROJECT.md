@@ -25,6 +25,18 @@ Successfully refactored main.go from 868 lines into a clean, well-organized code
 
 ---
 
+## Development Status
+
+**Snag is under active development (pre-v1.0)**
+
+- Current version: v0.0.4
+- Status: Feature complete for initial release, undergoing final polish
+- **Backward compatibility**: NOT guaranteed until v1.0.0
+- Breaking changes are acceptable and expected as we improve the UX and API
+- This is the ideal time to make breaking changes for better long-term design
+
+---
+
 ## Completed Work
 
 ### ✅ Step 1: Created handlers.go Module
@@ -332,7 +344,7 @@ snag --format pdf https://example.com       # PDF is just another format
 - Old: `snag --screenshot https://example.com`
 - New: `snag --format png https://example.com`
 
-**Decision:** No backwards compatibility needed - pre-v1.0, breaking changes are acceptable
+**Backward compatibility:** Not required (see Development Status above)
 
 ### Implementation Steps
 
@@ -346,6 +358,99 @@ snag --format pdf https://example.com       # PDF is just another format
 8. Update formats.go PNG handling
 9. Update all tests to use `--format png`
 10. Update documentation (README.md, AGENTS.md, etc.)
+
+---
+
+## Next Steps: Format Name Consistency
+
+### 🔍 UX Issue: Inconsistent Format Names
+
+**Problem:** Format names are inconsistent in length and don't align with common file extensions:
+
+**Current formats:**
+- `markdown` ← Only long-form name (inconsistent)
+- `html` ✓ Short, matches extension
+- `text` ✓ Short, matches common usage
+- `pdf` ✓ Short, matches extension
+- `png` (planned) ✓ Short, matches extension
+
+**Additional issue:** No support for `txt` alias (common .txt extension)
+
+### 💡 Proposed Solution: Normalize Format Names
+
+**Changes:**
+1. Replace `markdown` with `md` (primary format name)
+2. Add `txt` as alias for `text` format
+3. Optional: Support `markdown` as legacy alias during transition
+
+**Proposed CLI (consistent):**
+```bash
+snag --format md https://example.com      # Markdown (short, matches .md)
+snag --format html https://example.com    # HTML
+snag --format text https://example.com    # Text (plaintext)
+snag --format txt https://example.com     # Text (alias)
+snag --format pdf https://example.com     # PDF
+snag --format png https://example.com     # PNG (planned)
+```
+
+### Benefits
+
+1. **Consistency** - All format names are short and match file extensions
+2. **Predictability** - Users can guess format names from file extensions
+3. **Common usage** - "md" and "txt" are universally recognized
+4. **Better UX** - Less typing, clearer intent
+
+### Implementation Scope
+
+**Files affected:** Similar to screenshot→png refactor
+
+- `main.go` - Update format constants and validation
+  - Change `FormatMarkdown` constant value from "markdown" to "md"
+  - Update validation to accept: "md", "html", "text", "txt", "pdf", "png"
+  - Add alias mapping: "txt" → "text"
+  - Optional: Add "markdown" → "md" legacy alias
+
+- `formats.go` - Update format handling
+  - Update all format comparisons to use "md" instead of "markdown"
+  - Handle "txt" alias mapping
+
+- `handlers.go` - Minimal changes (uses format constants)
+
+- `output.go` - Update extension mapping
+  - "md" → ".md" (already correct)
+  - "txt" → ".txt" (add mapping)
+
+- Tests - Update all test cases to use "md" instead of "markdown"
+
+- Documentation - Update all examples and references
+
+### Breaking Change
+
+**This is a CLI breaking change:**
+- Old: `snag --format markdown https://example.com`
+- New: `snag --format md https://example.com`
+
+**Backward compatibility:** Not required (see Development Status above)
+
+**Implementation approach:** Hard break - only accept "md", no legacy "markdown" alias
+- Simplest implementation
+- Cleanest codebase
+- Forces clear migration path
+- No technical debt from supporting aliases
+
+### Combined Implementation
+
+**Note:** This refactor could be combined with the screenshot→png refactor since both involve format handling:
+
+**Combined breaking changes for v0.1.0:**
+1. Remove `--screenshot` flag → Use `--format png`
+2. Replace `markdown` → `md`
+3. Add `txt` alias for `text`
+
+**Benefit of combined approach:**
+- Single breaking change version instead of two
+- Users only need to update scripts once
+- Cleaner git history
 
 ---
 
