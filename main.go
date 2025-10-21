@@ -24,20 +24,16 @@ import (
 var version = "dev"
 
 const (
-	// Output format constants
+	// Output format constants for --format flag
 	FormatMarkdown = "markdown"
 	FormatHTML     = "html"
+	FormatText     = "text"
+	FormatPDF      = "pdf"
 )
 
 var (
 	logger         *Logger
 	browserManager *BrowserManager
-
-	// Valid output formats
-	validFormats = map[string]bool{
-		FormatMarkdown: true,
-		FormatHTML:     true,
-	}
 )
 
 func main() {
