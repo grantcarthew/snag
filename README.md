@@ -404,7 +404,7 @@ snag --port 9223 https://example.com
 
 ```
 -l, --list-tabs            List all open tabs in the browser
--t, --tab <pattern>        Fetch from existing tab by index (1, 2, 3...) or URL pattern
+-t, --tab <PATTERN>        Fetch from existing tab by index (1, 2, 3...) or URL pattern
                            Patterns can be:
                              - Index number: 1, 2, 3 (tab position)
                              - Exact URL: https://example.com (case-insensitive)
@@ -416,7 +416,7 @@ snag --port 9223 https://example.com
 
 ```
 -o, --output <file>        Save output to file instead of stdout
---format <type>            Output format: markdown (default) | html
+--format <FORMAT>          Output format: markdown (default) | html
 ```
 
 ### Page Loading
