@@ -72,3 +72,23 @@ Regression,Text format pipes to stdout,./snag https://example.com,stdout
 Regression,HTML pipes to stdout,./snag -f html https://example.com,stdout
 Regression,Binary never pipes (PDF),./snag -f pdf https://example.com,ls
 Regression,Binary never pipes (PNG),./snag -f png https://example.com,ls
+Multiple URLs - Inline,Two URLs inline (markdown),./snag --force-headless -d . https://example.com https://go.dev,ls
+Multiple URLs - Inline,Two URLs inline (HTML),./snag --force-headless -d . -f html https://example.com https://go.dev,ls
+Multiple URLs - Inline,Three URLs inline (text),./snag --force-headless -d . -f text https://example.com https://go.dev https://httpbin.org/html,ls
+Multiple URLs - Inline,Multiple URLs inline (PDF),./snag --force-headless -d . -f pdf https://example.com https://go.dev,ls
+Multiple URLs - Inline,Multiple URLs inline (PNG),./snag --force-headless -d . -f png https://example.com https://go.dev,ls
+Multiple URLs - File,Load from testdata/urls-small.txt,./snag --force-headless -d . --url-file testdata/urls-small.txt,ls
+Multiple URLs - File,Load from testdata/urls.txt (comprehensive),./snag --force-headless -d . --url-file testdata/urls.txt,ls
+Multiple URLs - File,Load from testdata/urls-invalid.txt (error handling),./snag --force-headless -d . --url-file testdata/urls-invalid.txt,ls
+Multiple URLs - File,URL file with HTML format,./snag --force-headless -d . -f html --url-file testdata/urls-small.txt,ls
+Multiple URLs - File,URL file with text format,./snag --force-headless -d . -f text --url-file testdata/urls-small.txt,ls
+Multiple URLs - File,URL file with PDF format,./snag --force-headless -d . -f pdf --url-file testdata/urls-small.txt,ls
+Multiple URLs - File,URL file with PNG format,./snag --force-headless -d . -f png --url-file testdata/urls-small.txt,ls
+Multiple URLs - Combined,URL file + inline URLs,./snag --force-headless -d . --url-file testdata/urls-small.txt https://httpbin.org/html,ls
+Multiple URLs - Combined,Multiple sources HTML,./snag --force-headless -d . -f html --url-file testdata/urls-small.txt https://example.com,ls
+Multiple URLs - Combined,Multiple sources with verbose,./snag --force-headless -d . --verbose --url-file testdata/urls-small.txt https://go.dev,ls
+Multiple URLs - Errors,Flag after URL (wrong order),./snag https://example.com --force-headless,error
+Multiple URLs - Errors,--output with multiple URLs,./snag --force-headless -o output.md https://example.com https://go.dev,error
+Multiple URLs - Errors,--close-tab with multiple URLs,./snag --force-headless --close-tab https://example.com https://go.dev,error
+Multiple URLs - Errors,URL file not found,./snag --url-file /nonexistent/file.txt,error
+Multiple URLs - Errors,Empty URL file,./snag --url-file testdata/empty-urls.txt,error
