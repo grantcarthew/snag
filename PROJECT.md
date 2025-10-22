@@ -675,8 +675,8 @@ Track completion of each task:
 - [x] Task 2: `--url-file` - **COMPLETE** (2025-10-22)
 - [x] Task 3: `--output` / `-o` - **COMPLETE** (2025-10-22)
 - [x] Task 4: `--output-dir` / `-d` - **COMPLETE** (2025-10-22)
-- [ ] Task 5: `--format` / `-f`
-- [ ] Task 6: `--timeout`
+- [x] Task 5: `--format` / `-f` - **COMPLETE** (2025-10-22)
+- [x] Task 6: `--timeout` - **COMPLETE** (2025-10-22)
 - [ ] Task 7: `--wait-for` / `-w`
 - [ ] Task 8: `--port` / `-p`
 - [ ] Task 9: `--close-tab` / `-c`
