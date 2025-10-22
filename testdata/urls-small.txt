@@ -1,0 +1,3 @@
+# Small test file with just 2 URLs for quick testing
+example.com
+httpbin.org/html

@@ -42,4 +42,13 @@ var (
 
 	// ErrNoTabMatch indicates no tab matches the provided pattern
 	ErrNoTabMatch = errors.New("no tab matches pattern")
+
+	// ErrNoValidURLs indicates no valid URLs were provided or found in URL file
+	ErrNoValidURLs = errors.New("no valid URLs provided")
+
+	// ErrOutputFlagConflict indicates --output cannot be used with multiple URLs
+	ErrOutputFlagConflict = errors.New("--output cannot be used with multiple URLs, use --output-dir instead")
+
+	// ErrCloseTabMultipleURLs indicates --close-tab is not supported with multiple URLs
+	ErrCloseTabMultipleURLs = errors.New("--close-tab not supported with multiple URLs")
 )

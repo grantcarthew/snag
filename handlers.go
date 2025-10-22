@@ -452,3 +452,222 @@ func handleTabFetch(c *cli.Context) error {
 	// Process page content and output in requested format
 	return processPageContent(page, format, outputFile)
 }
+
+// handleOpenURLsInBrowser opens multiple URLs in browser tabs without fetching content
+// This implements the --open-browser behavior with URLs (just opens, no output)
+func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
+	logger.Info("Opening %d URLs in browser...", len(urls))
+
+	// Create browser manager in visible mode
+	bm := NewBrowserManager(BrowserOptions{
+		Port:          c.Int("port"),
+		ForceVisible:  true,
+		OpenBrowser:   true,
+		ForceHeadless: false,
+		UserAgent:     c.String("user-agent"),
+	})
+
+	// Assign to global for signal handler access
+	browserManager = bm
+
+	// Connect to browser
+	_, err := bm.Connect()
+	if err != nil {
+		browserManager = nil
+		return err
+	}
+
+	// Open each URL in a new tab
+	for i, urlStr := range urls {
+		current := i + 1
+		logger.Info("[%d/%d] Opening: %s", current, len(urls), urlStr)
+
+		// Validate URL
+		validatedURL, err := validateURL(urlStr)
+		if err != nil {
+			logger.Warning("[%d/%d] Invalid URL - skipping: %s", current, len(urls), urlStr)
+			continue
+		}
+
+		// Create new page
+		page, err := bm.NewPage()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to create page: %v", current, len(urls), err)
+			continue
+		}
+
+		// Navigate to URL (with timeout)
+		timeout := c.Int("timeout")
+		err = page.Timeout(time.Duration(timeout) * time.Second).Navigate(validatedURL)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to navigate: %v", current, len(urls), err)
+			continue
+		}
+
+		logger.Success("[%d/%d] Opened: %s", current, len(urls), validatedURL)
+	}
+
+	logger.Success("Browser will remain open with %d tabs", len(urls))
+	logger.Info("Use 'snag --list-tabs' to see opened tabs")
+	logger.Info("Use 'snag --tab <index>' to fetch content from a tab")
+
+	// Don't close browser - leave it running for user
+	return nil
+}
+
+// handleMultipleURLs processes multiple URLs with batch fetching
+// Follows the same pattern as handleAllTabs but for URL arguments
+func handleMultipleURLs(c *cli.Context, urls []string) error {
+	// Validate conflicting flags for multiple URLs
+	if c.String("output") != "" {
+		logger.Error("Cannot use --output with multiple URLs")
+		logger.Info("Use --output-dir instead for auto-generated filenames")
+		return ErrOutputFlagConflict
+	}
+
+	if c.Bool("close-tab") {
+		logger.Error("Cannot use --close-tab with multiple URLs")
+		logger.Info("--close-tab is only supported for single URL fetching")
+		return ErrCloseTabMultipleURLs
+	}
+
+	// Extract configuration from flags
+	format := normalizeFormat(c.String("format"))
+	timeout := c.Int("timeout")
+	waitFor := c.String("wait-for")
+	outputDir := c.String("output-dir")
+	if outputDir == "" {
+		outputDir = "." // Default to current working directory
+	}
+
+	// Validate format
+	if err := validateFormat(format); err != nil {
+		return err
+	}
+
+	// Validate timeout
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	// Validate output directory
+	if err := validateDirectory(outputDir); err != nil {
+		return err
+	}
+
+	// Create browser manager
+	bm := NewBrowserManager(BrowserOptions{
+		Port:          c.Int("port"),
+		ForceHeadless: c.Bool("force-headless"),
+		ForceVisible:  c.Bool("force-visible"),
+		UserAgent:     c.String("user-agent"),
+	})
+
+	// Assign to global for signal handler access
+	browserManager = bm
+
+	// Connect to browser
+	_, err := bm.Connect()
+	if err != nil {
+		browserManager = nil
+		return err
+	}
+
+	// Ensure browser cleanup
+	defer func() {
+		bm.Close()
+		browserManager = nil
+	}()
+
+	// Create single timestamp for entire batch
+	timestamp := time.Now()
+
+	logger.Info("Processing %d URLs...", len(urls))
+
+	// Track success/failure counts
+	successCount := 0
+	failureCount := 0
+
+	// Process each URL
+	for i, urlStr := range urls {
+		current := i + 1
+		total := len(urls)
+
+		logger.Info("[%d/%d] Fetching: %s", current, total, urlStr)
+
+		// Validate URL
+		validatedURL, err := validateURL(urlStr)
+		if err != nil {
+			logger.Error("[%d/%d] Invalid URL - skipping: %v", current, total, err)
+			failureCount++
+			continue
+		}
+
+		// Create new page
+		page, err := bm.NewPage()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to create page: %v", current, total, err)
+			failureCount++
+			continue
+		}
+
+		// Fetch page content
+		fetcher := NewPageFetcher(page, timeout)
+		_, err = fetcher.Fetch(FetchOptions{
+			URL:     validatedURL,
+			Timeout: timeout,
+			WaitFor: waitFor,
+		})
+		if err != nil {
+			logger.Error("[%d/%d] Failed to fetch: %v", current, total, err)
+			bm.ClosePage(page)
+			failureCount++
+			continue
+		}
+
+		// Get page info for filename generation
+		info, err := page.Info()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to get page info: %v", current, total, err)
+			bm.ClosePage(page)
+			failureCount++
+			continue
+		}
+
+		// Generate output filename with conflict resolution
+		outputPath, err := generateOutputFilename(
+			info.Title, validatedURL, format,
+			timestamp, outputDir,
+		)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to generate filename: %v", current, total, err)
+			bm.ClosePage(page)
+			failureCount++
+			continue
+		}
+
+		// Process page content and output in requested format
+		if err := processPageContent(page, format, outputPath); err != nil {
+			logger.Error("[%d/%d] Failed to save content: %v", current, total, err)
+			bm.ClosePage(page)
+			failureCount++
+			continue
+		}
+
+		// Close page in headless mode
+		if bm.launchedHeadless {
+			bm.ClosePage(page)
+		}
+
+		successCount++
+	}
+
+	// Summary
+	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
+
+	if failureCount > 0 {
+		return fmt.Errorf("batch processing completed with %d failures", failureCount)
+	}
+
+	return nil
+}

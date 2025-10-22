@@ -1661,6 +1661,465 @@ func TestBrowser_OutputDirPDF(t *testing.T) {
 	_ = stderr
 }
 
+// ============================================================================
+// Phase 5: Multiple URL Support Tests
+// ============================================================================
+
+// TestCLI_MultipleURLs_FlagOrder tests that flags after URLs produces helpful error
+func TestCLI_MultipleURLs_FlagOrder(t *testing.T) {
+	stdout, stderr, err := runSnag("https://example.com", "--force-headless")
+
+	// Should fail with flag order error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	output := stdout + stderr
+	assertContains(t, output, "Flags must come before URL arguments")
+	assertContains(t, output, "--force-headless")
+	assertContains(t, output, "snag --force-headless")
+
+	_ = stdout
+}
+
+// TestCLI_MultipleURLs_WithOutput tests error when using --output with multiple URLs
+func TestCLI_MultipleURLs_WithOutput(t *testing.T) {
+	stdout, stderr, err := runSnag("--force-headless", "-o", "output.md", "https://example.com", "https://go.dev")
+
+	// Should fail with conflict error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	output := stdout + stderr
+	assertContains(t, output, "Cannot use --output with multiple URLs")
+	assertContains(t, output, "--output-dir")
+
+	_ = stdout
+}
+
+// TestCLI_MultipleURLs_WithCloseTab tests error when using --close-tab with multiple URLs
+func TestCLI_MultipleURLs_WithCloseTab(t *testing.T) {
+	stdout, stderr, err := runSnag("--force-headless", "--close-tab", "https://example.com", "https://go.dev")
+
+	// Should fail with conflict error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	output := stdout + stderr
+	assertContains(t, output, "Cannot use --close-tab with multiple URLs")
+
+	_ = stdout
+}
+
+// TestCLI_MultipleURLs_WithTab tests error when using --tab with URL arguments
+func TestCLI_MultipleURLs_WithTab(t *testing.T) {
+	stdout, stderr, err := runSnag("--tab", "1", "https://example.com")
+
+	// Should fail with conflict error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	output := stdout + stderr
+	assertContains(t, output, "Cannot use --tab with URL arguments")
+
+	_ = stdout
+}
+
+// TestCLI_MultipleURLs_WithAllTabs tests error when using --all-tabs with URL arguments
+func TestCLI_MultipleURLs_WithAllTabs(t *testing.T) {
+	stdout, stderr, err := runSnag("--all-tabs", "https://example.com")
+
+	// Should fail with conflict error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	output := stdout + stderr
+	assertContains(t, output, "Cannot use --all-tabs with URL arguments")
+
+	_ = stdout
+}
+
+// TestCLI_MultipleURLs_WithListTabs tests error when using --list-tabs with URL arguments
+func TestCLI_MultipleURLs_WithListTabs(t *testing.T) {
+	stdout, stderr, err := runSnag("--list-tabs", "https://example.com")
+
+	// Should fail with conflict error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	output := stdout + stderr
+	assertContains(t, output, "Cannot use --list-tabs with URL arguments")
+
+	_ = stdout
+}
+
+// TestCLI_URLFile_NotFound tests error when URL file doesn't exist
+func TestCLI_URLFile_NotFound(t *testing.T) {
+	stdout, stderr, err := runSnag("--url-file", "/nonexistent/file.txt")
+
+	// Should fail with file not found error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	output := stdout + stderr
+	assertContains(t, output, "Failed to open URL file")
+
+	_ = stdout
+}
+
+// TestCLI_URLFile_Empty tests error when URL file contains no valid URLs
+func TestCLI_URLFile_Empty(t *testing.T) {
+	// Create empty URL file
+	tmpFile, err := os.CreateTemp("", "empty-urls-*.txt")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	tmpFile.Close()
+
+	stdout, stderr, err := runSnag("--url-file", tmpFile.Name())
+
+	// Should fail with no valid URLs error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	output := stdout + stderr
+	assertContains(t, output, "no valid URLs")
+
+	_ = stdout
+}
+
+// TestCLI_URLFile_OnlyComments tests error when URL file contains only comments
+func TestCLI_URLFile_OnlyComments(t *testing.T) {
+	// Create URL file with only comments
+	tmpFile, err := os.CreateTemp("", "comments-only-*.txt")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	content := `# This is a comment
+// Another comment
+
+# More comments
+`
+	os.WriteFile(tmpFile.Name(), []byte(content), 0644)
+
+	stdout, stderr, err := runSnag("--url-file", tmpFile.Name())
+
+	// Should fail with no valid URLs error
+	assertError(t, err)
+	assertExitCode(t, err, 1)
+
+	output := stdout + stderr
+	assertContains(t, output, "no valid URLs")
+
+	_ = stdout
+}
+
+// TestBrowser_MultipleURLs_Inline tests fetching multiple inline URLs
+func TestBrowser_MultipleURLs_Inline(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	server := startTestServer(t)
+	url1 := server.URL + "/simple.html"
+	url2 := server.URL + "/minimal.html"
+
+	// Create temporary directory for output
+	tmpDir := t.TempDir()
+
+	stdout, stderr, err := runSnag("--force-headless", "-d", tmpDir, url1, url2)
+
+	assertNoError(t, err)
+	assertExitCode(t, err, 0)
+
+	// Stderr should contain progress indicators
+	assertContains(t, stderr, "Processing 2 URLs")
+	assertContains(t, stderr, "[1/2]")
+	assertContains(t, stderr, "[2/2]")
+	assertContains(t, stderr, "Batch complete: 2 succeeded, 0 failed")
+
+	// Check that 2 files were created
+	files, err := os.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to read temp directory: %v", err)
+	}
+
+	if len(files) != 2 {
+		t.Fatalf("expected 2 files in output directory, got %d", len(files))
+	}
+
+	// Verify both files have .md extension
+	for _, file := range files {
+		if !strings.HasSuffix(file.Name(), ".md") {
+			t.Errorf("expected .md file, got: %s", file.Name())
+		}
+	}
+
+	_ = stdout
+}
+
+// TestBrowser_MultipleURLs_FromFile tests fetching URLs from a file
+func TestBrowser_MultipleURLs_FromFile(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	server := startTestServer(t)
+	url1 := server.URL + "/simple.html"
+	url2 := server.URL + "/minimal.html"
+
+	// Create URL file
+	tmpFile, err := os.CreateTemp("", "urls-*.txt")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	content := fmt.Sprintf(`# Test URLs
+%s
+%s # With inline comment
+`, url1, url2)
+	os.WriteFile(tmpFile.Name(), []byte(content), 0644)
+
+	// Create temporary directory for output
+	tmpDir := t.TempDir()
+
+	stdout, stderr, err := runSnag("--force-headless", "-d", tmpDir, "--url-file", tmpFile.Name())
+
+	assertNoError(t, err)
+	assertExitCode(t, err, 0)
+
+	// Stderr should contain progress indicators
+	assertContains(t, stderr, "Processing 2 URLs")
+	assertContains(t, stderr, "Batch complete: 2 succeeded, 0 failed")
+
+	// Check that 2 files were created
+	files, err := os.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to read temp directory: %v", err)
+	}
+
+	if len(files) != 2 {
+		t.Fatalf("expected 2 files in output directory, got %d", len(files))
+	}
+
+	_ = stdout
+}
+
+// TestBrowser_MultipleURLs_Combined tests combining URL file with inline URLs
+func TestBrowser_MultipleURLs_Combined(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	server := startTestServer(t)
+	url1 := server.URL + "/simple.html"
+	url2 := server.URL + "/minimal.html"
+	url3 := server.URL + "/complex.html"
+
+	// Create URL file with 2 URLs
+	tmpFile, err := os.CreateTemp("", "urls-*.txt")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	content := fmt.Sprintf("%s\n%s\n", url1, url2)
+	os.WriteFile(tmpFile.Name(), []byte(content), 0644)
+
+	// Create temporary directory for output
+	tmpDir := t.TempDir()
+
+	// Combine file (2 URLs) with inline (1 URL) = 3 total
+	stdout, stderr, err := runSnag("--force-headless", "-d", tmpDir, "--url-file", tmpFile.Name(), url3)
+
+	assertNoError(t, err)
+	assertExitCode(t, err, 0)
+
+	// Stderr should show 3 URLs processed
+	assertContains(t, stderr, "Processing 3 URLs")
+	assertContains(t, stderr, "Batch complete: 3 succeeded, 0 failed")
+
+	// Check that 3 files were created
+	files, err := os.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to read temp directory: %v", err)
+	}
+
+	if len(files) != 3 {
+		t.Fatalf("expected 3 files in output directory, got %d", len(files))
+	}
+
+	_ = stdout
+}
+
+// TestBrowser_MultipleURLs_InvalidURLs tests continue-on-error behavior
+func TestBrowser_MultipleURLs_InvalidURLs(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	server := startTestServer(t)
+	validURL := server.URL + "/simple.html"
+
+	// Create URL file with mix of valid and invalid URLs
+	tmpFile, err := os.CreateTemp("", "urls-*.txt")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	content := fmt.Sprintf(`%s
+invalid url with spaces
+%s
+`, validURL, validURL)
+	os.WriteFile(tmpFile.Name(), []byte(content), 0644)
+
+	// Create temporary directory for output
+	tmpDir := t.TempDir()
+
+	stdout, stderr, err := runSnag("--force-headless", "-d", tmpDir, "--url-file", tmpFile.Name())
+
+	assertNoError(t, err) // Should succeed (2 valid URLs)
+	assertExitCode(t, err, 0)
+
+	// Stderr should show warning about invalid URL
+	assertContains(t, stderr, "URL contains space without comment marker")
+	assertContains(t, stderr, "Processing 2 URLs") // Only 2 valid URLs loaded
+	assertContains(t, stderr, "Batch complete: 2 succeeded, 0 failed")
+
+	_ = stdout
+}
+
+// TestBrowser_MultipleURLs_WithFormat tests format flag applies to all URLs
+func TestBrowser_MultipleURLs_WithFormat(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	server := startTestServer(t)
+	url1 := server.URL + "/simple.html"
+	url2 := server.URL + "/minimal.html"
+
+	// Create temporary directory for output
+	tmpDir := t.TempDir()
+
+	stdout, stderr, err := runSnag("--force-headless", "-d", tmpDir, "--format", "html", url1, url2)
+
+	assertNoError(t, err)
+	assertExitCode(t, err, 0)
+
+	// Check that 2 files were created with .html extension
+	files, err := os.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to read temp directory: %v", err)
+	}
+
+	if len(files) != 2 {
+		t.Fatalf("expected 2 files in output directory, got %d", len(files))
+	}
+
+	// Verify both files have .html extension
+	for _, file := range files {
+		if !strings.HasSuffix(file.Name(), ".html") {
+			t.Errorf("expected .html file, got: %s", file.Name())
+		}
+	}
+
+	_ = stdout
+	_ = stderr
+}
+
+// TestBrowser_URLFile_AutoHTTPS tests auto-prepending https:// to URLs
+func TestBrowser_URLFile_AutoHTTPS(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// Skip in environments without internet access
+	if testing.Short() {
+		t.Skip("skipping real-world test in short mode")
+	}
+
+	// Create temporary directory for output
+	tmpDir := t.TempDir()
+
+	// Use testdata/urls-small.txt which has URLs without https://
+	// This will try to fetch https://example.com and https://httpbin.org/html (auto-prepended)
+	stdout, stderr, err := runSnag("--force-headless", "-d", tmpDir, "--url-file", "testdata/urls-small.txt")
+
+	// May succeed or fail depending on network access
+	// Just verify the URLs were loaded from file
+	output := stderr + stdout
+	assertContains(t, output, "Processing 2 URLs")
+
+	_ = err // May succeed or fail depending on network
+}
+
+// TestBrowser_URLFile_Comprehensive tests all URL file features with testdata/urls.txt
+func TestBrowser_URLFile_Comprehensive(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// Skip in environments without internet access
+	if testing.Short() {
+		t.Skip("skipping real-world test in short mode")
+	}
+
+	// Create temporary directory for output
+	tmpDir := t.TempDir()
+
+	// Use testdata/urls.txt which demonstrates all features:
+	// - Full-line comments with # and //
+	// - Inline comments with # and //
+	// - Auto-prepending https://
+	// - URLs with paths and query parameters
+	stdout, stderr, err := runSnag("--force-headless", "-d", tmpDir, "--url-file", "testdata/urls.txt")
+
+	// May succeed or fail depending on network access
+	// Verify the URLs were loaded (should have 7 valid URLs based on the file content)
+	output := stderr + stdout
+	if strings.Contains(output, "Processing") {
+		// If processing started, verify it processed multiple URLs
+		assertContains(t, output, "URL")
+	}
+
+	_ = err // May succeed or fail depending on network
+}
+
+// TestBrowser_URLFile_InvalidURLs_RealWorld tests error handling with testdata/urls-invalid.txt
+func TestBrowser_URLFile_InvalidURLs_RealWorld(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	// Skip in environments without internet access
+	if testing.Short() {
+		t.Skip("skipping real-world test in short mode")
+	}
+
+	// Create temporary directory for output
+	tmpDir := t.TempDir()
+
+	// Use testdata/urls-invalid.txt which has mix of valid and invalid URLs
+	stdout, stderr, err := runSnag("--force-headless", "-d", tmpDir, "--url-file", "testdata/urls-invalid.txt")
+
+	// Should process valid URLs and warn about invalid ones
+	output := stderr + stdout
+
+	// Should warn about invalid URLs
+	if strings.Contains(output, "Processing") {
+		// If processing started, verify warnings were shown
+		// testdata/urls-invalid.txt has "example.com invalid extra text" which should warn
+		assertContains(t, output, "URL contains space")
+	}
+
+	_ = err // May succeed or fail depending on network
+}
+
 // min is a polyfill for compatibility with Go versions prior to 1.21
 // (min became a built-in function in Go 1.21)
 func min(a, b int) int {

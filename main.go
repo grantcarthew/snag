@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/urfave/cli/v2"
@@ -71,8 +72,14 @@ func main() {
    visible browsers for authenticated sessions. Output formats: Markdown, HTML, text, PDF, or PNG.
 
    The perfect companion for AI agents to gain context from web pages.`,
-		ArgsUsage: "<url>",
+		ArgsUsage: "[url...]",
 		Flags: []cli.Flag{
+			// Input Control
+			&cli.StringFlag{
+				Name:  "url-file",
+				Usage: "Read URLs from `FILE` (one per line, supports comments)",
+			},
+
 			// Output Control
 			&cli.StringFlag{
 				Name:    "output",
@@ -187,8 +194,68 @@ func run(c *cli.Context) error {
 	}
 	logger = NewLogger(level)
 
-	// Handle --open-browser flag WITHOUT URL (just open browser)
-	if c.Bool("open-browser") && c.NArg() == 0 {
+	// Collect URLs from --url-file and command line arguments
+	var urls []string
+
+	// Load URLs from file if --url-file is provided
+	if urlFile := c.String("url-file"); urlFile != "" {
+		fileURLs, err := loadURLsFromFile(urlFile)
+		if err != nil {
+			return err
+		}
+		urls = append(urls, fileURLs...)
+	}
+
+	// Add command-line URL arguments
+	urls = append(urls, c.Args().Slice()...)
+
+	// Validate that no flags are mixed with URLs (common user error)
+	for _, arg := range urls {
+		if strings.HasPrefix(arg, "-") {
+			logger.Error("Flags must come before URL arguments")
+			logger.ErrorWithSuggestion(
+				fmt.Sprintf("Found '%s' after URLs - flags must be specified before URLs", arg),
+				"snag --force-headless -d ./output example.com go.dev",
+			)
+			return fmt.Errorf("invalid argument order: flags must come before URLs")
+		}
+	}
+
+	// Handle --list-tabs flag (list tabs and exit)
+	if c.Bool("list-tabs") {
+		// Check for conflicting URL arguments
+		if len(urls) > 0 {
+			logger.Error("Cannot use --list-tabs with URL arguments")
+			logger.Info("Use --list-tabs alone to list existing tabs")
+			return fmt.Errorf("conflicting flags: --list-tabs and URL arguments")
+		}
+		return handleListTabs(c)
+	}
+
+	// Handle --all-tabs flag (process all tabs)
+	if c.Bool("all-tabs") {
+		// Check for conflicting URL arguments
+		if len(urls) > 0 {
+			logger.Error("Cannot use --all-tabs with URL arguments")
+			logger.Info("Use --all-tabs alone to process all existing tabs")
+			return fmt.Errorf("conflicting flags: --all-tabs and URL arguments")
+		}
+		return handleAllTabs(c)
+	}
+
+	// Handle --tab flag (fetch from existing tab)
+	if c.IsSet("tab") {
+		// Check for conflicting URL arguments
+		if len(urls) > 0 {
+			logger.Error("Cannot use --tab with URL arguments")
+			logger.Info("Use either --tab to fetch from existing tab OR provide URLs to fetch new pages")
+			return ErrTabURLConflict
+		}
+		return handleTabFetch(c)
+	}
+
+	// Handle --open-browser flag WITHOUT URLs (just open browser)
+	if c.Bool("open-browser") && len(urls) == 0 {
 		logger.Info("Opening browser...")
 		bm := NewBrowserManager(BrowserOptions{
 			Port:         c.Int("port"),
@@ -198,119 +265,100 @@ func run(c *cli.Context) error {
 		return bm.OpenBrowserOnly()
 	}
 
-	// Handle --list-tabs flag (list tabs and exit)
-	if c.Bool("list-tabs") {
-		return handleListTabs(c)
+	// Validate that at least one URL was provided
+	if len(urls) == 0 {
+		logger.Error("No URLs provided")
+		logger.ErrorWithSuggestion("Provide URLs as arguments or use --url-file", "snag <url> or snag --url-file urls.txt")
+		return ErrNoValidURLs
 	}
 
-	// Handle --all-tabs flag (process all tabs)
-	if c.Bool("all-tabs") {
-		// Check for conflicting URL argument
-		if c.NArg() > 0 {
-			logger.Error("Cannot use --all-tabs with URL argument")
-			logger.Info("Use --all-tabs alone to process all existing tabs")
-			return fmt.Errorf("conflicting flags: --all-tabs and URL argument")
-		}
-		return handleAllTabs(c)
+	// Handle --open-browser WITH URLs (open URLs in tabs, no output)
+	if c.Bool("open-browser") && len(urls) > 0 {
+		return handleOpenURLsInBrowser(c, urls)
 	}
 
-	// Handle --tab flag (fetch from existing tab)
-	if c.IsSet("tab") {
-		// Check for conflicting URL argument
-		if c.NArg() > 0 {
-			logger.Error("Cannot use --tab with URL argument")
-			logger.Info("Use either --tab to fetch from existing tab OR provide URL to fetch new page")
-			return ErrTabURLConflict
-		}
-		return handleTabFetch(c)
-	}
+	// Route based on URL count
+	if len(urls) == 1 {
+		// Single URL - use existing single URL flow
+		urlStr := urls[0]
 
-	// Validate URL argument
-	if c.NArg() == 0 {
-		logger.Error("URL argument is required")
-		logger.ErrorWithSuggestion("Missing URL", "snag <url>")
-		return ErrInvalidURL
-	}
-
-	urlStr := c.Args().First()
-
-	// Validate and normalize URL
-	validatedURL, err := validateURL(urlStr)
-	if err != nil {
-		return err
-	}
-
-	logger.Verbose("Target URL: %s", validatedURL)
-
-	// Validate conflicting flags
-	if c.Bool("force-headless") && c.Bool("force-visible") {
-		logger.Error("Conflicting flags: --force-headless and --force-visible cannot be used together")
-		return fmt.Errorf("conflicting flags: --force-headless and --force-visible")
-	}
-
-	// Normalize format (handles case-insensitive input and aliases)
-	format := normalizeFormat(c.String("format"))
-
-	// Extract configuration from flags
-	config := &Config{
-		URL:           validatedURL,
-		OutputFile:    c.String("output"),
-		OutputDir:     c.String("output-dir"),
-		Format:        format,
-		Timeout:       c.Int("timeout"),
-		WaitFor:       c.String("wait-for"),
-		Port:          c.Int("port"),
-		CloseTab:      c.Bool("close-tab"),
-		ForceHeadless: c.Bool("force-headless"),
-		ForceVisible:  c.Bool("force-visible"),
-		OpenBrowser:   c.Bool("open-browser"),
-		UserAgent:     c.String("user-agent"),
-	}
-
-	logger.Debug("Config: format=%s, timeout=%d, port=%d", config.Format, config.Timeout, config.Port)
-
-	// Validate conflicting output flags
-	if config.OutputFile != "" && config.OutputDir != "" {
-		logger.Error("Cannot use --output and --output-dir together")
-		logger.Info("Use --output for specific filename OR --output-dir for auto-generated filename")
-		return fmt.Errorf("conflicting flags: --output and --output-dir")
-	}
-
-	// Validate format
-	if err := validateFormat(config.Format); err != nil {
-		return err
-	}
-
-	// Validate timeout
-	if err := validateTimeout(config.Timeout); err != nil {
-		return err
-	}
-
-	// Validate port
-	if err := validatePort(config.Port); err != nil {
-		return err
-	}
-
-	// Validate output file path if provided
-	if config.OutputFile != "" {
-		if err := validateOutputPath(config.OutputFile); err != nil {
+		// Validate and normalize URL
+		validatedURL, err := validateURL(urlStr)
+		if err != nil {
 			return err
 		}
-	}
 
-	// Validate output directory if provided
-	if config.OutputDir != "" {
-		if err := validateDirectory(config.OutputDir); err != nil {
+		logger.Verbose("Target URL: %s", validatedURL)
+
+		// Validate conflicting flags
+		if c.Bool("force-headless") && c.Bool("force-visible") {
+			logger.Error("Conflicting flags: --force-headless and --force-visible cannot be used together")
+			return fmt.Errorf("conflicting flags: --force-headless and --force-visible")
+		}
+
+		// Normalize format (handles case-insensitive input and aliases)
+		format := normalizeFormat(c.String("format"))
+
+		// Extract configuration from flags
+		config := &Config{
+			URL:           validatedURL,
+			OutputFile:    c.String("output"),
+			OutputDir:     c.String("output-dir"),
+			Format:        format,
+			Timeout:       c.Int("timeout"),
+			WaitFor:       c.String("wait-for"),
+			Port:          c.Int("port"),
+			CloseTab:      c.Bool("close-tab"),
+			ForceHeadless: c.Bool("force-headless"),
+			ForceVisible:  c.Bool("force-visible"),
+			OpenBrowser:   c.Bool("open-browser"),
+			UserAgent:     c.String("user-agent"),
+		}
+
+		logger.Debug("Config: format=%s, timeout=%d, port=%d", config.Format, config.Timeout, config.Port)
+
+		// Validate conflicting output flags
+		if config.OutputFile != "" && config.OutputDir != "" {
+			logger.Error("Cannot use --output and --output-dir together")
+			logger.Info("Use --output for specific filename OR --output-dir for auto-generated filename")
+			return fmt.Errorf("conflicting flags: --output and --output-dir")
+		}
+
+		// Validate format
+		if err := validateFormat(config.Format); err != nil {
 			return err
 		}
+
+		// Validate timeout
+		if err := validateTimeout(config.Timeout); err != nil {
+			return err
+		}
+
+		// Validate port
+		if err := validatePort(config.Port); err != nil {
+			return err
+		}
+
+		// Validate output file path if provided
+		if config.OutputFile != "" {
+			if err := validateOutputPath(config.OutputFile); err != nil {
+				return err
+			}
+		}
+
+		// Validate output directory if provided
+		if config.OutputDir != "" {
+			if err := validateDirectory(config.OutputDir); err != nil {
+				return err
+			}
+		}
+
+		logger.Verbose("Configuration: format=%s, timeout=%ds, port=%d", config.Format, config.Timeout, config.Port)
+
+		// Execute the snag operation
+		return snag(config)
 	}
 
-	logger.Verbose("Configuration: format=%s, timeout=%ds, port=%d", config.Format, config.Timeout, config.Port)
-
-	// Handle --output-dir: Generate filename after page is fetched
-	// Note: For single URL fetches with -d, we need to fetch first to get the title
-	// This will be handled in snag() function after page load
-
-	// Execute the snag operation
-	return snag(config)
+	// Multiple URLs (2+) - use batch processing
+	return handleMultipleURLs(c, urls)
 }

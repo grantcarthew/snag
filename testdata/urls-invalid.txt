@@ -1,0 +1,23 @@
+# Test file with invalid URLs to test error handling
+# Valid URLs should be processed, invalid ones should be skipped with warnings
+
+# Valid URL
+example.com
+
+# Invalid: URL with space but no comment marker (should warn and skip)
+example.com invalid extra text
+
+# Valid URL with inline comment
+httpbin.org/html # This is valid
+
+# Invalid: Malformed URL
+not a valid url at all
+
+# Valid URL
+go.dev
+
+# Invalid: Just a comment without URL
+# This line has no URL
+
+# Valid URL after invalid ones
+httpbin.org/status/200
