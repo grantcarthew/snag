@@ -611,7 +611,7 @@ For each argument, answer:
 
 Track completion of each task:
 
-- [ ] Task 1: `<url>`
+- [x] Task 1: `<url>` - **COMPLETE** (2025-10-22)
 - [ ] Task 2: `--url-file`
 - [ ] Task 3: `--output` / `-o`
 - [ ] Task 4: `--output-dir` / `-d`
