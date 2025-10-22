@@ -207,3 +207,184 @@ func TestConvertToMarkdown_Minimal(t *testing.T) {
 		t.Errorf("expected 'Hello' in markdown output, got:\n%s", md)
 	}
 }
+
+// Phase 3: Text extraction tests
+
+func TestExtractPlainText_Headings(t *testing.T) {
+	html := `<html><body>
+		<h1>Main Title</h1>
+		<h2>Subtitle</h2>
+		<p>Paragraph text</p>
+	</body></html>`
+
+	converter := NewContentConverter(FormatText)
+	text := converter.extractPlainText(html)
+
+	// Check for text content (no HTML tags, no markdown syntax)
+	if !strings.Contains(text, "Main Title") {
+		t.Errorf("expected 'Main Title' in text output, got:\n%s", text)
+	}
+	if !strings.Contains(text, "Subtitle") {
+		t.Errorf("expected 'Subtitle' in text output, got:\n%s", text)
+	}
+	if !strings.Contains(text, "Paragraph text") {
+		t.Errorf("expected 'Paragraph text' in text output, got:\n%s", text)
+	}
+
+	// Should NOT contain HTML tags
+	if strings.Contains(text, "<h1>") || strings.Contains(text, "</h1>") {
+		t.Errorf("expected no HTML tags in text output, got:\n%s", text)
+	}
+
+	// Should NOT contain markdown syntax
+	if strings.Contains(text, "# Main Title") {
+		t.Errorf("expected no markdown syntax in text output, got:\n%s", text)
+	}
+}
+
+func TestExtractPlainText_Links(t *testing.T) {
+	html := `<html><body>
+		<p>Visit <a href="https://example.com">our website</a> for more info.</p>
+	</body></html>`
+
+	converter := NewContentConverter(FormatText)
+	text := converter.extractPlainText(html)
+
+	// Should contain the URL (plain text extraction shows URLs)
+	if !strings.Contains(text, "example.com") {
+		t.Errorf("expected URL 'example.com' in output, got:\n%s", text)
+	}
+
+	// Should contain surrounding text
+	if !strings.Contains(text, "Visit") || !strings.Contains(text, "more info") {
+		t.Errorf("expected surrounding text in output, got:\n%s", text)
+	}
+
+	// Should NOT contain HTML tags
+	if strings.Contains(text, "<a href") {
+		t.Errorf("expected no HTML tags in text output, got:\n%s", text)
+	}
+
+	// Should NOT contain markdown link syntax
+	if strings.Contains(text, "[our website](") {
+		t.Errorf("expected no markdown syntax in text output, got:\n%s", text)
+	}
+}
+
+func TestExtractPlainText_Formatting(t *testing.T) {
+	html := `<html><body>
+		<p>This is <strong>bold</strong> and <em>italic</em> text.</p>
+		<p>This has <del>strikethrough</del> text.</p>
+	</body></html>`
+
+	converter := NewContentConverter(FormatText)
+	text := converter.extractPlainText(html)
+
+	// Should contain the text content
+	if !strings.Contains(text, "bold") {
+		t.Errorf("expected 'bold' in text output, got:\n%s", text)
+	}
+	if !strings.Contains(text, "italic") {
+		t.Errorf("expected 'italic' in text output, got:\n%s", text)
+	}
+	if !strings.Contains(text, "strikethrough") {
+		t.Errorf("expected 'strikethrough' in text output, got:\n%s", text)
+	}
+
+	// Should NOT contain HTML tags
+	if strings.Contains(text, "<strong>") || strings.Contains(text, "<em>") {
+		t.Errorf("expected no HTML tags in text output, got:\n%s", text)
+	}
+
+	// Should NOT contain markdown syntax
+	if strings.Contains(text, "**bold**") || strings.Contains(text, "*italic*") {
+		t.Errorf("expected no markdown syntax in text output, got:\n%s", text)
+	}
+}
+
+func TestExtractPlainText_Scripts(t *testing.T) {
+	html := `<html><head>
+		<script>console.log("test");</script>
+	</head><body>
+		<p>Visible content</p>
+		<script>alert("popup");</script>
+	</body></html>`
+
+	converter := NewContentConverter(FormatText)
+	text := converter.extractPlainText(html)
+
+	// Should contain visible content
+	if !strings.Contains(text, "Visible content") {
+		t.Errorf("expected 'Visible content' in text output, got:\n%s", text)
+	}
+
+	// Should NOT contain script content
+	if strings.Contains(text, "console.log") || strings.Contains(text, "alert") {
+		t.Errorf("expected no script content in text output, got:\n%s", text)
+	}
+}
+
+func TestExtractPlainText_Lists(t *testing.T) {
+	html := `<html><body>
+		<ul>
+			<li>Item 1</li>
+			<li>Item 2</li>
+		</ul>
+		<ol>
+			<li>First</li>
+			<li>Second</li>
+		</ol>
+	</body></html>`
+
+	converter := NewContentConverter(FormatText)
+	text := converter.extractPlainText(html)
+
+	// Should contain list items
+	if !strings.Contains(text, "Item 1") {
+		t.Errorf("expected 'Item 1' in text output, got:\n%s", text)
+	}
+	if !strings.Contains(text, "Item 2") {
+		t.Errorf("expected 'Item 2' in text output, got:\n%s", text)
+	}
+	if !strings.Contains(text, "First") {
+		t.Errorf("expected 'First' in text output, got:\n%s", text)
+	}
+	if !strings.Contains(text, "Second") {
+		t.Errorf("expected 'Second' in text output, got:\n%s", text)
+	}
+
+	// Should NOT contain HTML tags
+	if strings.Contains(text, "<li>") || strings.Contains(text, "<ul>") {
+		t.Errorf("expected no HTML tags in text output, got:\n%s", text)
+	}
+}
+
+func TestExtractPlainText_Minimal(t *testing.T) {
+	html := `<html><body>Hello World</body></html>`
+
+	converter := NewContentConverter(FormatText)
+	text := converter.extractPlainText(html)
+
+	// Should contain the text
+	if !strings.Contains(text, "Hello World") {
+		t.Errorf("expected 'Hello World' in text output, got:\n%s", text)
+	}
+
+	// Should be plain text (no tags)
+	if strings.Contains(text, "<") || strings.Contains(text, ">") {
+		t.Errorf("expected no HTML in text output, got:\n%s", text)
+	}
+}
+
+func TestExtractPlainText_Empty(t *testing.T) {
+	html := `<html><body></body></html>`
+
+	converter := NewContentConverter(FormatText)
+	text := converter.extractPlainText(html)
+
+	// Should be empty or whitespace only
+	trimmed := strings.TrimSpace(text)
+	if trimmed != "" {
+		t.Errorf("expected empty text output, got: %q", text)
+	}
+}

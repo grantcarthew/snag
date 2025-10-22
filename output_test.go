@@ -1,0 +1,328 @@
+// Copyright (c) 2025 Grant Carthew
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package main
+
+import (
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+)
+
+func init() {
+	// Initialize global logger for tests (discard output)
+	logger = &Logger{
+		level:  LevelQuiet,
+		color:  false,
+		writer: io.Discard,
+	}
+}
+
+// TestSlugifyTitle tests URL-safe slug generation from page titles
+func TestSlugifyTitle(t *testing.T) {
+	tests := []struct {
+		title    string
+		maxLen   int
+		expected string
+		desc     string
+	}{
+		// Basic slugification
+		{"Example Domain", 80, "example-domain", "simple title"},
+		{"GitHub - Project Page", 80, "github-project-page", "title with dash"},
+		{"Docs   -   The Go Language", 80, "docs-the-go-language", "multiple spaces"},
+
+		// Special characters
+		{"!!!Test???", 80, "test", "only special chars"},
+		{"Hello@World#2024", 80, "hello-world-2024", "mixed special chars"},
+		{"UTF-8 Encoding: 你好", 80, "utf-8-encoding", "unicode characters"},
+
+		// Edge cases
+		{"", 80, "", "empty title"},
+		{"   ", 80, "", "only whitespace"},
+		{"---", 80, "", "only hyphens"},
+		{"Test", 80, "test", "single word"},
+
+		// Truncation
+		{"This is a very long title that exceeds the maximum length allowed for slugs", 20, "this-is-a-very-long", "truncation at maxLen"},
+		{"abcdefghijklmnopqrstuvwxyz", 10, "abcdefghij", "truncation exact"},
+		{"hello-world-how-are-you", 15, "hello-world-how", "truncation with hyphen"},
+
+		// Case conversion
+		{"UPPERCASE TITLE", 80, "uppercase-title", "all uppercase"},
+		{"MixedCase Title", 80, "mixedcase-title", "mixed case"},
+
+		// Multiple consecutive hyphens
+		{"Test  -  Multiple  -  Hyphens", 80, "test-multiple-hyphens", "collapse hyphens"},
+		{"a----b", 80, "a-b", "many consecutive hyphens"},
+	}
+
+	for _, tt := range tests {
+		result := SlugifyTitle(tt.title, tt.maxLen)
+		if result != tt.expected {
+			t.Errorf("SlugifyTitle(%q, %d) [%s] = %q, expected %q",
+				tt.title, tt.maxLen, tt.desc, result, tt.expected)
+		}
+	}
+}
+
+// TestGenerateURLSlug tests fallback slug generation from URLs
+func TestGenerateURLSlug(t *testing.T) {
+	tests := []struct {
+		url      string
+		expected string
+		desc     string
+	}{
+		// Valid URLs
+		{"https://example.com", "example-com", "simple domain"},
+		{"https://www.github.com/user/repo", "www-github-com", "subdomain"},
+		{"https://api.example.com:8080", "api-example-com-8080", "with port"},
+		{"http://localhost:3000", "localhost-3000", "localhost"},
+
+		// Edge cases
+		{"file:///path/to/file.html", "page", "file URL"},
+		{"invalid-url", "page", "invalid URL"},
+		{"", "page", "empty URL"},
+
+		// Complex hostnames
+		{"https://my-service.cloud-provider.example.com", "my-service-cloud-provider-example-com", "multi-level subdomain"},
+	}
+
+	for _, tt := range tests {
+		result := GenerateURLSlug(tt.url)
+		if result != tt.expected {
+			t.Errorf("GenerateURLSlug(%q) [%s] = %q, expected %q",
+				tt.url, tt.desc, result, tt.expected)
+		}
+	}
+}
+
+// TestGetFileExtension tests format to file extension mapping
+func TestGetFileExtension(t *testing.T) {
+	tests := []struct {
+		format   string
+		expected string
+	}{
+		{FormatMarkdown, ".md"},
+		{FormatHTML, ".html"},
+		{FormatText, ".txt"},
+		{FormatPDF, ".pdf"},
+		{FormatPNG, ".png"},
+		{"unknown", ".md"}, // Default fallback
+		{"", ".md"},        // Empty fallback
+	}
+
+	for _, tt := range tests {
+		result := GetFileExtension(tt.format)
+		if result != tt.expected {
+			t.Errorf("GetFileExtension(%q) = %q, expected %q",
+				tt.format, result, tt.expected)
+		}
+	}
+}
+
+// TestGenerateFilename tests complete filename generation
+func TestGenerateFilename(t *testing.T) {
+	// Use fixed timestamp for predictable output
+	timestamp := time.Date(2025, 10, 21, 14, 30, 45, 0, time.UTC)
+
+	tests := []struct {
+		title    string
+		format   string
+		url      string
+		expected string
+		desc     string
+	}{
+		// Normal cases
+		{
+			"Example Domain",
+			FormatMarkdown,
+			"https://example.com",
+			"2025-10-21-143045-example-domain.md",
+			"basic markdown",
+		},
+		{
+			"GitHub Repository",
+			FormatHTML,
+			"https://github.com",
+			"2025-10-21-143045-github-repository.html",
+			"html format",
+		},
+		{
+			"Documentation Page",
+			FormatText,
+			"https://docs.example.com",
+			"2025-10-21-143045-documentation-page.txt",
+			"text format",
+		},
+		{
+			"PDF Report",
+			FormatPDF,
+			"https://example.com",
+			"2025-10-21-143045-pdf-report.pdf",
+			"pdf format",
+		},
+		{
+			"Screenshot",
+			FormatPNG,
+			"https://example.com",
+			"2025-10-21-143045-screenshot.png",
+			"png format",
+		},
+
+		// Empty title fallback to URL
+		{
+			"",
+			FormatMarkdown,
+			"https://example.com",
+			"2025-10-21-143045-example-com.md",
+			"empty title uses URL",
+		},
+		{
+			"   ",
+			FormatMarkdown,
+			"https://www.github.com",
+			"2025-10-21-143045-www-github-com.md",
+			"whitespace title uses URL",
+		},
+
+		// Special characters in title
+		{
+			"Hello@World#2024!!!",
+			FormatMarkdown,
+			"https://example.com",
+			"2025-10-21-143045-hello-world-2024.md",
+			"special chars removed",
+		},
+	}
+
+	for _, tt := range tests {
+		result := GenerateFilename(tt.title, tt.format, timestamp, tt.url)
+		if result != tt.expected {
+			t.Errorf("GenerateFilename(%q, %q, ..., %q) [%s] = %q, expected %q",
+				tt.title, tt.format, tt.url, tt.desc, result, tt.expected)
+		}
+	}
+}
+
+// TestResolveConflict tests filename conflict resolution
+func TestResolveConflict(t *testing.T) {
+	// Create temporary directory
+	tmpDir := t.TempDir()
+
+	// Test 1: No conflict - file doesn't exist
+	filename, err := ResolveConflict(tmpDir, "test.md")
+	if err != nil {
+		t.Fatalf("ResolveConflict failed: %v", err)
+	}
+	if filename != "test.md" {
+		t.Errorf("expected 'test.md', got %q", filename)
+	}
+
+	// Test 2: Create file, should get conflict
+	testFile := filepath.Join(tmpDir, "test.md")
+	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	filename, err = ResolveConflict(tmpDir, "test.md")
+	if err != nil {
+		t.Fatalf("ResolveConflict failed: %v", err)
+	}
+	if filename != "test-1.md" {
+		t.Errorf("expected 'test-1.md', got %q", filename)
+	}
+
+	// Test 3: Create test-1.md, should get test-2.md
+	testFile1 := filepath.Join(tmpDir, "test-1.md")
+	if err := os.WriteFile(testFile1, []byte("test"), 0644); err != nil {
+		t.Fatalf("failed to create test-1 file: %v", err)
+	}
+
+	filename, err = ResolveConflict(tmpDir, "test.md")
+	if err != nil {
+		t.Fatalf("ResolveConflict failed: %v", err)
+	}
+	if filename != "test-2.md" {
+		t.Errorf("expected 'test-2.md', got %q", filename)
+	}
+
+	// Test 4: Different extension
+	filename, err = ResolveConflict(tmpDir, "test.pdf")
+	if err != nil {
+		t.Fatalf("ResolveConflict failed: %v", err)
+	}
+	if filename != "test.pdf" {
+		t.Errorf("expected 'test.pdf' (different ext), got %q", filename)
+	}
+
+	// Test 5: File with multiple dots in name
+	multiDotFile := filepath.Join(tmpDir, "test.backup.md")
+	if err := os.WriteFile(multiDotFile, []byte("test"), 0644); err != nil {
+		t.Fatalf("failed to create multi-dot file: %v", err)
+	}
+
+	filename, err = ResolveConflict(tmpDir, "test.backup.md")
+	if err != nil {
+		t.Fatalf("ResolveConflict failed: %v", err)
+	}
+	if filename != "test.backup-1.md" {
+		t.Errorf("expected 'test.backup-1.md', got %q", filename)
+	}
+}
+
+// TestResolveConflict_NonexistentDirectory tests error handling
+func TestResolveConflict_NonexistentDirectory(t *testing.T) {
+	// This should work because we're just checking if files exist
+	// The directory check happens elsewhere (validateDirectory)
+	nonexistentDir := "/nonexistent/test/directory"
+
+	// Should return original filename since directory doesn't exist
+	// (no files can exist there)
+	filename, err := ResolveConflict(nonexistentDir, "test.md")
+	if err != nil {
+		t.Fatalf("ResolveConflict with nonexistent dir failed: %v", err)
+	}
+	if filename != "test.md" {
+		t.Errorf("expected 'test.md', got %q", filename)
+	}
+}
+
+// TestSlugifyTitle_Truncation tests edge cases in truncation
+func TestSlugifyTitle_Truncation(t *testing.T) {
+	// Test that truncation doesn't leave trailing hyphens
+	tests := []struct {
+		title    string
+		maxLen   int
+		expected string
+	}{
+		{"hello-world-test", 11, "hello-world"}, // Should truncate and remove trailing hyphen
+		{"test-", 10, "test"},                    // Trailing hyphen removed
+		{"a-b-c-d-e-f-g", 5, "a-b-c"},           // Multiple truncations
+	}
+
+	for _, tt := range tests {
+		result := SlugifyTitle(tt.title, tt.maxLen)
+		if result != tt.expected {
+			t.Errorf("SlugifyTitle(%q, %d) = %q, expected %q",
+				tt.title, tt.maxLen, result, tt.expected)
+		}
+
+		// Verify no trailing hyphens
+		if strings.HasSuffix(result, "-") {
+			t.Errorf("SlugifyTitle(%q, %d) has trailing hyphen: %q",
+				tt.title, tt.maxLen, result)
+		}
+
+		// Verify no leading hyphens
+		if strings.HasPrefix(result, "-") {
+			t.Errorf("SlugifyTitle(%q, %d) has leading hyphen: %q",
+				tt.title, tt.maxLen, result)
+		}
+	}
+}
