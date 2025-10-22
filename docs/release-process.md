@@ -84,7 +84,7 @@ Follow [Semantic Versioning](https://semver.org/):
 
 **Example**: If current is `v0.0.3` and adding features → `v0.1.0`
 
-**Decision**: ******\_\_\_****** (fill in new version number)
+**Decision**: **\*\***\_\_\_**\*\*** (fill in new version number)
 
 ---
 

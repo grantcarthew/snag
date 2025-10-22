@@ -34,7 +34,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ## Design Decisions Summary
 
-**22 major design decisions documented below:**
+**26 major design decisions documented below:**
 
 ### Phase 1 (MVP) Decisions
 
@@ -57,16 +57,25 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ### Phase 2 (Tab Management) Decisions
 
-| #   | Decision              | Choice                                                       |
-| --- | --------------------- | ------------------------------------------------------------ |
-| 15  | Flag Assignment       | `-t` moved from `--timeout` to `--tab` (more frequently used) |
-| 16  | Tab Indexing          | 1-based indexing (first tab is [1], not [0])                 |
-| 17  | Pattern Matching      | Progressive fallthrough (exact → contains → regex)           |
-| 18  | Case Sensitivity      | Case-insensitive matching for all modes                      |
-| 19  | Regex Support         | Full regex patterns (not just wildcards)                     |
-| 20  | Pattern Simplicity    | No regex detection needed (try all methods in order)         |
-| 21  | Multiple Matches      | First match wins (predictable, simple)                       |
-| 22  | Performance           | Single-pass page.Info() caching (3x improvement)             |
+| #   | Decision           | Choice                                                        |
+| --- | ------------------ | ------------------------------------------------------------- |
+| 15  | Flag Assignment    | `-t` moved from `--timeout` to `--tab` (more frequently used) |
+| 16  | Tab Indexing       | 1-based indexing (first tab is [1], not [0])                  |
+| 17  | Pattern Matching   | Progressive fallthrough (exact → contains → regex)            |
+| 18  | Case Sensitivity   | Case-insensitive matching for all modes                       |
+| 19  | Regex Support      | Full regex patterns (not just wildcards)                      |
+| 20  | Pattern Simplicity | No regex detection needed (try all methods in order)          |
+| 21  | Multiple Matches   | First match wins (predictable, simple)                        |
+| 22  | Performance        | Single-pass page.Info() caching (3x improvement)              |
+
+### Phase 3 (Format Refactoring) Decisions
+
+| #   | Decision                  | Choice                                                          |
+| --- | ------------------------- | --------------------------------------------------------------- |
+| 23  | Format Name Normalization | `md` (not "markdown") for consistency with file extensions      |
+| 24  | Format Alias Support      | Case-insensitive formats with aliases (markdown→md, txt→text)   |
+| 25  | Screenshot → PNG Format   | Remove `--screenshot` flag, use `--format png` (consistency)    |
+| 26  | Binary Format Safety      | Auto-generate filenames for PDF/PNG (prevent stdout corruption) |
 
 See detailed rationale in [Design Decisions Made](#design-decisions-made) section below.
 
@@ -110,8 +119,11 @@ Alternative considered:
 
 **Output Formats:**
 
-- Markdown (default) - clean, readable
-- HTML (raw) - via `--format html` flag
+- Markdown (default) - clean, readable text format
+- HTML - raw HTML output via `--format html`
+- Text - plain text only (strips all HTML) via `--format text`
+- PDF - visual rendering as document via `--format pdf`
+- PNG - visual rendering as image via `--format png`
 
 ## What It Does NOT Do
 
@@ -120,8 +132,8 @@ Alternative considered:
 - ❌ Remote control browser (clicking, form filling, multi-step workflows)
 - ❌ Web scraping framework
 - ❌ JavaScript execution/testing
-- ❌ Screenshot capture
 - ❌ Performance profiling
+- ❌ Video recording or animated GIF capture
 
 **Philosophy**: `snag` is a **passive observer** for content retrieval, not an automation framework. For browser automation, use Puppeteer, Playwright, or Selenium.
 
@@ -158,7 +170,8 @@ snag [options] <url>
 
 ```
   -o, --output <file>        Save output to file instead of stdout
-  --format <FORMAT>          Output format: markdown (default) | html
+  -d, --output-dir <dir>     Save files with auto-generated names to directory
+  --format <FORMAT>          Output format: md (default) | html | text | pdf | png
 ```
 
 **Page Loading:**
@@ -282,27 +295,31 @@ snag -t "github"                         # Contains "github"
 - **First match wins**: Simple, predictable, documented behavior
 - **Performance optimization**: Caching eliminates redundant network calls (3x improvement)
 
-### Phase 3+: Post-MVP Features
+### Phase 3: Additional Output Formats (Implemented - v0.0.4)
 
-Each feature below will be a separate project/enhancement after MVP release:
+**Status**: Implementation Complete (2025-10-22)
 
-**Text Format Support:**
+**Implemented Features:**
 
-```
-  --format text              Extract plain text only (strip all HTML)
-```
-
-**PDF Export:**
-
-```
-  --format pdf               Export page as PDF using Chrome rendering
+```bash
+snag --format text <url>              # Plain text extraction (strips all HTML)
+snag --format pdf <url>               # PDF export using Chrome rendering
+snag --format png <url>               # PNG screenshot capture (full page)
 ```
 
-**Screenshot Capture:**
+**Implementation Notes:**
 
-```
-  --screenshot <file>        Save screenshot of the page (PNG/JPG)
-```
+- Text format uses plain text extraction (no HTML/Markdown)
+- PDF format uses Chrome's native PDF rendering API
+- PNG format captures full-page screenshots (replaced `--screenshot` flag)
+- All formats auto-generate filenames for binary outputs (PDF, PNG)
+- Format name normalization: `md` (not "markdown") for consistency
+- Alias support: `markdown` → `md`, `txt` → `text` (backward compatibility)
+- Case-insensitive format input
+
+See [Phase 3 Implementation Notes](#phase-3-format-refactoring---implemented) for details.
+
+### Phase 4+: Future Features Under Consideration
 
 **JavaScript Control:**
 
@@ -545,12 +562,15 @@ $ snag https://example.com
 
 ### 2. Output Formats
 
-- **Decision**: MVP supports `markdown` (default) and `html` only
-- **Future Consideration**: `text`, `pdf` as separate enhancement projects
+- **Decision**: MVP supports `md` (default) and `html` formats
+- **Phase 3 Addition**: `text`, `pdf`, and `png` formats added
 - **Rationale**:
-  - Keeps MVP scope focused
-  - `text` and `pdf` add complexity (plain text extraction, Chrome PDF API)
-  - Extensible via `--format` flag design
+  - Started with essential text formats (Markdown, HTML)
+  - Added `text` for plain text extraction (no HTML/Markdown)
+  - Added `pdf` using Chrome's native PDF rendering API
+  - Added `png` for visual capture (replaces dedicated `--screenshot` flag)
+  - All formats treated consistently via `--format` flag
+  - Extensible design allows future format additions
 
 ### 3. Argument Parsing
 
@@ -1035,6 +1055,105 @@ $ snag https://example.com
   - Maintains exact same behavior, just faster
 - **Code Location**: browser.go:487-507 (GetTabByPattern function)
 
+### 23. Format Name Normalization (Phase 3)
+
+- **Decision**: Change `FormatMarkdown` from "markdown" to "md"
+- **Rationale**:
+  - **Consistency**: All other formats use short names matching file extensions (html, text, pdf, png)
+  - **Only outlier**: "markdown" was the only long-form name (8 characters vs 2-4 for others)
+  - **Matches extension**: Files are saved as `.md`, so format should be `md`
+  - **Less typing**: Shorter format name for most commonly used format
+  - **Predictability**: Users can guess format from file extension (`.md` → `md`, `.pdf` → `pdf`)
+- **Breaking Change**: Yes, but acceptable pre-v1.0
+- **Migration Path**: Backward compatibility via alias support (see Decision 24)
+- **Implementation**:
+  - Changed `FormatMarkdown = "md"` constant (was "markdown")
+  - Updated all format validation and help text
+  - Updated tests to use canonical "md" name
+- **Impact**: More consistent, predictable CLI interface
+
+### 24. Format Alias Support (Phase 3)
+
+- **Decision**: Support case-insensitive format input with backward-compatible aliases
+- **Aliases Supported**:
+  - `"markdown"` → `"md"` (backward compatibility)
+  - `"txt"` → `"text"` (common alias)
+- **Case Insensitivity**: All format inputs converted to lowercase before validation
+  - `"MARKDOWN"` → `"markdown"` → `"md"` ✅
+  - `"Png"` → `"png"` ✅
+  - `"HTML"` → `"html"` ✅
+- **Implementation**:
+  - `normalizeFormat()` function in validate.go:124-141
+  - Called before format validation in all handlers
+  - Lowercase conversion + alias mapping
+- **Rationale**:
+  - **Better UX**: Users don't worry about capitalization
+  - **Smooth migration**: Existing scripts using "markdown" continue working
+  - **Common expectations**: Users expect "txt" to work for text files
+  - **No complexity penalty**: Simple map lookup, negligible performance impact
+  - **Future-proof**: Easy to add more aliases if needed
+- **Code Location**: validate.go:124-141 (normalizeFormat function)
+
+### 25. Screenshot → PNG Format Refactor (Phase 3)
+
+- **Decision**: Remove `--screenshot` flag, make PNG a regular format via `--format png`
+- **Before**:
+  ```bash
+  snag --screenshot https://example.com       # Special flag
+  snag --format pdf https://example.com       # Format flag
+  ```
+- **After**:
+  ```bash
+  snag --format png https://example.com       # PNG is just another format
+  snag --format pdf https://example.com       # Consistent approach
+  ```
+- **Rationale**:
+  - **Consistency**: All visual outputs (PDF, PNG) treated as formats, not special cases
+  - **Eliminates code smell**: Removed parameter interdependency between `screenshot bool` and `format string`
+  - **Simpler logic**: No special-case handling throughout codebase
+  - **Semantic consistency**: PDF and PNG are both "visual captures" (not content extraction)
+  - **Cleaner Config struct**: Removed redundant `Screenshot bool` field
+  - **One way to do it**: Eliminates confusion about screenshot vs format png
+- **Breaking Change**: Yes, but acceptable pre-v1.0
+  - Old: `snag --screenshot https://example.com`
+  - New: `snag --format png https://example.com`
+- **Implementation Impact**:
+  - Removed `--screenshot` CLI flag (main.go:93-96)
+  - Removed `Screenshot bool` from Config struct (handlers.go:28)
+  - Removed `screenshot` parameter from 2 helper functions
+  - Updated 7 call sites in handlers.go
+  - Updated formats.go to use `FormatPNG` constant
+  - Simplified conditional logic (no special cases)
+- **Benefits**:
+  - 19 lines removed from handlers.go
+  - Cleaner function signatures
+  - More maintainable codebase
+  - Consistent user experience
+
+### 26. Binary Format Safety (Phase 3)
+
+- **Decision**: Auto-generate filenames for binary formats (PDF, PNG) when no output file specified
+- **Behavior**:
+  - Text formats (md, html, text): Output to stdout by default
+  - Binary formats (pdf, png): Auto-generate filename to current directory
+- **Rationale**:
+  - **Terminal corruption prevention**: Binary data to stdout corrupts terminal display
+  - **Better UX**: No need to remember `-o` flag for binary formats
+  - **Safety first**: Prevents accidental terminal damage
+  - **Sensible defaults**: Users expect binary files to be saved
+- **Implementation**:
+  - Check if output file not specified: `if config.OutputFile == ""`
+  - Check if binary format: `if format == FormatPDF || format == FormatPNG`
+  - Auto-generate filename with timestamp and page title
+  - Save to current directory (handlers.go:118, 441)
+- **Auto-Generated Filename Format**:
+  ```
+  yyyy-mm-dd-hhmmss-{page-title-slug}.{ext}
+  Example: 2025-10-22-142033-github-snag-repo.png
+  ```
+- **User Override**: Can still use `-o` or `-d` to specify custom location
+- **Code Location**: handlers.go:116-133, 439-450
+
 ## Implementation Notes
 
 ### Phase 1 (MVP) - Implemented
@@ -1079,10 +1198,12 @@ Phase 2 implementation complete (2025-10-21) with 8 additional design decisions 
 **Design Changes During Implementation:**
 
 1. **Pattern matching order**: Changed from regex → exact → contains to exact → contains → regex
+
    - Reason: Most common cases hit first for better performance
    - Suggestion from user led to simpler, more intuitive behavior
 
 2. **Regex detection removed**: Originally planned `hasRegexChars()` detection function
+
    - Reason: Unnecessary complexity, simpler to try all methods in order
    - Cleaner code, more predictable behavior
 
@@ -1102,22 +1223,107 @@ Phase 2 implementation complete (2025-10-21) with 8 additional design decisions 
 - ✅ AGENTS.md updated with comprehensive Phase 2 examples
 - ✅ README.md updated with tab management documentation (public-ready)
 - ✅ PROJECT.md updated with session summaries and progress tracking
-- ⏳ docs/design-record.md (this document) - being updated now
+- ✅ docs/design-record.md (this document) updated with Phase 2 decisions
 
 **Implementation Details**: See PROJECT.md for detailed session summaries and implementation notes
 
+### Phase 3 (Format Refactoring) - Implemented
+
+Phase 3 implementation complete (2025-10-22) with 4 design decisions (23-26).
+
+**Implementation Status**: Code complete, tests and documentation in progress
+
+**Key Implementation Outcomes:**
+
+- **Format name normalization**: `markdown` → `md` for consistency
+- **Format alias support**: Case-insensitive input with backward-compatible aliases
+  - `normalizeFormat()` function handles lowercase conversion and alias mapping
+  - Aliases: `"markdown"` → `"md"`, `"txt"` → `"text"`
+  - Called in 3 locations: main.go, handleAllTabs, handleTabFetch
+- **Screenshot → PNG refactor**: Removed `--screenshot` flag entirely
+  - PNG is now a regular format via `--format png`
+  - Removed `Screenshot bool` from Config struct
+  - Removed `screenshot` parameter from `processPageContent()` and `generateOutputFilename()`
+  - Updated all 7 call sites in handlers.go
+  - 19 lines eliminated through refactoring
+- **Binary format safety**: Auto-generate filenames for PDF/PNG
+  - Prevents terminal corruption from binary output to stdout
+  - Auto-generates timestamp-based filenames in current directory
+  - Users can still override with `-o` or `-d` flags
+
+**Files Modified:**
+
+- `main.go`: Updated format constants, removed `--screenshot` flag, added `normalizeFormat()` call
+- `validate.go`: Added `normalizeFormat()` function, updated `validateFormat()` for PNG
+- `handlers.go`: Removed `Screenshot` from Config, updated 2 helper functions + 7 call sites
+- `formats.go`: Updated to use `FormatPNG` constant, updated comments
+- `output.go`: Updated to use `FormatPNG` constant
+- CLI description: Updated to mention all 5 formats
+
+**Breaking Changes (Pre-v1.0):**
+
+1. ❌ `snag --screenshot <url>` → ✅ `snag --format png <url>`
+2. ❌ `snag --format markdown <url>` → ✅ `snag --format md <url>` (but alias still works)
+
+**Backward Compatibility:**
+
+- ✅ `--format markdown` still works (via alias)
+- ✅ `--format MARKDOWN` works (case-insensitive)
+- ✅ `--format txt` works (alias for text)
+
+**Code Quality Improvements:**
+
+- Eliminated parameter interdependency code smell (screenshot + format)
+- Consistent treatment of all formats (no special cases)
+- Cleaner function signatures (fewer parameters)
+- More maintainable codebase (single source of truth)
+
+**Testing Status:**
+
+- Build: ✅ Successful
+- Unit tests: ⏳ Need updates for new format names
+- Integration tests: ⏳ Need updates for `--format png` (was `--screenshot`)
+- Format validation tests: ⏳ Need fixes (pdf/text now valid, markdown→md)
+
+**Documentation Status:**
+
+- ✅ CLI help text updated (--format description)
+- ✅ CLI description updated (mentions all formats)
+- ✅ docs/design-record.md (this document) updated
+- ⏳ README.md - needs update for format changes
+- ⏳ AGENTS.md - needs update for format changes
+
+**Next Steps:**
+
+1. Update test files to use canonical format names (`md` not `markdown`)
+2. Fix format validation tests (update valid/invalid format lists)
+3. Update all `--screenshot` references to `--format png` in tests
+4. Run full test suite
+5. Update README.md and AGENTS.md documentation
+6. Manual testing with all formats
+7. Git commit with comprehensive message
+
+**Implementation Details**: See PROJECT.md for step-by-step refactoring process
+
 ### Future Enhancements Under Consideration
 
-**Phase 2.5+:**
-- `--tab-all <pattern>` - Fetch from all matching tabs
+**Phase 2.5+ (Tab Enhancements):**
+
+- `--tab-all <pattern>` - Fetch from all matching tabs (batch processing)
 - `--list-tabs --format json` - JSON output for scripting
 - Tab filtering and sorting options
+- Close tab after fetching (`--close-tab` with `--tab`)
 
-**Phase 3+:**
-- Additional output formats (text, pdf)
-- Screenshot capabilities
-- Cookie management
-- Proxy support
+**Phase 4+ (Advanced Features):**
+
+- JavaScript control (`--no-js`)
+- Cookie management (`--cookies <file>`)
+- Advanced headers (`--header <key:value>`)
+- Redirect control (`--max-redirects <n>`)
+- Proxy support (`--proxy <url>`)
+- Custom Chrome profile (`--user-data-dir <path>`)
+- Batch processing from file list
+- JSON structured output mode
 
 ## References
 

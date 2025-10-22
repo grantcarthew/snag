@@ -21,6 +21,7 @@ Modern AI agents need web content in clean, token-efficient formats. snag solves
 - Building knowledge bases from authenticated sites
 - Capturing dynamic web content for analysis
 - Piping web content into AI processing pipelines
+- Taking page screenshots for CSS/Style analysis
 
 ## Quick Start
 
@@ -29,7 +30,7 @@ Modern AI agents need web content in clean, token-efficient formats. snag solves
 brew tap grantcarthew/tap
 brew install grantcarthew/tap/snag
 
-# Fetch a page as markdown
+# Fetch a page as Markdown (default format)
 snag example.com
 
 # Save to file
@@ -112,6 +113,9 @@ snag example.com > output.md
 # Get raw HTML instead
 snag --format html https://example.com
 
+# Get plain text only (strips all HTML)
+snag --format text https://example.com
+
 # Quiet mode (content only, no logs)
 snag --quiet https://example.com
 
@@ -123,6 +127,113 @@ snag --timeout 60 https://slow-site.com
 
 # Verbose logging for debugging
 snag --verbose https://example.com
+```
+
+## Output Formats
+
+snag supports 5 output formats for different use cases. Format names are case-insensitive and support aliases for convenience.
+
+### Text Formats
+
+**Markdown (default):**
+
+Clean, readable text format optimized for AI agents and documentation. Uses 70% fewer tokens than HTML.
+
+```bash
+# Default format (no flag needed)
+snag https://example.com
+
+# Explicit format
+snag --format md https://example.com
+
+# Alias also works (backward compatibility)
+snag --format markdown https://example.com
+
+# Case-insensitive
+snag --format MD https://example.com
+snag --format Markdown https://example.com
+```
+
+**HTML:**
+
+Raw HTML output, preserving original page structure.
+
+```bash
+# Get raw HTML
+snag --format html https://example.com
+
+# Case-insensitive
+snag --format HTML https://example.com
+```
+
+**Text:**
+
+Plain text only, strips all HTML tags and formatting.
+
+```bash
+# Extract plain text
+snag --format text https://example.com
+
+# Alias also works
+snag --format txt https://example.com
+
+# Case-insensitive
+snag --format TEXT https://example.com
+```
+
+### Binary Formats (PDF, PNG)
+
+Binary formats automatically generate filenames to prevent terminal corruption. Files are saved to the current directory unless you specify a location.
+
+**PDF:**
+
+Visual rendering as a PDF document using Chrome's native rendering engine.
+
+```bash
+# Auto-generates filename in current directory
+snag --format pdf https://example.com
+# Creates: 2025-10-22-142033-example-domain.pdf
+
+# Specify custom filename
+snag --format pdf -o report.pdf https://example.com
+
+# Save to specific directory with auto-generated name
+snag --format pdf -d ~/Downloads https://example.com
+# Creates: ~/Downloads/2025-10-22-142033-example-domain.pdf
+
+# Case-insensitive
+snag --format PDF https://example.com
+```
+
+**PNG:**
+
+Full-page screenshot as a PNG image.
+
+```bash
+# Auto-generates filename in current directory
+snag --format png https://example.com
+# Creates: 2025-10-22-142033-example-domain.png
+
+# Specify custom filename
+snag --format png -o screenshot.png https://example.com
+
+# Save to specific directory with auto-generated name
+snag --format png -d ~/screenshots https://example.com
+# Creates: ~/screenshots/2025-10-22-142033-example-domain.png
+
+# Case-insensitive
+snag --format PNG https://example.com
+```
+
+**Why auto-generate filenames?**
+
+Binary formats (PDF, PNG) cannot output to stdout because binary data corrupts terminal display. When you don't specify `-o` or `-d`, snag automatically generates a timestamped filename in the current directory.
+
+**Auto-generated filename format:**
+
+```
+yyyy-mm-dd-hhmmss-{page-title-slug}.{ext}
+Example: 2025-10-22-142033-github-snag-repo.png
 ```
 
 ## Common Scenarios
@@ -198,6 +309,14 @@ snag -t ".*/dashboard" > dashboard.md
 for i in 1 2 3 4; do
   snag -t $i -o "tab-$i.md"
 done
+
+# Process all open tabs at once
+snag --all-tabs --output-dir ~/my-tabs
+snag -a -d ~/reference
+
+# Combine --all-tabs with format options
+snag --all-tabs --format pdf -d ~/pdfs
+snag --all-tabs --format png -d ~/screenshots
 ```
 
 ### Batch Processing URLs
@@ -340,8 +459,12 @@ snag -t 1
 # Fetch from third tab and save to file
 snag -t 3 -o docs.md
 
-# Get HTML instead of markdown
+# Get HTML instead of Markdown
 snag -t 2 --format html
+
+# Get as PDF or PNG
+snag -t 3 --format pdf -o docs.pdf
+snag -t 1 --format png -o screenshot.png
 ```
 
 **Fetch from tab by URL pattern:**
@@ -410,13 +533,18 @@ snag --port 9223 https://example.com
                              - Exact URL: https://example.com (case-insensitive)
                              - Substring: dashboard, github, docs (contains match)
                              - Regex: https://.*\.com, .*/dashboard, (github|gitlab)\.com
+-a, --all-tabs             Process all open browser tabs (saves with auto-generated filenames)
+                           Requires --output-dir or saves to current directory
 ```
 
 ### Output Control
 
 ```
 -o, --output <file>        Save output to file instead of stdout
---format <FORMAT>          Output format: markdown (default) | html
+-d, --output-dir <dir>     Save files with auto-generated names to directory
+--format <FORMAT>          Output format: md (default) | html | text | pdf | png
+                           Format aliases: markdown→md, txt→text
+                           Case-insensitive: MD, MARKDOWN, Html, PDF, etc.
 ```
 
 ### Page Loading
@@ -553,18 +681,20 @@ Fetched page but content is missing.
 Solutions:
 
 - Try `--format html` to see raw HTML
+- Try `--format text` to see plain text extraction
 - Use `--verbose` to check if page loaded correctly
 - Page may require authentication (see authentication section)
 - Content may be loaded dynamically (use `--wait-for`)
 
 **Markdown formatting looks wrong**
 
-Converted markdown has formatting issues.
+Converted Markdown has formatting issues.
 
 Solutions:
 
 - Use `--format html` to get raw HTML instead
-- Some complex HTML structures may not convert perfectly
+- Use `--format text` for plain text only (no formatting)
+- Some complex HTML structures may not convert perfectly to Markdown
 - Report specific issues at https://github.com/grantcarthew/snag/issues
 
 ### Platform-Specific Issues
