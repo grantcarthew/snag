@@ -8,6 +8,45 @@
 
 ---
 
+## Design Process
+
+This document tracks a systematic design session for the snag CLI tool's argument handling behavior.
+
+### Why This Process?
+
+Before implementing new features or fixing edge cases, we need crystal-clear design decisions for every argument interaction. This prevents:
+
+- Inconsistent behavior across similar scenarios
+- Undocumented edge cases discovered by users
+- Implementation decisions made without considering all implications
+- Technical debt from "we'll figure it out later" approaches
+
+### Strict Process
+
+This is a **design-first, implementation-later** methodology:
+
+1. **Question Phase**: For each argument, I will ask you design questions about:
+   - What happens with invalid/wrong values?
+   - How it interacts with every other argument
+   - Whether combinations should error, work together, modify behavior, or be ignored
+
+2. **Discussion Phase**: We discuss and decide together on the correct behavior
+
+3. **Documentation Phase**: Only after your explicit permission, I will:
+   - Update this PROJECT.md with progress tracking
+   - Update `docs/argument-handling.md` with the design decisions
+
+4. **No Implementation**: This is design-only. No code changes, only documentation.
+
+### Rules
+
+- I will NOT make assumptions about behavior without asking
+- I will NOT update documentation without your permission
+- I will ask about every combination systematically
+- We decide together, document completely, implement later
+
+---
+
 ## Analysis Structure
 
 For each argument, answer:
