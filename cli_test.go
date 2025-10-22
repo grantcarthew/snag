@@ -7,6 +7,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -303,7 +304,8 @@ func TestCLI_InvalidURL(t *testing.T) {
 
 // TestCLI_InvalidFormat tests invalid format flag
 func TestCLI_InvalidFormat(t *testing.T) {
-	stdout, stderr, err := runSnag("--format", "pdf", "https://example.com")
+	// Use a truly invalid format (json is not supported)
+	stdout, stderr, err := runSnag("--format", "json", "https://example.com")
 
 	assertError(t, err)
 	assertExitCode(t, err, 1)
@@ -373,7 +375,8 @@ func TestCLI_InvalidPort(t *testing.T) {
 func TestCLI_FormatOptions(t *testing.T) {
 	// Note: These will fail to actually fetch without a browser,
 	// but should pass format validation
-	tests := []string{"markdown", "html"}
+	// Test with user-facing format names (aliases that will be normalized)
+	tests := []string{"markdown", "md", "html", "text", "txt", "pdf", "png"}
 
 	for _, format := range tests {
 		t.Run(format, func(t *testing.T) {
@@ -1419,4 +1422,250 @@ func TestBrowser_TabNoMatch(t *testing.T) {
 	assertContains(t, stderr, "snag --list-tabs")
 
 	_ = stdout
+}
+
+// ============================================================================
+// Phase 3: Integration Tests for New Features
+// ============================================================================
+
+// TestBrowser_TextFormat tests --format text output
+func TestBrowser_TextFormat(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	server := startTestServer(t)
+	url := server.URL + "/simple.html"
+
+	stdout, stderr, err := runSnag("--format", "text", url)
+
+	assertNoError(t, err)
+	assertExitCode(t, err, 0)
+
+	// Verify plain text output (no HTML, no markdown)
+	assertContains(t, stdout, "Example Heading")
+	assertContains(t, stdout, "simple paragraph")
+
+	// Should NOT contain HTML tags
+	assertNotContains(t, stdout, "<h1>")
+	assertNotContains(t, stdout, "<p>")
+
+	// Should NOT contain markdown syntax
+	assertNotContains(t, stdout, "# Example Heading")
+	assertNotContains(t, stdout, "**bold")
+
+	// Verify logs went to stderr
+	if len(stderr) > 0 {
+		assertNotContains(t, stderr, "Example Heading")
+	}
+}
+
+// TestBrowser_PDFFormat tests --format pdf creates file
+func TestBrowser_PDFFormat(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	server := startTestServer(t)
+	url := server.URL + "/simple.html"
+
+	// Create temporary file for PDF output
+	tmpFile, err := os.CreateTemp("", "snag-test-*.pdf")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	outputPath := tmpFile.Name()
+	tmpFile.Close()
+
+	// Clean up after test
+	t.Cleanup(func() {
+		os.Remove(outputPath)
+	})
+
+	stdout, stderr, err := runSnag("--format", "pdf", "-o", outputPath, url)
+
+	assertNoError(t, err)
+	assertExitCode(t, err, 0)
+
+	// Stdout should be empty (content written to file)
+	if len(strings.TrimSpace(stdout)) > 0 {
+		t.Errorf("expected empty stdout when using -o flag, got: %s", stdout)
+	}
+
+	// Verify PDF file was created
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("failed to read PDF file: %v", err)
+	}
+
+	// Check PDF magic bytes
+	if len(content) < 4 || !bytes.HasPrefix(content, []byte("%PDF")) {
+		t.Errorf("expected PDF file to start with %%PDF, got: %s", string(content[:min(20, len(content))]))
+	}
+
+	// PDF should not be empty
+	if len(content) < 100 {
+		t.Errorf("expected PDF file to have content, got only %d bytes", len(content))
+	}
+
+	_ = stderr
+}
+
+// TestBrowser_PNGFormat tests --format png creates screenshot
+func TestBrowser_PNGFormat(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	server := startTestServer(t)
+	url := server.URL + "/simple.html"
+
+	// Create temporary file for PNG output
+	tmpFile, err := os.CreateTemp("", "snag-test-*.png")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	outputPath := tmpFile.Name()
+	tmpFile.Close()
+
+	// Clean up after test
+	t.Cleanup(func() {
+		os.Remove(outputPath)
+	})
+
+	stdout, stderr, err := runSnag("--format", "png", "-o", outputPath, url)
+
+	assertNoError(t, err)
+	assertExitCode(t, err, 0)
+
+	// Stdout should be empty (content written to file)
+	if len(strings.TrimSpace(stdout)) > 0 {
+		t.Errorf("expected empty stdout when using -o flag, got: %s", stdout)
+	}
+
+	// Verify PNG file was created
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("failed to read PNG file: %v", err)
+	}
+
+	// Check PNG magic bytes
+	if len(content) < 8 || content[0] != 0x89 || content[1] != 0x50 || content[2] != 0x4E || content[3] != 0x47 {
+		t.Errorf("expected PNG file to have PNG magic bytes, got: %x", content[:min(8, len(content))])
+	}
+
+	// PNG should not be empty
+	if len(content) < 100 {
+		t.Errorf("expected PNG file to have content, got only %d bytes", len(content))
+	}
+
+	_ = stderr
+}
+
+// TestBrowser_OutputDir tests --output-dir flag with auto-generated filenames
+func TestBrowser_OutputDir(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	server := startTestServer(t)
+	url := server.URL + "/simple.html"
+
+	// Create temporary directory
+	tmpDir := t.TempDir()
+
+	stdout, stderr, err := runSnag("-d", tmpDir, url)
+
+	assertNoError(t, err)
+	assertExitCode(t, err, 0)
+
+	// When using -d, content goes to file, not stdout
+	// Stdout should be empty (or just contain logs)
+	if len(strings.TrimSpace(stdout)) > 0 {
+		// If there's output, it should be logs, not content
+		assertNotContains(t, stdout, "Example Heading")
+	}
+
+	// Check that a file was created in the temp directory
+	files, err := os.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to read temp directory: %v", err)
+	}
+
+	// Should have created exactly one file
+	if len(files) != 1 {
+		t.Fatalf("expected 1 file in output directory, got %d", len(files))
+	}
+
+	// Verify filename format and content
+	filename := files[0].Name()
+	if !strings.HasSuffix(filename, ".md") {
+		t.Errorf("expected .md file, got: %s", filename)
+	}
+	if !strings.Contains(filename, "-") {
+		t.Errorf("expected timestamp in filename, got: %s", filename)
+	}
+
+	// Read the file and verify it contains the expected content
+	filePath := filepath.Join(tmpDir, filename)
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("failed to read output file: %v", err)
+	}
+	assertContains(t, string(content), "Example Heading")
+
+	_ = stderr
+}
+
+// TestBrowser_OutputDirPDF tests --output-dir with PDF format
+func TestBrowser_OutputDirPDF(t *testing.T) {
+	if !isBrowserAvailable() {
+		t.Skip("Browser not available, skipping browser integration test")
+	}
+
+	server := startTestServer(t)
+	url := server.URL + "/simple.html"
+
+	// Create temporary directory
+	tmpDir := t.TempDir()
+
+	stdout, stderr, err := runSnag("-d", tmpDir, "--format", "pdf", url)
+
+	assertNoError(t, err)
+	assertExitCode(t, err, 0)
+
+	// Stdout should be empty for binary format
+	if len(strings.TrimSpace(stdout)) > 0 {
+		t.Errorf("expected empty stdout for PDF format, got: %s", stdout)
+	}
+
+	// Check that a PDF file was created
+	files, err := os.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to read temp directory: %v", err)
+	}
+
+	// Should have created exactly one file
+	if len(files) != 1 {
+		t.Fatalf("expected 1 file in output directory, got %d", len(files))
+	}
+
+	if len(files) > 0 {
+		// Verify filename format (should be timestamp-slug.pdf)
+		filename := files[0].Name()
+		if !strings.HasSuffix(filename, ".pdf") {
+			t.Errorf("expected .pdf file, got: %s", filename)
+		}
+	}
+
+	_ = stderr
+}
+
+// min is a polyfill for compatibility with Go versions prior to 1.21
+// (min became a built-in function in Go 1.21)
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
