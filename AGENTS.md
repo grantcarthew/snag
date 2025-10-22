@@ -9,17 +9,20 @@
 - Auto-detect and connect to existing Chrome instances
 - Launch headless or visible browser modes
 - Handle authenticated sessions gracefully
-- Convert HTML to Markdown (default) or output raw HTML
-- Tab management: List, select, and fetch from existing browser tabs (Phase 2)
+- Multiple output formats: Markdown (default), HTML, Text, PDF, PNG
+- Multiple URL support: Process multiple URLs in a single command
+- Tab management: List, select, and fetch from existing browser tabs
 - Pattern matching: Select tabs by index, exact URL, substring, or regex
+- Output directory support: Auto-generate filenames with timestamps
 - Single binary distribution, no runtime dependencies
 
 **Technology Stack:**
 
 - Language: Go 1.25.3
-- CLI Framework: github.com/urfave/cli/v2
-- Browser Control: github.com/go-rod/rod (Chrome DevTools Protocol)
-- HTML to Markdown: github.com/JohannesKaufmann/html-to-markdown/v2
+- CLI Framework: github.com/urfave/cli/v2 v2.27.7
+- Browser Control: github.com/go-rod/rod v0.116.2 (Chrome DevTools Protocol)
+- HTML to Markdown: github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
+- HTML to Text: github.com/k3a/html2text v1.2.1
 
 ## Setup Commands
 
@@ -60,7 +63,15 @@ go test -v -cover
 # Test basic content fetching
 snag https://example.com                # Fetch page as Markdown
 snag --format html https://example.com  # Fetch as HTML
+snag --format text https://example.com  # Fetch as plain text
+snag --format pdf https://example.com   # Save as PDF (auto-generates filename)
+snag --format png https://example.com   # Save as PNG screenshot (auto-generates filename)
 snag -o output.md https://example.com   # Save to file
+
+# Test multiple URL fetching
+snag https://example.com https://google.com               # Fetch multiple URLs
+snag -d output/ https://example.com https://google.com    # Save multiple with auto-generated names
+snag -o combined.md https://example.com https://google.com # Combine into single file
 
 # Test tab management features (Phase 2)
 snag --open-browser                     # Open persistent browser (with DevTools enabled)
@@ -329,10 +340,17 @@ First matching tab wins if multiple tabs match.
 
 ## Dependencies
 
-- `github.com/urfave/cli/v2` - CLI framework
-- `github.com/go-rod/rod` - Chrome DevTools Protocol
-- `github.com/JohannesKaufmann/html-to-markdown/v2` - Conversion
-- Chromium-based browser required at runtime
+**Direct Dependencies:**
+
+- `github.com/urfave/cli/v2` v2.27.7 - CLI framework
+- `github.com/go-rod/rod` v0.116.2 - Chrome DevTools Protocol
+- `github.com/JohannesKaufmann/html-to-markdown/v2` v2.4.0 - HTML to Markdown conversion
+- `github.com/k3a/html2text` v1.2.1 - HTML to plain text conversion
+
+**Runtime Requirements:**
+
+- Chromium-based browser (Chrome, Chromium, Edge, Brave)
+- macOS (arm64/amd64) or Linux (amd64/arm64)
 
 ## Troubleshooting
 
@@ -404,10 +422,34 @@ Mozilla Public License 2.0
 
 Third-party licenses in `LICENSES/` directory.
 
+## Current Development Status
+
+**Recently Completed:**
+
+- ✅ Multiple URL support (commit: 7dddb31)
+- ✅ Text format support (plain text extraction)
+- ✅ PDF format support (Chrome PDF rendering)
+- ✅ PNG format support (full-page screenshots)
+- ✅ Output directory support with auto-generated filenames
+- ✅ Format refactoring (md/html/text/pdf/png)
+
+**In Progress:**
+
+- 🚧 Argument handling analysis (see PROJECT.md and docs/argument-handling.md)
+- 🚧 URL file input (`--url-file FILE`)
+- 🚧 All-tabs fetching (`--all-tabs`)
+
+**Planned:**
+
+- Future enhancements tracked in GitHub issues
+
 ## Additional Resources
 
 - **README.md**: User-facing documentation and usage examples
-- **docs/design-record.md**: Comprehensive design decisions and rationale
+- **PROJECT.md**: Current project status and work tracking
+- **docs/design-record.md**: Comprehensive design decisions and rationale (26 design decisions documented)
+- **docs/argument-handling.md**: Complete argument compatibility matrix
 - **docs/release-process.md**: Step-by-step release guide for AI agents
+- **docs/testing.md**: Testing documentation and strategies
 - **Repository**: https://github.com/grantcarthew/snag
 - **Issues**: https://github.com/grantcarthew/snag/issues
