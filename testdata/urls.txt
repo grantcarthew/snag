@@ -1,0 +1,27 @@
+# Test URLs for snag multiple URL support
+# This file demonstrates all supported URL file features
+
+# Basic URLs (https:// will be auto-prepended)
+example.com
+
+# URLs with explicit protocols
+https://httpbin.org/html
+
+# Full-line comments work with # or //
+// This is also a comment
+
+# Inline comments with #
+go.dev/doc/ # Go programming language documentation
+
+# Inline comments with //
+httpbin.org/status/200 // HTTP status testing
+
+# Blank lines are ignored
+
+
+
+# URLs can have paths and query parameters
+example.com/path/to/page
+
+# Mixed comment styles work fine
+https://www.iana.org/domains/reserved # Internet Assigned Numbers Authority

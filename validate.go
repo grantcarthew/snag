@@ -7,6 +7,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net/url"
 	"os"
@@ -238,4 +239,79 @@ func validateOutputPathEscape(outputDir, filename string) error {
 	}
 
 	return nil
+}
+
+// loadURLsFromFile reads and parses a URL file, returning a list of valid URLs.
+// File format supports:
+//   - Full-line comments starting with # or //
+//   - Inline comments with " #" or " //"
+//   - Blank lines (ignored)
+//   - Auto-prepends https:// if no scheme present
+//   - Invalid URLs are logged as warnings and skipped
+func loadURLsFromFile(filename string) ([]string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		logger.Error("Failed to open URL file: %s", filename)
+		return nil, fmt.Errorf("failed to open URL file: %w", err)
+	}
+	defer file.Close()
+
+	var urls []string
+	scanner := bufio.NewScanner(file)
+	lineNum := 0
+
+	for scanner.Scan() {
+		lineNum++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines
+		if line == "" {
+			continue
+		}
+
+		// Skip full-line comments
+		if strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") {
+			continue
+		}
+
+		// Handle inline comments
+		hasComment := false
+		for _, marker := range []string{" #", " //"} {
+			if idx := strings.Index(line, marker); idx != -1 {
+				line = strings.TrimSpace(line[:idx])
+				hasComment = true
+				break
+			}
+		}
+
+		// Check for space without comment marker (formatting error)
+		if !hasComment && strings.Contains(line, " ") {
+			logger.Warning("Line %d: URL contains space without comment marker - skipping: %s", lineNum, line)
+			continue
+		}
+
+		// Auto-prepend https:// if missing protocol
+		if !strings.HasPrefix(line, "http://") && !strings.HasPrefix(line, "https://") && !strings.HasPrefix(line, "file://") {
+			line = "https://" + line
+		}
+
+		// Validate URL
+		if _, err := validateURL(line); err != nil {
+			logger.Warning("Line %d: Invalid URL - skipping: %s", lineNum, scanner.Text())
+			continue
+		}
+
+		urls = append(urls, line)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading file: %w", err)
+	}
+
+	if len(urls) == 0 {
+		return nil, ErrNoValidURLs
+	}
+
+	logger.Verbose("Loaded %d URLs from %s", len(urls), filename)
+	return urls, nil
 }
