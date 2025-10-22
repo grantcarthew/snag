@@ -25,7 +25,6 @@ type Config struct {
 	OutputFile    string
 	OutputDir     string
 	Format        string
-	Screenshot    bool
 	Timeout       int
 	WaitFor       string
 	Port          int
@@ -106,7 +105,7 @@ func snag(config *Config) error {
 		}
 
 		config.OutputFile, err = generateOutputFilename(
-			info.Title, config.URL, config.Format, config.Screenshot,
+			info.Title, config.URL, config.Format,
 			time.Now(), config.OutputDir,
 		)
 		if err != nil {
@@ -115,8 +114,8 @@ func snag(config *Config) error {
 	}
 
 	// For binary formats without -o or -d: auto-generate filename in current directory
-	// Binary formats (PDF, screenshot) should NEVER output to stdout (corrupts terminal)
-	if config.OutputFile == "" && (config.Format == FormatPDF || config.Screenshot) {
+	// Binary formats (PDF, PNG) should NEVER output to stdout (corrupts terminal)
+	if config.OutputFile == "" && (config.Format == FormatPDF || config.Format == FormatPNG) {
 		// Get page info for title
 		info, err := page.Info()
 		if err != nil {
@@ -124,7 +123,7 @@ func snag(config *Config) error {
 		}
 
 		config.OutputFile, err = generateOutputFilename(
-			info.Title, config.URL, config.Format, config.Screenshot,
+			info.Title, config.URL, config.Format,
 			time.Now(), ".",
 		)
 		if err != nil {
@@ -134,23 +133,17 @@ func snag(config *Config) error {
 	}
 
 	// Process page content and output in requested format
-	return processPageContent(page, config.Format, config.Screenshot, config.OutputFile)
+	return processPageContent(page, config.Format, config.OutputFile)
 }
 
 // processPageContent handles format conversion for all output types
 // Returns error if processing fails
-func processPageContent(page *rod.Page, format string, screenshot bool, outputFile string) error {
-	// Handle screenshot capture (binary format)
-	if screenshot {
-		converter := NewContentConverter("png")
-		return converter.ProcessPage(page, outputFile)
-	}
-
+func processPageContent(page *rod.Page, format string, outputFile string) error {
 	// Create content converter for specified format
 	converter := NewContentConverter(format)
 
-	// Handle binary formats (PDF) that need the page object
-	if format == FormatPDF {
+	// Handle binary formats (PDF, PNG) that need the page object
+	if format == FormatPDF || format == FormatPNG {
 		return converter.ProcessPage(page, outputFile)
 	}
 
@@ -165,16 +158,10 @@ func processPageContent(page *rod.Page, format string, screenshot bool, outputFi
 
 // generateOutputFilename creates an auto-generated filename for binary formats
 // Takes title, URL, format info and returns full path with conflict resolution
-func generateOutputFilename(title, url, format string, screenshot bool,
+func generateOutputFilename(title, url, format string,
 	timestamp time.Time, outputDir string) (string, error) {
-	// Determine format for filename generation
-	filenameFormat := format
-	if screenshot {
-		filenameFormat = "png"
-	}
-
 	// Generate filename
-	filename := GenerateFilename(title, filenameFormat, timestamp, url)
+	filename := GenerateFilename(title, format, timestamp, url)
 
 	// Resolve conflicts in directory
 	finalFilename, err := ResolveConflict(outputDir, filename)
@@ -241,8 +228,7 @@ func displayTabListOnError(bm *BrowserManager) {
 // handleAllTabs processes all open browser tabs with auto-generated filenames
 func handleAllTabs(c *cli.Context) error {
 	// Extract configuration from flags
-	format := c.String("format")
-	screenshot := c.Bool("screenshot")
+	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := c.String("wait-for")
 	outputDir := c.String("output-dir")
@@ -317,7 +303,7 @@ func handleAllTabs(c *cli.Context) error {
 
 		// Generate output filename with conflict resolution
 		outputPath, err := generateOutputFilename(
-			tab.Title, tab.URL, format, screenshot,
+			tab.Title, tab.URL, format,
 			timestamp, outputDir,
 		)
 		if err != nil {
@@ -327,7 +313,7 @@ func handleAllTabs(c *cli.Context) error {
 		}
 
 		// Process page content and output in requested format
-		if err := processPageContent(page, format, screenshot, outputPath); err != nil {
+		if err := processPageContent(page, format, outputPath); err != nil {
 			logger.Error("[%d/%d] Failed to process content: %v", tabNum, len(tabs), err)
 			failureCount++
 			continue
@@ -412,8 +398,7 @@ func handleTabFetch(c *cli.Context) error {
 	}
 
 	// Extract configuration from flags
-	format := c.String("format")
-	screenshot := c.Bool("screenshot")
+	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := c.String("wait-for")
 	outputFile := c.String("output")
@@ -452,10 +437,10 @@ func handleTabFetch(c *cli.Context) error {
 	}
 
 	// For binary formats without -o or -d: auto-generate filename in current directory
-	// Binary formats (PDF, screenshot) should NEVER output to stdout (corrupts terminal)
-	if outputFile == "" && (format == FormatPDF || screenshot) {
+	// Binary formats (PDF, PNG) should NEVER output to stdout (corrupts terminal)
+	if outputFile == "" && (format == FormatPDF || format == FormatPNG) {
 		outputFile, err = generateOutputFilename(
-			info.Title, info.URL, format, screenshot,
+			info.Title, info.URL, format,
 			time.Now(), ".",
 		)
 		if err != nil {
@@ -465,5 +450,5 @@ func handleTabFetch(c *cli.Context) error {
 	}
 
 	// Process page content and output in requested format
-	return processPageContent(page, format, screenshot, outputFile)
+	return processPageContent(page, format, outputFile)
 }
