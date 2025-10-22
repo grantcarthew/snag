@@ -38,11 +38,32 @@ This is a **design-first, implementation-later** methodology:
 
 4. **No Implementation**: This is design-only. No code changes, only documentation.
 
+### Question Format Rules
+
+To enable structured responses, questions will be asked ONE CATEGORY AT A TIME with clear numbering:
+
+```
+Question 1: Invalid Values
+1. Scenario description
+2. Scenario description
+3. Scenario description
+
+Question 2: Key Combinations
+1. Scenario description
+2. Scenario description
+```
+
+You can respond with structured answers like:
+- `1.1` - answer for Question 1, item 1
+- `1.2` - answer for Question 1, item 2
+- `2.1` - answer for Question 2, item 1
+
 ### Rules
 
 - I will NOT make assumptions about behavior without asking
 - I will NOT update documentation without your permission
 - I will ask about every combination systematically
+- I will ask ONE category at a time with clear numbering
 - We decide together, document completely, implement later
 
 ---
