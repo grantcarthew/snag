@@ -92,12 +92,14 @@ snag https://example.com -o myfile --format markdown
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
 | `-o file.txt` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
-| `-o file.md` + `--open-browser` (no URL) | **Error** | Nothing to fetch |
+| `-o file.md` + `--open-browser` (no URL) | **Warning**, flag ignored | No content fetching |
 | `-o file.md` + `--tab <pattern>` | Works normally | Fetch from tab, save to file |
 | `-o file.md` + `--tab <pattern>` (no browser) | **Error** | Tab requires running browser |
 
+**Warning messages:**
+- `--open-browser` only: `"Warning: --output ignored with --open-browser (no content fetching)"`
+
 **Error messages:**
-- `--open-browser` only: `"Cannot use --output without content source (URL or --tab)"`
 - `--tab` no browser: `"No browser instance running with remote debugging"`
 
 **Format Combinations:**
@@ -154,7 +156,6 @@ snag --url-file urls.txt -o out.md                   # ERROR: Multiple sources
 snag https://example.com -o out.md -o out2.md        # ERROR: Multiple -o flags
 snag https://example.com -o file.md -d ./dir         # ERROR: -o and -d conflict
 snag --list-tabs -o tabs.txt                         # --output ignored, lists tabs from existing browser
-snag --open-browser -o file.md                       # ERROR: Nothing to fetch
 snag --tab 1 -o file.md                              # ERROR: No browser running
 snag https://example.com -o /root/file.md            # ERROR: Permission denied
 snag https://example.com -o /nonexistent/dir/file.md # ERROR: Parent doesn't exist
@@ -164,6 +165,7 @@ snag https://example.com -o ""                       # ERROR: Empty string
 
 **With Warnings:**
 ```bash
+snag --open-browser -o file.md                       # ⚠️ Warning: --output ignored (no content fetching)
 snag https://example.com -o file.md --format html    # ⚠️ Extension mismatch
 snag https://example.com -o file.txt --format pdf    # ⚠️ Binary to text ext
 snag https://example.com -o myfile                   # ⚠️ No extension
