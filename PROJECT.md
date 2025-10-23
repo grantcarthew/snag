@@ -805,39 +805,55 @@ All **warned and ignored** (no content fetching):
 
 ---
 
-### Task 21: `--user-data-dir DIRECTORY`
+### Task 21: `--user-data-dir DIRECTORY` ✅
 
-**Questions to answer:**
-- What happens with wrong values? (doesn't exist, not a directory, permission denied, invalid path, empty string)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - Another `--user-data-dir`
+**Status:** Complete (2025-10-23)
 
-**Define:** Directory creation behavior, default value, session isolation, multi-instance support
+#### Invalid Values & Basic Behavior
 
-**Use Cases:**
-- Multiple authenticated sessions (personal vs work accounts)
-- Session isolation per project/client
-- Privacy (separate from personal browsing)
-- Enable true multi-instance browsers with different ports
+**Empty/whitespace:**
+- Warn and use browser default profile
+
+**Directory doesn't exist:**
+- Error
+
+**Path is file not directory:**
+- Error
+
+**Permission denied:**
+- Error
+
+**Invalid path characters:**
+- Error
+
+**Relative/absolute paths:**
+- Both supported, browser handles as needed
+
+**Multiple flags:**
+- Last wins
+
+**Tilde expansion:**
+- Snag expands `~` to home directory
+
+#### Browser Mode Interactions
+
+- Works with `--force-headless` and `--open-browser`
+- Existing browser connection → Warn and ignore flag
+- Multiple instances same profile → Let browser error
+- Profile persists between invocations (headless and visible)
+
+#### Content Source Interactions
+
+- Works with URLs, `--url-file`
+- Tab operations (`--tab`, `--all-tabs`) → Warn and ignore
+- `--list-tabs` → List-tabs wins (standalone like `--help`)
+
+#### Other Flag Interactions
+
+- Output control, timing, wait, close-tab → All work normally
+- `--user-agent` → Custom profile WITH custom UA (both applied)
+- Logging flags → Work normally
+- `--help` / `--version` → These win, ignore profile
 
 ---
 
@@ -865,7 +881,7 @@ Track completion of each task:
 - [x] Task 18: `--user-agent` - **COMPLETE** (2025-10-23)
 - [x] Task 19: `--help` / `-h` - **COMPLETE** (2025-10-23)
 - [x] Task 20: `--version` / `-v` - **COMPLETE** (2025-10-23)
-- [ ] Task 21: `--user-data-dir`
+- [x] Task 21: `--user-data-dir` - **COMPLETE** (2025-10-23)
 
 ---
 

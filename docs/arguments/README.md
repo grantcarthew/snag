@@ -2,7 +2,7 @@
 
 **Purpose:** Complete specification of all argument/flag combinations and their interactions.
 
-**Status:** Current implementation + Planned features (marked with 🚧)
+**Status:** All arguments analyzed and documented ✅
 
 **Last Updated:** 2025-10-23
 
@@ -32,9 +32,6 @@
 - [**`--version`** / **`-v`** - Show version](./version.md)
 - [**`--all-tabs`** / **`-a`** - Process all open tabs](./all-tabs.md)
 - [**`--user-agent STRING`** - Custom user agent](./user-agent.md)
-
-### In Progress 🚧
-
 - [**`--user-data-dir DIRECTORY`** - Custom browser profile](./user-data-dir.md)
 
 ### Advanced Topics
