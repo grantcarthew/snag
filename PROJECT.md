@@ -103,6 +103,7 @@ For each argument, answer:
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Which combinations error, which work together, which modify behavior?
 
@@ -132,6 +133,7 @@ For each argument, answer:
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Error conditions, valid combinations, output behavior
 
@@ -162,6 +164,7 @@ For each argument, answer:
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Conflicts with `--output-dir`, behavior with multiple sources
 
@@ -192,6 +195,7 @@ For each argument, answer:
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Filename generation behavior, conflicts with `--output`
 
@@ -222,6 +226,7 @@ For each argument, answer:
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Binary format auto-save behavior, stdout vs file interaction
 
@@ -252,6 +257,7 @@ For each argument, answer:
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Timeout behavior with `--wait-for`, batch operations
 
@@ -443,6 +449,7 @@ snag --wait-for ""                                             # Ignored (empty)
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Port availability checking, all operation modes
 
@@ -493,33 +500,41 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 10: `--force-headless`
+### Task 10: `--force-headless` ✅
 
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - Another `--force-headless`
-  - `--force-visible`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
+**Status:** Complete (2025-10-23)
 
-**Define:** Conflict with `--force-visible` and `--open-browser`, behavior with existing browser
+#### Core Behavior & Browser Connection
+
+**No existing browser:**
+- Flag **silently ignored** (headless is default behavior)
+
+**Existing browser on default port:**
+- Connection attempt fails with port conflict error
+
+**Existing browser + custom `--port`:**
+- Works normally (launches new headless on custom port)
+
+**Multiple flags:**
+- Multiple `--force-headless` → **Error**: `"Only one --force-headless flag allowed"`
+
+#### Browser Mode Conflicts
+
+- `--force-headless` + `--force-visible` → **Error**: `"Cannot use both --force-headless and --force-visible (conflicting flags)"`
+- `--force-headless` + `--open-browser` → **Error**: `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
+
+#### Content Source Interactions
+
+- Single/multiple URLs, `--url-file` → **Silently ignore** (headless is default)
+- `--tab` → **Error**: `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"`
+- `--all-tabs` → **Error**: `"Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)"`
+- `--list-tabs` → **Error**: `"Cannot use --force-headless with --list-tabs (--list-tabs requires existing browser connection)"`
+
+#### Other Flag Interactions
+
+- `--close-tab` → **Warning**: `"--close-tab has no effect in headless mode (tabs close automatically)"`
+- `--user-data-dir` → Works normally (launch headless with custom profile)
+- All others (output, format, timeout, wait-for, port, user-agent, logging) → Work normally
 
 ---
 
@@ -548,6 +563,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Conflict with `--force-headless`, redundancy with `--open-browser`
 
@@ -578,6 +594,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Behavior with vs without URL (current vs planned), conflicts
 
@@ -608,6 +625,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Standalone mode requirement, all conflicts
 
@@ -638,6 +656,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Pattern matching priority, conflicts, should-ignore flags
 
@@ -668,6 +687,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Output requirement, conflicts, error handling behavior
 
@@ -698,6 +718,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--quiet` / `-q`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Logging level priority order, conflicts with `--quiet` and `--debug`
 
@@ -728,6 +749,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - Another `--quiet`
   - `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Logging level priority order, conflicts with `--verbose` and `--debug`
 
@@ -758,6 +780,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--quiet` / `-q`
   - Another `--debug`
   - `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Logging level priority order, output format, conflicts
 
@@ -788,6 +811,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--quiet` / `-q`
   - `--debug`
   - Another `--user-agent`
+  - `--user-data-dir`
 
 **Define:** Behavior with new pages vs existing tabs (should ignore for existing tabs)
 
@@ -797,7 +821,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 **Questions to answer:**
 - What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with any other argument?
+- What happens when combined with any other argument (including `--user-data-dir`)?
 
 **Define:** Should display help and exit, ignoring all other flags
 
@@ -807,7 +831,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 **Questions to answer:**
 - What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with any other argument?
+- What happens when combined with any other argument (including `--user-data-dir`)?
 
 **Define:** Should display version and exit, ignoring all other flags
 
@@ -863,7 +887,7 @@ Track completion of each task:
 - [x] Task 7: `--wait-for` / `-w` - **COMPLETE** (2025-10-23)
 - [x] Task 8: `--port` / `-p` - **COMPLETE** (2025-10-23)
 - [x] Task 9: `--close-tab` / `-c` - **COMPLETE** (2025-10-23)
-- [ ] Task 10: `--force-headless`
+- [x] Task 10: `--force-headless` - **COMPLETE** (2025-10-23)
 - [ ] Task 11: `--force-visible`
 - [ ] Task 12: `--open-browser` / `-b`
 - [ ] Task 13: `--list-tabs` / `-l`
@@ -899,3 +923,5 @@ All findings will be documented in `docs/argument-handling.md` with:
   - Parallel: Process multiple URLs concurrently with goroutines
   - Hybrid: Parallel with configurable concurrency limit
   - Consider impact on: browser resource usage, tab creation/closing order, error handling, output ordering, and `--close-tab` behavior
+
+- [ ] **Review `--user-data-dir` interactions**: After completing all argument analysis tasks, review every completed task (1-21) to ensure `--user-data-dir` flag behavior is properly documented in `docs/argument-handling.md`. This flag was added after initial tasks were designed, so it needs to be retroactively documented for Tasks 1-9, 16-18, 20-21.
