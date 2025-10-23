@@ -596,12 +596,12 @@ snag --url-file urls.txt --timeout 60
 | `--timeout` + single `<url>` | Works normally | Standard timeout for navigation |
 | `--timeout` + multiple `<url>` | Works normally | Applied per-URL individually |
 | `--timeout` + `--url-file` | Works normally | Applied per-URL individually |
-| `--timeout` + `--tab` | **Error** | Page already loaded in tab |
-| `--timeout` + `--all-tabs` | **Error** | Pages already loaded in tabs |
+| `--timeout` + `--tab` | Works with warning | Timeout applies to `--wait-for` if present, otherwise no effect |
+| `--timeout` + `--all-tabs` | Works with warning | Timeout applies to `--wait-for` if present, otherwise no effect |
 
-**Error messages:**
-- `--tab`: `"Cannot use --timeout with --tab (page already loaded)"`
-- `--all-tabs`: `"Cannot use --timeout with --all-tabs (pages already loaded)"`
+**Warning messages:**
+- `--tab` (no --wait-for): `"Warning: --timeout has no effect without --wait-for when using --tab"`
+- `--all-tabs` (no --wait-for): `"Warning: --timeout has no effect without --wait-for when using --all-tabs"`
 
 **Special Operation Modes:**
 
@@ -677,9 +677,14 @@ snag https://example.com --timeout 45.5             # ERROR: Non-integer
 snag https://example.com --timeout abc              # ERROR: Non-numeric
 snag https://example.com --timeout                  # ERROR: Missing value
 snag https://example.com --timeout 30 --timeout 60  # ERROR: Multiple flags
-snag --tab 1 --timeout 30                           # ERROR: Page already loaded
-snag --all-tabs --timeout 30                        # ERROR: Pages already loaded
 snag --list-tabs --timeout 30                       # ERROR: No navigation
+```
+
+**With Warnings:**
+```bash
+snag --tab 1 --timeout 30                           # ⚠️  Warning: no effect without --wait-for
+snag --all-tabs --timeout 30                        # ⚠️  Warning: no effect without --wait-for
+snag --tab 1 --timeout 30 --wait-for ".content"     # OK: timeout applies to selector
 ```
 
 **Ignored (No Error):**
@@ -1370,26 +1375,28 @@ These determine the primary operation mode:
 
 - ✅ `-o, -d` - Output control
 - ✅ `--format` - Format selection
-- ✅ `--timeout` - Wait timeout (for --wait-for)
-- ✅ `--wait-for` - Wait for selector
+- ✅ `--timeout` - Applies to `--wait-for` if present (warns if no --wait-for)
+- ✅ `--wait-for` - Wait for selector (supports automation with persistent browser)
 - ✅ `--port` - Remote debugging port
-- ✅ `--user-agent` - ⚠️ UNDEFINED (tab already open)
+- ✅ `--user-agent` - Ignored (tab already open with its own user agent)
+- ✅ `--close-tab` - Honored (closes the tab after fetching)
 - ✅ Logging flags
 
 **Incompatible Flags:**
 
-- ❌ `<url>` - Conflicts with tab
-- ❌ `--all-tabs` - Use one or the other
+- ❌ `<url>` - Conflicts with tab (mutually exclusive content sources)
+- ❌ `--all-tabs` - Use one or the other (mutually exclusive)
 - ❌ `--list-tabs` - Standalone only
 - ❌ `--open-browser` - ⚠️ UNDEFINED
-- ❌ `--close-tab` - ⚠️ Tab persists (not created by snag)
-- ❌ `--force-headless, --force-visible` - ⚠️ UNDEFINED (browser already running)
+- ❌ `--force-headless` - Error (tab requires visible browser)
+- ❌ `--force-visible` - Ignored (browser already running visible)
 
 **Special Behavior:**
 
-- Requires existing browser with remote debugging
+- Requires existing **visible browser** with remote debugging enabled
+- If no browser running → Error: `"No browser running. Open browser first: snag --open-browser"`
 - Tab pattern: index (1-based), exact URL, substring, or regex
-- Tab remains open after fetch (not created by this invocation)
+- Tab remains open after fetch unless `--close-tab` specified
 
 ### Mode 4: Fetch All Tabs
 
@@ -1399,25 +1406,27 @@ These determine the primary operation mode:
 
 - ✅ `-d` - Output directory (REQUIRED or defaults to current dir)
 - ✅ `--format` - Applied to all tabs
-- ✅ `--timeout` - Applied to each tab
-- ✅ `--wait-for` - Applied to each page
+- ✅ `--timeout` - Applies to `--wait-for` if present (warns if no --wait-for)
+- ✅ `--wait-for` - Wait for same selector in each tab before fetching
 - ✅ `--port` - Remote debugging port
 - ✅ Logging flags
 
 **Incompatible Flags:**
 
-- ❌ `<url>` - Conflicts with all-tabs
+- ❌ `<url>` - Conflicts with all-tabs (mutually exclusive content sources)
 - ❌ `-o` - Multiple outputs (use `-d`)
-- ❌ `--tab` - Use one or the other
+- ❌ `--tab` - Use one or the other (mutually exclusive)
 - ❌ `--list-tabs` - Standalone only
 - ❌ `--open-browser` - ⚠️ UNDEFINED
-- ❌ `--close-tab` - ⚠️ Tabs persist
-- ❌ `--force-headless, --force-visible` - ⚠️ UNDEFINED (browser already running)
-- ❌ `--user-agent` - ⚠️ UNDEFINED (tabs already open)
+- ❌ `--close-tab` - Error (ambiguous for batch operations)
+- ❌ `--force-headless` - Error (tabs require visible browser)
+- ❌ `--force-visible` - Ignored (browser already running visible)
+- ❌ `--user-agent` - Ignored (tabs already open with their own user agents)
 
 **Special Behavior:**
 
-- Requires existing browser with remote debugging
+- Requires existing **visible browser** with remote debugging enabled
+- If no browser running → Error: `"No browser running. Open browser first: snag --open-browser"`
 - Requires `-d` or defaults to current directory
 - All tabs get auto-generated filenames
 - Continue-on-error (process all tabs)
@@ -1568,15 +1577,13 @@ snag --all-tabs         # Connects to existing browser
 
 **Question:** What happens with `snag --tab 1 --close-tab`?
 
-**Current Behavior:** ⚠️ UNDEFINED
+**Decision:** **Allow** - Close the tab after fetching (honor user's explicit request)
 
-**Possible Behaviors:**
-
-1. ❌ Error: "Cannot close tab not created by snag"
-2. ✅ Ignore flag (tab persists)
-3. ✅ Close the tab (user requested it)
-
-**Recommendation:** Option 3 - Honor user's explicit request
+**Rationale:**
+- User explicitly requested the tab to be closed
+- Clear intent to clean up after fetching
+- Works with `--tab` (single tab)
+- Errors with `--all-tabs` (ambiguous for batch operations)
 
 ### Case 5: Browser Mode Flags with Tab Features
 
@@ -1584,19 +1591,26 @@ snag --all-tabs         # Connects to existing browser
 
 **Current Behavior:** ⚠️ UNDEFINED
 
-**Rationale:** Browser already running, mode flags are irrelevant
+**Decision:**
+- `--force-headless` → **Error** (tabs require visible browser)
+- `--force-visible` → **Ignored** (browser already running visible)
 
-**Recommendation:** Ignore browser mode flags when using tab features (browser already connected)
+**Rationale:**
+- Tabs require visible browser with remote debugging
+- `--force-headless` conflicts with this requirement → Error
+- `--force-visible` is redundant but harmless → Ignore
 
 ### Case 6: --user-agent with Tab Features
 
 **Question:** What happens with `snag --tab 1 --user-agent "Custom"`?
 
-**Current Behavior:** ⚠️ UNDEFINED
+**Decision:** **Ignore** - Tab already loaded with its own user agent
 
-**Rationale:** Tab already open with its own user agent
-
-**Recommendation:** Ignore `--user-agent` when using tab features (tab already loaded)
+**Rationale:**
+- Tab already open in browser with established user agent
+- Cannot change user agent for existing page
+- Silently ignore rather than error (flag has no effect but doesn't break operation)
+- Applies to both `--tab` and `--all-tabs`
 
 ### Case 7: Multiple Logging Flags
 
@@ -1684,6 +1698,8 @@ These combinations need clarification and implementation decisions:
 | `--list-tabs --tab 1`             | ⚠️ Undefined | ❌ ERROR: list-tabs standalone |
 | `--list-tabs --all-tabs`          | ⚠️ Undefined | ❌ ERROR: list-tabs standalone |
 | `--open-browser --force-headless` | ⚠️ Undefined | ❌ ERROR: Conflicting modes    |
+| `--tab --force-headless`          | ⚠️ Undefined | ❌ ERROR: Tabs require visible browser |
+| `--all-tabs --force-headless`     | ⚠️ Undefined | ❌ ERROR: Tabs require visible browser |
 | `--quiet --verbose`               | ⚠️ Undefined | ❌ ERROR or priority order?    |
 
 ### Priority 2: Should Be Defined
@@ -1691,10 +1707,11 @@ These combinations need clarification and implementation decisions:
 | Combination                     | Current      | Recommendation                     |
 | ------------------------------- | ------------ | ---------------------------------- |
 | `--tab 1 --close-tab`           | ⚠️ Undefined | ✅ Allow: Close the tab            |
-| `--tab 1 --force-headless`      | ⚠️ Undefined | ✅ Ignore: Browser already running |
+| `--tab 1 --force-visible`       | ⚠️ Undefined | ✅ Ignore: Browser already running |
 | `--tab 1 --user-agent "Custom"` | ⚠️ Undefined | ✅ Ignore: Tab already open        |
-| `--all-tabs --force-headless`   | ⚠️ Undefined | ✅ Ignore: Browser already running |
+| `--all-tabs --force-visible`    | ⚠️ Undefined | ✅ Ignore: Browser already running |
 | `--all-tabs --close-tab`        | ⚠️ Undefined | ❌ ERROR: Ambiguous                |
+| `--all-tabs --user-agent`       | ⚠️ Undefined | ✅ Ignore: Tabs already open       |
 
 ### Priority 3: Edge Cases
 
