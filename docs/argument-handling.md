@@ -4,7 +4,7 @@
 
 **Status:** Current implementation + Planned features (marked with 🚧)
 
-**Last Updated:** 2025-10-22
+**Last Updated:** 2025-10-23
 
 ---
 
@@ -1120,6 +1120,448 @@ snag https://example.com -o myfile                   # ⚠️ No extension
 - Does not prevent operation (user intent honored)
 - Exit code remains 0 if operation succeeds
 
+### `--verbose` ✅
+
+**Status:** Complete (2025-10-23)
+
+#### Validation Rules
+
+**Boolean Flag:**
+- No value required (presence = enabled)
+- No validation errors possible
+
+**Multiple Flag Conflicts:**
+- Multiple `--verbose` flags → Last flag honored (standard Unix behavior)
+- `--verbose` + `--quiet` → Last flag wins
+- `--verbose` + `--debug` → Last flag wins
+
+#### Behavior
+
+**Logging Level:**
+- Enables verbose logging output to stderr
+- Shows additional information about operations:
+  - Browser connection details
+  - Page navigation steps
+  - Content conversion progress
+  - File writing confirmations
+- Does not affect stdout content output
+
+**Basic Usage:**
+```bash
+snag https://example.com --verbose
+```
+- Outputs page content to stdout (as normal)
+- Logs verbose messages to stderr:
+  - "Connecting to Chrome on port 9222..."
+  - "Navigating to https://example.com..."
+  - "Waiting for page load..."
+  - "Converting HTML to Markdown..."
+  - "Content written to stdout"
+
+#### Interaction Matrix
+
+**Logging Level Priority (Last Flag Wins):**
+
+| Combination | Effective Level | Rationale |
+|-------------|----------------|-----------|
+| `--verbose` | Verbose | Standard verbose mode |
+| `--verbose --quiet` | Quiet | Last flag wins (Unix standard) |
+| `--quiet --verbose` | Verbose | Last flag wins |
+| `--verbose --debug` | Debug | Last flag wins |
+| `--debug --verbose` | Verbose | Last flag wins |
+| `--verbose --quiet --debug` | Debug | Last flag wins |
+
+**All Other Flags:**
+- Works normally with all other flags
+- Simply controls stderr logging verbosity
+- No conflicts or special behaviors
+
+#### Examples
+
+**Valid:**
+```bash
+snag https://example.com --verbose                  # Verbose logging
+snag https://example.com --verbose -o page.md       # Verbose + file output
+snag --url-file urls.txt --verbose                  # Verbose batch processing
+snag --tab 1 --verbose                              # Verbose tab fetch
+snag --list-tabs --verbose                          # Verbose tab listing
+snag https://example.com --quiet --verbose          # Verbose wins (last flag)
+```
+
+**No Invalid Combinations:**
+- Boolean flag, no invalid values
+- Works with everything
+
+#### Implementation Details
+
+**Location:**
+- Flag definition: `main.go` (CLI framework)
+- Logger initialization: `main.go:181-187`
+- Logging level: `logger.go`
+
+**Processing:**
+1. Check if `--verbose` flag is present
+2. If multiple logging flags, last one wins
+3. Initialize logger with verbose level
+4. All subsequent operations use verbose logging
+
+**Logging Behavior:**
+- Normal output: Important messages only
+- Verbose output: All operational details
+- Logs go to stderr (stdout reserved for content)
+
+---
+
+### `--quiet` / `-q` ✅
+
+**Status:** Complete (2025-10-23)
+
+#### Validation Rules
+
+**Boolean Flag:**
+- No value required (presence = enabled)
+- No validation errors possible
+
+**Multiple Flag Conflicts:**
+- Multiple `--quiet` flags → Last flag honored (standard Unix behavior)
+- `--quiet` + `--verbose` → Last flag wins
+- `--quiet` + `--debug` → Last flag wins
+
+#### Behavior
+
+**Logging Level:**
+- Suppresses all logging output to stderr except errors
+- Shows only:
+  - Fatal errors
+  - Critical validation failures
+  - Operation completion status (success/failure)
+- Ideal for scripting and automation
+
+**Basic Usage:**
+```bash
+snag https://example.com --quiet
+```
+- Outputs page content to stdout (as normal)
+- Suppresses all stderr messages except errors
+- Silent operation on success
+
+#### Interaction Matrix
+
+**Logging Level Priority (Last Flag Wins):**
+
+| Combination | Effective Level | Rationale |
+|-------------|----------------|-----------|
+| `--quiet` | Quiet | Suppress all but errors |
+| `--quiet --verbose` | Verbose | Last flag wins (Unix standard) |
+| `--verbose --quiet` | Quiet | Last flag wins |
+| `--quiet --debug` | Debug | Last flag wins |
+| `--debug --quiet` | Quiet | Last flag wins |
+| `--quiet --verbose --debug` | Debug | Last flag wins |
+
+**All Other Flags:**
+- Works normally with all other flags
+- Simply controls stderr logging verbosity
+- No conflicts or special behaviors
+
+#### Examples
+
+**Valid:**
+```bash
+snag https://example.com --quiet                    # Silent operation
+snag https://example.com -q -o page.md              # Silent file save
+snag --url-file urls.txt --quiet                    # Silent batch processing
+snag --tab 1 --quiet                                # Silent tab fetch
+snag --list-tabs --quiet                            # Silent tab listing (shows tabs only)
+snag https://example.com --verbose --quiet          # Quiet wins (last flag)
+```
+
+**No Invalid Combinations:**
+- Boolean flag, no invalid values
+- Works with everything
+
+#### Implementation Details
+
+**Location:**
+- Flag definition: `main.go` (CLI framework)
+- Logger initialization: `main.go:181-187`
+- Logging level: `logger.go`
+
+**Processing:**
+1. Check if `--quiet` flag is present
+2. If multiple logging flags, last one wins
+3. Initialize logger with quiet level
+4. All subsequent operations suppress non-error logs
+
+**Logging Behavior:**
+- Quiet output: Errors only
+- Exit code 0 on success (silent)
+- Exit code 1 on failure (error message shown)
+
+---
+
+### `--debug` ✅
+
+**Status:** Complete (2025-10-23)
+
+#### Validation Rules
+
+**Boolean Flag:**
+- No value required (presence = enabled)
+- No validation errors possible
+
+**Multiple Flag Conflicts:**
+- Multiple `--debug` flags → Last flag honored (standard Unix behavior)
+- `--debug` + `--verbose` → Last flag wins
+- `--debug` + `--quiet` → Last flag wins
+
+#### Behavior
+
+**Logging Level:**
+- Enables maximum logging output to stderr
+- Shows all verbose information plus:
+  - Chrome DevTools Protocol (CDP) messages
+  - Browser connection debugging
+  - Internal state information
+  - Detailed error traces
+- For troubleshooting and development
+
+**Basic Usage:**
+```bash
+snag https://example.com --debug
+```
+- Outputs page content to stdout (as normal)
+- Logs extensive debug information to stderr
+- Includes CDP protocol messages
+
+#### Interaction Matrix
+
+**Logging Level Priority (Last Flag Wins):**
+
+| Combination | Effective Level | Rationale |
+|-------------|----------------|-----------|
+| `--debug` | Debug | Maximum logging |
+| `--debug --verbose` | Verbose | Last flag wins (Unix standard) |
+| `--verbose --debug` | Debug | Last flag wins |
+| `--debug --quiet` | Quiet | Last flag wins |
+| `--quiet --debug` | Debug | Last flag wins |
+| `--debug --quiet --verbose` | Verbose | Last flag wins |
+
+**All Other Flags:**
+- Works normally with all other flags
+- Simply controls stderr logging verbosity
+- No conflicts or special behaviors
+
+#### Examples
+
+**Valid:**
+```bash
+snag https://example.com --debug                    # Debug logging
+snag https://example.com --debug -o page.md         # Debug + file output
+snag --url-file urls.txt --debug                    # Debug batch processing
+snag --tab 1 --debug                                # Debug tab fetch
+snag --list-tabs --debug                            # Debug tab listing
+snag https://example.com --verbose --debug          # Debug wins (last flag)
+```
+
+**No Invalid Combinations:**
+- Boolean flag, no invalid values
+- Works with everything
+
+#### Implementation Details
+
+**Location:**
+- Flag definition: `main.go` (CLI framework)
+- Logger initialization: `main.go:181-187`
+- Logging level: `logger.go`
+
+**Processing:**
+1. Check if `--debug` flag is present
+2. If multiple logging flags, last one wins
+3. Initialize logger with debug level
+4. All subsequent operations use debug logging
+5. CDP messages logged via rod's debug capabilities
+
+**Logging Behavior:**
+- Debug output: Everything (verbose + CDP messages + internals)
+- Extremely detailed for troubleshooting
+- Logs go to stderr (stdout reserved for content)
+
+---
+
+### `--help` / `-h` ✅
+
+**Status:** Complete (2025-10-23)
+
+#### Validation Rules
+
+**Boolean Flag:**
+- No value required (presence = enabled)
+- No validation errors possible
+
+**Priority Behavior:**
+- Takes absolute priority over all other flags
+- Displays help and exits immediately
+- Exit code 0 (success)
+
+#### Behavior
+
+**Basic Usage:**
+```bash
+snag --help
+snag -h
+```
+- Displays comprehensive help message
+- Shows all available flags and usage
+- Exits with code 0
+- No other operations performed
+
+**Help Message Contents:**
+- Tool description and purpose
+- Usage syntax
+- All available flags with descriptions
+- Examples
+- Exit codes
+- Links to documentation
+
+#### Interaction Matrix
+
+**With All Other Flags:**
+
+| Combination | Behavior | Rationale |
+|-------------|----------|-----------|
+| `--help` alone | Display help, exit 0 | Standard help mode |
+| `--help <url>` | Display help, exit 0 | Help takes priority, URL ignored |
+| `--help --version` | Display help, exit 0 | Help takes priority over version |
+| `--version --help` | Display help, exit 0 | Help takes priority (regardless of order) |
+| `--help` + any flags | Display help, exit 0 | Help ignores all other flags |
+
+**Priority Rules:**
+1. `--help` detected → Display help
+2. Ignore all other flags completely
+3. Exit with code 0
+4. `--help` takes priority over `--version`
+
+#### Examples
+
+**Valid (All display help and exit):**
+```bash
+snag --help                                         # Basic help
+snag -h                                             # Short form
+snag --help https://example.com                     # Help (URL ignored)
+snag --help --version                               # Help (version ignored)
+snag --help -o file.md --format pdf --verbose       # Help (everything ignored)
+```
+
+**No Invalid Combinations:**
+- Help flag ignores all other input
+- Always succeeds (exit 0)
+
+#### Implementation Details
+
+**Location:**
+- Flag definition: Built into `github.com/urfave/cli/v2` framework
+- Auto-generated help by CLI framework
+
+**Processing:**
+1. CLI framework checks for `--help` or `-h`
+2. If present, displays auto-generated help
+3. Exits with code 0
+4. No custom validation code runs
+
+**Help Display:**
+- Auto-generated from flag definitions
+- Includes usage patterns
+- Shows all flags with descriptions
+- Framework handles everything
+
+---
+
+### `--version` / `-v` ✅
+
+**Status:** Complete (2025-10-23)
+
+#### Validation Rules
+
+**Boolean Flag:**
+- No value required (presence = enabled)
+- No validation errors possible
+
+**Priority Behavior:**
+- Displays version and exits immediately
+- Exit code 0 (success)
+- Lower priority than `--help`
+
+#### Behavior
+
+**Basic Usage:**
+```bash
+snag --version
+snag -v
+```
+- Displays version number
+- Exits with code 0
+- No other operations performed
+
+**Version Format:**
+- Format: `snag version {version}` (e.g., `snag version 0.0.3`)
+- Version set at build time via `-ldflags`
+
+#### Interaction Matrix
+
+**With All Other Flags:**
+
+| Combination | Behavior | Rationale |
+|-------------|----------|-----------|
+| `--version` alone | Display version, exit 0 | Standard version mode |
+| `--version <url>` | Display version, exit 0 | Version takes priority, URL ignored |
+| `--version --help` | Display help, exit 0 | **Help takes priority** |
+| `--help --version` | Display help, exit 0 | **Help takes priority** |
+| `--version` + any flags | Display version, exit 0 | Version ignores all other flags (except --help) |
+
+**Priority Rules:**
+1. `--help` detected → Display help (higher priority)
+2. Otherwise, `--version` detected → Display version
+3. Ignore all other flags
+4. Exit with code 0
+
+#### Examples
+
+**Valid (Display version and exit):**
+```bash
+snag --version                                      # Basic version
+snag -v                                             # Short form
+snag --version https://example.com                  # Version (URL ignored)
+snag --version -o file.md --format pdf              # Version (everything ignored)
+```
+
+**Help Takes Priority:**
+```bash
+snag --version --help                               # Shows HELP (not version)
+snag --help --version                               # Shows HELP (not version)
+```
+
+**No Invalid Combinations:**
+- Version flag ignores all other input (except --help)
+- Always succeeds (exit 0)
+
+#### Implementation Details
+
+**Location:**
+- Flag definition: Built into `github.com/urfave/cli/v2` framework
+- Version set in `main.go:26` via `app.Version`
+
+**Processing:**
+1. CLI framework checks for `--help` first
+2. If no help, checks for `--version` or `-v`
+3. If present, displays version string
+4. Exits with code 0
+5. No custom validation code runs
+
+**Version String:**
+- Default: `"dev"` (development builds)
+- Release: Set via build flag `-ldflags "-X main.version=0.0.3"`
+- Format: Controlled by CLI framework
+
 ---
 
 ## All Arguments and Flags
@@ -1227,7 +1669,7 @@ These determine the primary operation mode:
 | `--open-browser` + `--force-headless`  | ⚠️ UNDEFINED                   | ❓ Unknown |
 | `--open-browser` + `--force-visible`   | ✅ Redundant but allowed       | ✅ Current |
 
-### Logging Level (Mutually Exclusive Priority)
+### Logging Level (Last Flag Wins) ✅
 
 | Combination             | Effective Level         | Status     |
 | ----------------------- | ----------------------- | ---------- |
@@ -1235,9 +1677,10 @@ These determine the primary operation mode:
 | `--quiet`               | Quiet                   | ✅ Current |
 | `--verbose`             | Verbose                 | ✅ Current |
 | `--debug`               | Debug                   | ✅ Current |
-| `--quiet` + `--verbose` | ⚠️ UNDEFINED            | ❓ Unknown |
-| `--debug` + `--verbose` | Debug (higher priority) | ✅ Current |
-| `--quiet` + `--debug`   | ⚠️ UNDEFINED            | ❓ Unknown |
+| `--quiet` + `--verbose` | Verbose (last wins)     | ✅ Defined |
+| `--debug` + `--verbose` | Verbose (last wins)     | ✅ Defined |
+| `--quiet` + `--debug`   | Debug (last wins)       | ✅ Defined |
+| `--verbose` + `--quiet` | Quiet (last wins)       | ✅ Defined |
 
 ---
 
@@ -1700,7 +2143,6 @@ These combinations need clarification and implementation decisions:
 | `--open-browser --force-headless` | ⚠️ Undefined | ❌ ERROR: Conflicting modes    |
 | `--tab --force-headless`          | ⚠️ Undefined | ❌ ERROR: Tabs require visible browser |
 | `--all-tabs --force-headless`     | ⚠️ Undefined | ❌ ERROR: Tabs require visible browser |
-| `--quiet --verbose`               | ⚠️ Undefined | ❌ ERROR or priority order?    |
 
 ### Priority 2: Should Be Defined
 
@@ -1779,13 +2221,15 @@ These combinations need clarification and implementation decisions:
 | **-o** | ✅      | 🚧 ❌            |
 | **-d** | ✅      | 🚧 ✅            |
 
-### Logging Flags
+### Logging Flags ✅
+
+All logging flag conflicts resolved using "last flag wins" approach (Unix standard):
 
 |               | --verbose | --quiet | --debug |
 | ------------- | --------- | ------- | ------- |
-| **--verbose** | -         | ⚠️      | ?       |
-| **--quiet**   | ⚠️        | -       | ⚠️      |
-| **--debug**   | ?         | ⚠️      | -       |
+| **--verbose** | -         | ✅ Last wins | ✅ Last wins |
+| **--quiet**   | ✅ Last wins | -       | ✅ Last wins |
+| **--debug**   | ✅ Last wins | ✅ Last wins | -       |
 
 ---
 
@@ -1811,7 +2255,7 @@ These combinations need clarification and implementation decisions:
 - [ ] `--tab` + `--all-tabs` → Should ERROR
 - [ ] `--all-tabs` + `-o` → Should ERROR
 - [ ] `--open-browser` + `--force-headless` → Should ERROR
-- [ ] Multiple logging flags → Define priority
+- [x] Multiple logging flags → Last flag wins (Unix standard) ✅
 
 ### Planned Validations 🚧
 
