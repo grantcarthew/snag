@@ -528,33 +528,50 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 11: `--open-browser` / `-b`
+### Task 11: `--open-browser` / `-b` ✅
 
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - Another `--open-browser`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+**Status:** Complete (2025-10-23)
 
-**Define:** Behavior with vs without URL (current vs planned), conflicts
+#### Core Behavior
+
+**Primary purpose:**
+- Launch persistent visible browser and exit snag (browser stays open)
+- "Launch and exit" means **exit snag**, not the browser
+- **Does not fetch content** - purely a browser launcher
+
+**Multiple flags:**
+- Multiple `--open-browser` → **Silently ignore** (duplicate boolean)
+
+**Modes:**
+1. Standalone (no URLs): Open browser, exit snag
+2. With URLs: Open browser, navigate to URLs in tabs, exit snag (no fetch)
+
+#### Browser Mode Conflicts
+
+- `--open-browser` + `--force-headless` → **Error**: `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
+- `--open-browser` + `--list-tabs` → **Error**: `"Cannot use --list-tabs with --open-browser (--list-tabs is standalone)"`
+
+#### Content Source Interactions
+
+- Single/multiple `<url>`, `--url-file` → Navigate to URLs in tabs, exit (no fetch)
+- `--tab`, `--all-tabs` → **Warning**: Flags ignored (no content fetching)
+
+#### Output & Timing Flags
+
+All **warned and ignored** (no content fetching):
+- `--output`, `--output-dir`, `--format` → Warning
+- `--timeout`, `--wait-for` → Warning
+
+#### Browser Configuration
+
+- `--port`, `--user-data-dir` → Work normally
+- `--close-tab` → **Warning**: Ignored (no fetching)
+- `--user-agent` (no URLs) → **Warning**: Ignored (no navigation)
+- `--user-agent` + URLs → Works normally (applied during navigation)
+
+#### Logging
+
+- `--verbose`, `--quiet`, `--debug` → Work normally
 
 ---
 
@@ -838,7 +855,7 @@ Track completion of each task:
 - [x] Task 8: `--port` / `-p` - **COMPLETE** (2025-10-23)
 - [x] Task 9: `--close-tab` / `-c` - **COMPLETE** (2025-10-23)
 - [x] Task 10: `--force-headless` - **COMPLETE** (2025-10-23)
-- [ ] Task 11: `--open-browser` / `-b`
+- [x] Task 11: `--open-browser` / `-b` - **COMPLETE** (2025-10-23)
 - [ ] Task 12: `--list-tabs` / `-l`
 - [ ] Task 13: `--tab` / `-t`
 - [ ] Task 14: `--all-tabs` / `-a`
