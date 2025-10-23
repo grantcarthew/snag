@@ -862,7 +862,7 @@ Track completion of each task:
 - [x] Task 15: `--verbose` - **COMPLETE** (2025-10-23)
 - [x] Task 16: `--quiet` / `-q` - **COMPLETE** (2025-10-23)
 - [x] Task 17: `--debug` - **COMPLETE** (2025-10-23)
-- [ ] Task 18: `--user-agent`
+- [x] Task 18: `--user-agent` - **COMPLETE** (2025-10-23)
 - [x] Task 19: `--help` / `-h` - **COMPLETE** (2025-10-23)
 - [x] Task 20: `--version` / `-v` - **COMPLETE** (2025-10-23)
 - [ ] Task 21: `--user-data-dir`
