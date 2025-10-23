@@ -858,7 +858,7 @@ Track completion of each task:
 - [x] Task 11: `--open-browser` / `-b` - **COMPLETE** (2025-10-23)
 - [x] Task 12: `--list-tabs` / `-l` - **COMPLETE** (2025-10-23)
 - [x] Task 13: `--tab` / `-t` - **COMPLETE** (2025-10-23)
-- [ ] Task 14: `--all-tabs` / `-a`
+- [x] Task 14: `--all-tabs` / `-a` - **COMPLETE** (2025-10-23)
 - [x] Task 15: `--verbose` - **COMPLETE** (2025-10-23)
 - [x] Task 16: `--quiet` / `-q` - **COMPLETE** (2025-10-23)
 - [x] Task 17: `--debug` - **COMPLETE** (2025-10-23)

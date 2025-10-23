@@ -1,19 +1,241 @@
 # `--all-tabs` / `-a`
 
-**Status:** Incomplete (Design in progress)
+**Status:** Complete (2025-10-23)
 
-## Overview
+#### Validation Rules
 
-Fetch content from all open tabs in an existing browser connection.
+**Flag Type:**
+- Boolean flag (no value required)
+- Multiple `--all-tabs` flags → Silently ignored (duplicate boolean)
 
-## Design Questions
+**Browser Connection:**
+- Requires existing browser connection with remote debugging enabled
+- Connection failure → Standard browser error (no special handling)
+- Zero tabs open → Error (browser cannot have zero tabs)
 
-This argument's behavior is currently being designed. See PROJECT.md Task 14 for design decisions in progress.
+**Output Requirements:**
+- No output flags (neither `-o` nor `-d`) → Default to current directory (`.`)
+- Auto-generates filename for each tab
+- Cannot use `-o` (single file output) with `--all-tabs` (multiple outputs)
 
-## Planned Features
+**Error Messages:**
+- No existing browser: Standard connection error from browser module
+- Zero tabs (if encountered): `"No tabs found in browser"`
 
-- Fetch from all open tabs
-- Requires existing browser connection
-- Mutually exclusive with `<url>`, `--url-file`, `--tab`
-- Works with `--output-dir` for auto-generated filenames
-- Works with `--wait-for` to apply selector to all tabs
+#### Behavior
+
+**Primary Purpose:**
+- Fetch content from ALL open browser tabs
+- Process tabs sequentially in browser tab order (left to right)
+- Save each tab to separate file with auto-generated filename
+- Continue processing all tabs even if individual tabs fail
+
+**Tab Processing:**
+- **Order**: Browser's tab order (same as `--list-tabs` display order)
+- **Error handling**: Continue on error (process all tabs)
+- **Exit code**: 0 if ALL succeed, 1 if ANY fail
+- **Summary**: "Fetched X of Y tabs successfully" (logged at end)
+- **Progress logging**: Log each tab as it's processed
+
+**Special Tab Handling:**
+- Non-fetchable URLs (`chrome://`, `about:`, `devtools://`, etc.):
+  - Skip with warning: `"Skipping tab: {URL} (not fetchable)"`
+  - Does not count as failure
+  - Continue to next tab
+
+**Output Behavior:**
+- Always saves to files (never stdout)
+- No `-d` flag → Auto-generated filenames in current directory (`.`)
+- With `-d ./dir` → Auto-generated filenames in specified directory
+- Filename format: `yyyy-mm-dd-hhmmss-{title-slug}.{ext}`
+- Filename conflicts: Append `-1`, `-2`, etc. (existing conflict resolution)
+
+**Close-Tab Behavior:**
+- With `--close-tab`: Close each tab immediately after fetching
+- Last tab closure → Browser closes automatically
+- Message: `"Closing last tab, browser will close"`
+
+#### Interaction Matrix
+
+**Content Source Conflicts (All ERROR - Mutually Exclusive):**
+
+| Combination | Behavior | Error Message |
+|-------------|----------|---------------|
+| `--all-tabs` + `<url>` (single) | **Error** | `"Cannot use --all-tabs with URL argument. Use --all-tabs alone to process all existing tabs"` |
+| `--all-tabs` + `<url>` (multiple) | **Error** | `"Cannot use --all-tabs with URL argument. Use --all-tabs alone to process all existing tabs"` |
+| `--all-tabs` + `--url-file` | **Error** | `"Cannot use both --all-tabs and --url-file (mutually exclusive content sources)"` |
+| `--all-tabs` + `--tab` | **Error** | `"Cannot use both --all-tabs and --tab (mutually exclusive content sources)"` |
+| `--all-tabs` + `--list-tabs` | `--list-tabs` overrides | Lists all tabs, ignores `--all-tabs` (no error) |
+
+**Browser Mode Conflicts (All ERROR):**
+
+| Combination | Behavior | Error Message |
+|-------------|----------|---------------|
+| `--all-tabs` + `--force-headless` | **Error** | `"Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)"` |
+| `--all-tabs` + `--open-browser` | **Error** | `"Cannot use both --all-tabs and --open-browser (conflicting purposes)"` |
+
+**Output Control:**
+
+| Combination | Behavior | Notes |
+|-------------|----------|-------|
+| `--all-tabs` (no output flags) | Works normally | Auto-save to current directory (`.`) with auto-generated filenames |
+| `--all-tabs` + `--output-dir` | Works normally | Save all tabs to specified directory with auto-generated filenames |
+| `--all-tabs` + `--output` | **Error** | `"Cannot use --output with --all-tabs (multiple outputs require --output-dir)"` |
+| `--all-tabs` + `--format` (all) | Works normally | All formats supported (md/html/text/pdf/png), applied to all tabs |
+
+**Timing & Selector:**
+
+| Combination | Behavior | Notes |
+|-------------|----------|-------|
+| `--all-tabs` + `--timeout` (no `--wait-for`) | Works with **warning** | `"Warning: --timeout has no effect without --wait-for when using --all-tabs"` |
+| `--all-tabs` + `--timeout` + `--wait-for` | Works normally | Timeout applies to selector wait for each tab (30s per tab, not total) |
+| `--all-tabs` + `--wait-for` | Works normally | Same selector applied to all tabs before fetching |
+
+**Browser Configuration:**
+
+| Combination | Behavior | Notes |
+|-------------|----------|-------|
+| `--all-tabs` + `--port` | Works normally | Connect to browser on specific port |
+| `--all-tabs` + `--close-tab` | Works normally | Close each tab after fetching; last tab closes browser |
+| `--all-tabs` + `--user-agent` | **Warning**, ignored | `"Warning: --user-agent has no effect with --all-tabs (cannot change existing tabs' user agents)"` |
+| `--all-tabs` + `--user-data-dir` | Works normally | Connects to browser using specified profile |
+
+**Logging Flags (All Work Normally):**
+
+| Combination | Behavior |
+|-------------|----------|
+| `--all-tabs` + `--verbose` | Works normally - verbose logging of tab processing |
+| `--all-tabs` + `--quiet` | Works normally - suppress non-error messages |
+| `--all-tabs` + `--debug` | Works normally - debug logging of all operations |
+
+#### Examples
+
+**Valid:**
+```bash
+# Fetch all tabs to current directory
+snag --all-tabs                                 # Auto-save all tabs to ./
+
+# Fetch all tabs to specific directory
+snag --all-tabs -d ./tabs                       # Save all tabs to ./tabs/
+snag -a -d ./output                             # Short form
+
+# With output format
+snag --all-tabs --format html                   # All tabs as HTML
+snag --all-tabs --format pdf -d ./pdfs          # All tabs as PDF
+
+# With selectors and timeouts
+snag --all-tabs --wait-for ".content"           # Wait for selector in each tab
+snag --all-tabs --wait-for ".loaded" --timeout 60  # Custom timeout per tab
+
+# Close tabs after fetching
+snag --all-tabs --close-tab                     # Fetch all, close all, browser closes
+snag --all-tabs -c -d ./backup                  # Backup all tabs then close
+
+# With custom port
+snag --all-tabs --port 9223 -d ./tabs           # Connect to browser on port 9223
+
+# With logging
+snag --all-tabs --verbose                       # Verbose progress logging
+snag --all-tabs --quiet                         # Only show errors
+```
+
+**Invalid (Errors):**
+```bash
+snag --all-tabs https://example.com             # ERROR: Cannot mix with URL
+snag --all-tabs url1 url2                       # ERROR: Cannot mix with URLs
+snag --all-tabs --url-file urls.txt             # ERROR: Cannot mix with --url-file
+snag --all-tabs --tab 1                         # ERROR: Cannot mix with --tab
+snag --all-tabs -o output.md                    # ERROR: Use -d for multiple outputs
+snag --all-tabs --open-browser                  # ERROR: Conflicting purposes
+snag --all-tabs --force-headless                # ERROR: Requires existing browser
+```
+
+**With Warnings:**
+```bash
+snag --all-tabs --timeout 30                    # ⚠️  Warning: timeout has no effect (no --wait-for)
+snag --all-tabs --user-agent "Bot/1.0"          # ⚠️  Warning: can't change existing tabs' user agents
+snag --all-tabs                                 # ⚠️  Skipping tab: chrome://settings (not fetchable)
+```
+
+**Overridden (No Error):**
+```bash
+snag --list-tabs --all-tabs                     # --list-tabs overrides, lists all tabs
+```
+
+#### Implementation Details
+
+**Location:**
+- Flag definition: `main.go` (CLI flag definitions)
+- Handler: `main.go` (to be implemented: `handleAllTabsFetch()`)
+- Tab listing: `browser.go:404-434` (`ListTabs()`)
+- Tab fetching: Reuse existing fetch logic per tab
+
+**How it works:**
+1. Validate mutually exclusive flags (URL, --url-file, --tab, --open-browser, --force-headless)
+2. Check output flags (error if `-o`, default to `.` if no `-d`)
+3. Connect to existing browser (error if none found)
+4. Get list of all tabs using `ListTabs()`
+5. For each tab in browser order:
+   - Check if URL is fetchable (skip `chrome://`, `about:`, `devtools://`, etc.)
+   - Log: `"Fetching tab {index}/{total}: {URL}"`
+   - Fetch content from tab (apply `--wait-for`, `--timeout`, `--format`)
+   - Generate filename with timestamp and title slug
+   - Check for filename conflicts (append `-1`, `-2`, etc.)
+   - Save to file in output directory
+   - If `--close-tab`: Close tab after saving
+   - On error: Log error, increment failure count, continue to next tab
+6. Log summary: `"Fetched X of Y tabs successfully"`
+7. Exit 0 if all succeeded, exit 1 if any failed
+
+**Error Handling Strategy:**
+- **Continue on error**: Process all tabs even if individual tabs fail
+- **Log errors**: Display error message for each failed tab as it occurs
+- **Track failures**: Count total successes and failures
+- **Final summary**: Display count of successful vs failed fetches
+- **Exit code**: 0 only if ALL tabs succeeded, 1 if ANY tab failed
+
+**Special URL Detection:**
+```go
+// Pseudocode for non-fetchable URL detection
+func isNonFetchableURL(url string) bool {
+    nonFetchablePrefixes := []string{
+        "chrome://",
+        "about:",
+        "devtools://",
+        "chrome-extension://",
+        "edge://",
+        "brave://",
+    }
+
+    for _, prefix := range nonFetchablePrefixes {
+        if strings.HasPrefix(strings.ToLower(url), prefix) {
+            return true
+        }
+    }
+    return false
+}
+```
+
+**Filename Generation:**
+- Format: `yyyy-mm-dd-hhmmss-{title-slug}.{ext}`
+- Extension based on `--format` flag
+- Title slug: Lowercase, alphanumeric + hyphens, max length
+- Conflict resolution: Append `-1`, `-2`, etc. if file exists
+- See `design-record.md` for complete filename generation specification
+
+**Close-Tab Behavior:**
+- Close each tab immediately after successful fetch
+- If tab fetch fails, still attempt to close (if `--close-tab` set)
+- Last tab closure automatically closes browser
+- Log message when last tab is being closed
+
+**Performance Considerations:**
+- Sequential processing (not parallel) to avoid browser resource contention
+- Each tab operation is independent (failure doesn't affect others)
+- Timeout applies per tab (not cumulative across all tabs)
+
+**Design Notes:**
+- Similar to `--tab` but processes all tabs instead of one
+- Reuses existing fetch, format, and output logic
+- Progress logging critical for user feedback during batch operations
+- Continue-on-error ensures maximum data recovery even with partial failures
