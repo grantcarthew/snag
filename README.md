@@ -374,11 +374,11 @@ snag https://private.example.com/settings
 Let snag launch the browser for you:
 
 ```bash
-# Launch visible browser and navigate to page
-snag --force-visible https://private.example.com
+# Open browser and navigate to page for authentication
+snag --open-browser https://private.example.com
 
 # Authenticate in the browser window that opens
-# Then close it or leave it running
+# Then leave it running
 
 # Subsequent calls reuse the session
 snag https://private.example.com/other-page
@@ -427,8 +427,8 @@ snag --verbose https://problematic-site.com
 # Full debug output including browser messages
 snag --debug https://problematic-site.com 2> debug.log
 
-# Open browser visibly to see what snag sees
-snag --force-visible https://problematic-site.com
+# Open browser to see what snag sees
+snag --open-browser https://problematic-site.com
 ```
 
 ### Working with Browser Tabs
@@ -560,7 +560,6 @@ snag --port 9223 https://example.com
 -p, --port <port>          Chromium remote debugging port (default: 9222)
 -c, --close-tab            Close the browser tab after fetching content
 --force-headless           Force headless mode even if Chromium is running
---force-visible            Force visible mode for authentication
 -b, --open-browser         Open Chromium browser in visible state (no URL required)
 ```
 
@@ -610,7 +609,6 @@ Page requires login but snag cannot authenticate.
 
 Solutions:
 
-- Use `--force-visible` to manually log in: `snag --force-visible https://example.com`
 - Open browser with `snag --open-browser`, log in, then run snag again
 - Use `--list-tabs` to find authenticated tabs, then `--tab` to fetch from them
 - Browser session persists authentication across snag calls
@@ -740,7 +738,7 @@ Still having issues?
 2. **Mode Selection**:
    - If Chromium browser is running → Connect to existing session (preserves auth/cookies)
    - If no browser found → Launch headless mode
-   - If `--force-visible` → Launch visible mode for authentication
+   - Use `--open-browser` to open visible browser for authentication
 3. **Tab Management**:
    - List tabs with `--list-tabs` to see what's currently open
    - Fetch from specific tabs using `--tab` (by index or URL pattern)

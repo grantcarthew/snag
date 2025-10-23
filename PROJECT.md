@@ -94,7 +94,6 @@ For each argument, answer:
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -124,7 +123,6 @@ For each argument, answer:
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -155,7 +153,6 @@ For each argument, answer:
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -186,7 +183,6 @@ For each argument, answer:
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -217,7 +213,6 @@ For each argument, answer:
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -248,7 +243,6 @@ For each argument, answer:
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -340,7 +334,6 @@ All output flags work normally with `--wait-for`:
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
 | `--wait-for` + `--force-headless` | Works normally | Wait in headless mode |
-| `--wait-for` + `--force-visible` | Works normally | Wait in visible mode |
 | `--wait-for` + `--open-browser` (no URL) | **Warning** | Flag ignored, no content to fetch |
 | `--wait-for` + `--open-browser` + URL | **Warning** | Flag ignored, `--open-browser` doesn't fetch content |
 
@@ -440,7 +433,6 @@ snag --wait-for ""                                             # Ignored (empty)
   - Another `--port`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -490,7 +482,6 @@ snag --wait-for ""                                             # Ignored (empty)
 #### Browser Mode
 
 - `--force-headless`: ⚠️ Warning (redundant), proceeds
-- `--force-visible`: Works normally ✅
 
 #### All Other Flags
 
@@ -520,7 +511,6 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 #### Browser Mode Conflicts
 
-- `--force-headless` + `--force-visible` → **Error**: `"Cannot use both --force-headless and --force-visible (conflicting flags)"`
 - `--force-headless` + `--open-browser` → **Error**: `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
 
 #### Content Source Interactions
@@ -538,7 +528,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 11: `--force-visible`
+### Task 11: `--open-browser` / `-b`
 
 **Questions to answer:**
 - What happens with wrong values? (N/A - boolean flag)
@@ -554,38 +544,6 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - Another `--force-visible`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
-
-**Define:** Conflict with `--force-headless`, redundancy with `--open-browser`
-
----
-
-### Task 12: `--open-browser` / `-b`
-
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--force-visible`
   - Another `--open-browser`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -600,7 +558,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 13: `--list-tabs` / `-l`
+### Task 12: `--list-tabs` / `-l`
 
 **Questions to answer:**
 - What happens with wrong values? (N/A - boolean flag)
@@ -616,7 +574,6 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - Another `--list-tabs`
   - `--tab` / `-t`
@@ -631,7 +588,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 14: `--tab PATTERN` / `-t`
+### Task 13: `--tab PATTERN` / `-t`
 
 **Questions to answer:**
 - What happens with wrong values? (no match found, invalid regex, empty pattern)
@@ -647,7 +604,6 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - Another `--tab`
@@ -662,7 +618,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 15: `--all-tabs` / `-a`
+### Task 14: `--all-tabs` / `-a`
 
 **Questions to answer:**
 - What happens with wrong values? (N/A - boolean flag)
@@ -678,7 +634,6 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -693,7 +648,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 16: `--verbose`
+### Task 15: `--verbose`
 
 **Questions to answer:**
 - What happens with wrong values? (N/A - boolean flag)
@@ -709,7 +664,6 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -724,7 +678,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 17: `--quiet` / `-q`
+### Task 16: `--quiet` / `-q`
 
 **Questions to answer:**
 - What happens with wrong values? (N/A - boolean flag)
@@ -740,7 +694,6 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -755,7 +708,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 18: `--debug`
+### Task 17: `--debug`
 
 **Questions to answer:**
 - What happens with wrong values? (N/A - boolean flag)
@@ -771,7 +724,6 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -786,7 +738,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 19: `--user-agent STRING`
+### Task 18: `--user-agent STRING`
 
 **Questions to answer:**
 - What happens with wrong values? (empty string, extremely long string)
@@ -802,7 +754,6 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -817,7 +768,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 20: `--help` / `-h`
+### Task 19: `--help` / `-h`
 
 **Questions to answer:**
 - What happens with wrong values? (N/A - boolean flag)
@@ -827,7 +778,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 21: `--version` / `-v`
+### Task 20: `--version` / `-v`
 
 **Questions to answer:**
 - What happens with wrong values? (N/A - boolean flag)
@@ -837,7 +788,7 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
 
 ---
 
-### Task 22: `--user-data-dir DIRECTORY`
+### Task 21: `--user-data-dir DIRECTORY`
 
 **Questions to answer:**
 - What happens with wrong values? (doesn't exist, not a directory, permission denied, invalid path, empty string)
@@ -853,7 +804,6 @@ Output control, wait-for, timeout, port, user-agent, logging: All work normally 
   - `--port` / `-p`
   - `--close-tab` / `-c`
   - `--force-headless`
-  - `--force-visible`
   - `--open-browser` / `-b`
   - `--list-tabs` / `-l`
   - `--tab` / `-t`
@@ -888,18 +838,17 @@ Track completion of each task:
 - [x] Task 8: `--port` / `-p` - **COMPLETE** (2025-10-23)
 - [x] Task 9: `--close-tab` / `-c` - **COMPLETE** (2025-10-23)
 - [x] Task 10: `--force-headless` - **COMPLETE** (2025-10-23)
-- [ ] Task 11: `--force-visible`
-- [ ] Task 12: `--open-browser` / `-b`
-- [ ] Task 13: `--list-tabs` / `-l`
-- [ ] Task 14: `--tab` / `-t`
-- [ ] Task 15: `--all-tabs` / `-a`
-- [x] Task 16: `--verbose` - **COMPLETE** (2025-10-23)
-- [x] Task 17: `--quiet` / `-q` - **COMPLETE** (2025-10-23)
-- [x] Task 18: `--debug` - **COMPLETE** (2025-10-23)
-- [ ] Task 19: `--user-agent`
-- [x] Task 20: `--help` / `-h` - **COMPLETE** (2025-10-23)
-- [x] Task 21: `--version` / `-v` - **COMPLETE** (2025-10-23)
-- [ ] Task 22: `--user-data-dir`
+- [ ] Task 11: `--open-browser` / `-b`
+- [ ] Task 12: `--list-tabs` / `-l`
+- [ ] Task 13: `--tab` / `-t`
+- [ ] Task 14: `--all-tabs` / `-a`
+- [x] Task 15: `--verbose` - **COMPLETE** (2025-10-23)
+- [x] Task 16: `--quiet` / `-q` - **COMPLETE** (2025-10-23)
+- [x] Task 17: `--debug` - **COMPLETE** (2025-10-23)
+- [ ] Task 18: `--user-agent`
+- [x] Task 19: `--help` / `-h` - **COMPLETE** (2025-10-23)
+- [x] Task 20: `--version` / `-v` - **COMPLETE** (2025-10-23)
+- [ ] Task 21: `--user-data-dir`
 
 ---
 
@@ -925,3 +874,10 @@ All findings will be documented in `docs/argument-handling.md` with:
   - Consider impact on: browser resource usage, tab creation/closing order, error handling, output ordering, and `--close-tab` behavior
 
 - [ ] **Review `--user-data-dir` interactions**: After completing all argument analysis tasks, review every completed task (1-21) to ensure `--user-data-dir` flag behavior is properly documented in `docs/argument-handling.md`. This flag was added after initial tasks were designed, so it needs to be retroactively documented for Tasks 1-9, 16-18, 20-21.
+
+- [ ] **Remove `--force-visible` from code**: Remove the `--force-visible` flag from the codebase. This includes:
+  - Remove flag definition from `main.go`
+  - Remove all references and logic in `browser.go`
+  - Remove validation logic and error messages
+  - Update any tests that reference this flag
+  - Ensure browser mode logic works correctly without this flag
