@@ -434,7 +434,7 @@ Third-party licenses in `LICENSES/` directory.
 
 **In Progress:**
 
-- 🚧 Argument handling analysis (see PROJECT.md and docs/argument-handling.md)
+- 🚧 Argument handling analysis (see PROJECT.md and docs/arguments/*)
 - 🚧 URL file input (`--url-file FILE`)
 - 🚧 All-tabs fetching (`--all-tabs`)
 
@@ -447,7 +447,7 @@ Third-party licenses in `LICENSES/` directory.
 - **README.md**: User-facing documentation and usage examples
 - **PROJECT.md**: Current project status and work tracking
 - **docs/design-record.md**: Comprehensive design decisions and rationale (26 design decisions documented)
-- **docs/argument-handling.md**: Complete argument compatibility matrix
+- **docs/arguments/**: Complete argument compatibility matrix
 - **docs/release-process.md**: Step-by-step release guide for AI agents
 - **docs/testing.md**: Testing documentation and strategies
 - **Repository**: https://github.com/grantcarthew/snag
