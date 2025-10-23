@@ -448,33 +448,48 @@ snag --wait-for ""                                             # Ignored (empty)
 
 ---
 
-### Task 9: `--close-tab` / `-c`
+### Task 9: `--close-tab` / `-c` ✅
 
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - Another `--close-tab`
-  - `--force-headless`
-  - `--force-visible`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
+**Status:** Complete (2025-10-23)
 
-**Define:** Behavior with existing tabs vs new tabs, batch operations
+#### Behavior
+
+**Primary use case:**
+- Visible browser mode: Close tab after fetch
+- Headless mode: Warning (tabs close automatically anyway)
+
+**Default behavior (no flag):**
+- Headless: Tabs closed automatically
+- Visible: Tabs remain open
+
+**Last tab handling:**
+- Closing last tab also closes browser
+- Message: "Closing last tab, browser will close"
+
+**Close failure:**
+- Warning issued but fetch considered successful
+- Content already retrieved before close attempted
+
+#### Content Source Interactions
+
+- Single/multiple URLs: Works - close each tab after fetch ✅
+- `--url-file`: Works - close each tab after fetch ✅
+- `--tab`: Works - close existing tab; if last, close browser ✅
+- `--all-tabs`: Works - close all tabs and browser ✅
+- `--list-tabs`: ❌ ERROR (standalone)
+- `--open-browser` (no URL): ⚠️ Warning, ignored
+- `--open-browser` + URL: Works - close tab/browser ✅
+
+#### Browser Mode
+
+- `--force-headless`: ⚠️ Warning (redundant), proceeds
+- `--force-visible`: Works normally ✅
+
+#### All Other Flags
+
+Output control, wait-for, timeout, port, user-agent, logging: All work normally ✅
+
+**Note:** Parallel processing strategy for multiple URLs tracked in TODO.
 
 ---
 
@@ -847,7 +862,7 @@ Track completion of each task:
 - [x] Task 6: `--timeout` - **COMPLETE** (2025-10-22)
 - [x] Task 7: `--wait-for` / `-w` - **COMPLETE** (2025-10-23)
 - [x] Task 8: `--port` / `-p` - **COMPLETE** (2025-10-23)
-- [ ] Task 9: `--close-tab` / `-c`
+- [x] Task 9: `--close-tab` / `-c` - **COMPLETE** (2025-10-23)
 - [ ] Task 10: `--force-headless`
 - [ ] Task 11: `--force-visible`
 - [ ] Task 12: `--open-browser` / `-b`
@@ -878,3 +893,9 @@ All findings will be documented in `docs/argument-handling.md` with:
 ## TODO Items
 
 - [ ] **Argument trimming**: Scan all string arguments (`--wait-for`, `--user-agent`, `--output`, `--output-dir`, `--tab`, etc.) and apply `strings.TrimSpace()` after reading from CLI framework. This is standard behavior in most CLI tools (git, docker, etc.) and handles copy-paste trailing spaces gracefully.
+
+- [ ] **Parallel processing strategy**: Define and implement strategy for processing multiple URLs (from multiple `<url>` arguments, `--url-file`, or `--all-tabs`). Decide between:
+  - Sequential: Process URLs one-by-one (current behavior)
+  - Parallel: Process multiple URLs concurrently with goroutines
+  - Hybrid: Parallel with configurable concurrency limit
+  - Consider impact on: browser resource usage, tab creation/closing order, error handling, output ordering, and `--close-tab` behavior
