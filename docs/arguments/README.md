@@ -30,10 +30,10 @@
 - [**`--debug`** - Debug logging](./debug.md)
 - [**`--help`** / **`-h`** - Show help](./help.md)
 - [**`--version`** / **`-v`** - Show version](./version.md)
+- [**`--all-tabs`** / **`-a`** - Process all open tabs](./all-tabs.md)
 
 ### In Progress 🚧
 
-- [**`--all-tabs`** / **`-a`** - Process all open tabs](./all-tabs.md)
 - [**`--user-agent STRING`** - Custom user agent](./user-agent.md)
 - [**`--user-data-dir DIRECTORY`** - Custom browser profile](./user-data-dir.md)
 
@@ -311,6 +311,8 @@ See [tab.md](./tab.md) for complete details.
 - ✅ `--timeout` - Applies to `--wait-for` if present (warns if no --wait-for)
 - ✅ `--wait-for` - Wait for same selector in each tab before fetching
 - ✅ `--port` - Remote debugging port
+- ✅ `--close-tab` - Close each tab after fetching; last tab closes browser
+- ✅ `--user-data-dir` - Custom browser profile
 - ✅ Logging flags
 
 **Incompatible Flags:**
@@ -319,9 +321,8 @@ See [tab.md](./tab.md) for complete details.
 - ❌ `-o` - Multiple outputs (use `-d`)
 - ❌ `--tab` - Use one or the other (mutually exclusive)
 - ❌ `--open-browser` - Conflicting purposes
-- ❌ `--close-tab` - Ambiguous for batch operations
 - ❌ `--force-headless` - Error (tabs require existing browser)
-- ❌ `--user-agent` - Ignored (tabs already open with their own user agents)
+- ⚠️ `--user-agent` - Warning, ignored (tabs already open with their own user agents)
 
 ### Mode 5: List Tabs
 
