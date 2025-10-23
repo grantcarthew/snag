@@ -268,8 +268,7 @@ main.go:412-534       # handleTabFetch()
 
 1. Connect to existing Chrome (auto-detect)
 2. Launch headless (if none found)
-3. Launch visible (`--force-visible` for auth)
-4. Open only (`--open-browser`)
+3. Open only (`--open-browser`)
 
 **Tab Management (Phase 2):**
 
@@ -359,7 +358,7 @@ First matching tab wins if multiple tabs match.
 - Browser not found: Install Chromium-based browser (Firefox NOT supported)
 - Connection refused: Try different port `--port 9223`
 - Timeout: Increase with `--timeout 60`
-- Auth required: Use `--force-visible`, authenticate manually, reconnect
+- Auth required: Use `--open-browser`, authenticate manually in visible browser
 - Empty output: Try `--format html` or `--wait-for <selector>`
 - Tab errors: Run `snag --list-tabs` first to see available tabs
 
