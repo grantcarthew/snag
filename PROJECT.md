@@ -434,9 +434,17 @@ All 7 critical contradictions resolved:
 - `docs/arguments/output.md`
 - `docs/arguments/wait-for.md` (from Issue #1)
 
-#### Phase 2: Warning Message Standardization (7 issues)
-- [ ] Issue #8: `--user-agent` + `--tab` wording
-- [ ] Issue #9: `--user-agent` + `--all-tabs` wording
+#### Issues #8 & #9: `--user-agent` Warning Messages - ✅ RESOLVED (2025-10-24)
+
+**Changes made to `docs/arguments/user-agent.md`:**
+1. Line 64 (Issue #8): Changed warning message from "tab already has its user agent" to "cannot change existing tab's user agent"
+2. Line 65 (Issue #9): Changed warning message from "tabs already have their user agents" to "cannot change existing tabs' user agents"
+
+**Result:** Warning messages now use consistent "cannot change" phrasing across user-agent.md, tab.md, and all-tabs.md.
+
+#### Phase 2: Warning Message Standardization (7 issues) 🚧 IN PROGRESS
+- [x] Issue #8: `--user-agent` + `--tab` wording - 2025-10-24
+- [x] Issue #9: `--user-agent` + `--all-tabs` wording - 2025-10-24
 - [ ] Issue #10: `--close-tab` + `--open-browser` wording
 - [ ] Issue #11: `--format` + `--open-browser` missing warning
 - [ ] Issue #12: `--timeout` + `--open-browser` missing warning
@@ -454,4 +462,5 @@ All 7 critical contradictions resolved:
 **Review Completed:** 2025-10-23 23:00 AEST
 **Implementation Started:** 2025-10-24 09:30 AEST
 **Phase 1 Completed:** 2025-10-24 09:50 AEST
-**Status:** Phase 1 complete - All 7 critical contradictions resolved. Ready for Phase 2 (Warning Message Standardization).
+**Phase 2 Started:** 2025-10-24 10:00 AEST
+**Status:** Phase 2 in progress - 2 of 7 warning message standardizations complete (Issues #8, #9). Files modified: user-agent.md

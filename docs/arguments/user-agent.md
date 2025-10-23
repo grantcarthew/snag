@@ -61,8 +61,8 @@ Set a custom user agent string for browser requests. This flag allows you to cus
 | `--user-agent` + `--list-tabs` | **Silently ignored** | List-tabs standalone mode ignores all other flags |
 
 **Warning messages for tabs:**
-- `--tab`: "Warning: --user-agent has no effect with --tab (tab already has its user agent)"
-- `--all-tabs`: "Warning: --user-agent has no effect with --all-tabs (tabs already have their user agents)"
+- `--tab`: "Warning: --user-agent has no effect with --tab (cannot change existing tab's user agent)"
+- `--all-tabs`: "Warning: --user-agent has no effect with --all-tabs (cannot change existing tabs' user agents)"
 
 **Rationale for tab behavior:**
 - Once a page/tab is loaded, its user agent cannot be changed
