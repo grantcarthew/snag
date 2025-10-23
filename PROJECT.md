@@ -846,7 +846,7 @@ Track completion of each task:
 - [x] Task 5: `--format` / `-f` - **COMPLETE** (2025-10-22)
 - [x] Task 6: `--timeout` - **COMPLETE** (2025-10-22)
 - [x] Task 7: `--wait-for` / `-w` - **COMPLETE** (2025-10-23)
-- [ ] Task 8: `--port` / `-p`
+- [x] Task 8: `--port` / `-p` - **COMPLETE** (2025-10-23)
 - [ ] Task 9: `--close-tab` / `-c`
 - [ ] Task 10: `--force-headless`
 - [ ] Task 11: `--force-visible`
