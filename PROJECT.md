@@ -389,5 +389,57 @@ Before implementing changes, confirm:
 
 ---
 
+## Implementation Progress
+
+**Started:** 2025-10-24
+**Status:** In Progress - Phase 1 (Critical Contradictions)
+
+### Completed
+
+#### Issue #1: `--list-tabs` + `--wait-for` - ✅ RESOLVED (2025-10-24)
+
+**Expanded scope:** Fixed ALL `--list-tabs` interactions across ALL 21 argument documentation files to ensure consistency.
+
+**Changes made to `docs/arguments/wait-for.md`:**
+1. Line 51: Changed interaction matrix from "**Error**" to "Flag **ignored**, tabs listed"
+2. Removed error message documentation that was under "Error messages:" section
+3. Line 118: Removed incorrect example from "Invalid:" section (`snag --list-tabs --wait-for ".content"`)
+
+**Verification:**
+- Searched all 21 files in `docs/arguments/` for `--list-tabs` mentions
+- Confirmed only `wait-for.md` had incorrect documentation
+- Verified all other 20 files correctly document `--list-tabs` as silently ignoring/overriding other flags
+- Confirmed no remaining "ERROR" references to `--list-tabs` combinations
+
+**Result:** All `--list-tabs` documentation is now consistent across all argument files. The flag behaves as a standalone mode (like `--help` and `--version`) and silently ignores all other flags except `--port` and logging flags.
+
+### Remaining Work
+
+#### Phase 1: Critical Contradictions (6 remaining)
+- [ ] Issue #2: `--close-tab` + `--url-file` (url-file.md)
+- [ ] Issue #3: `--tab` + `--open-browser` (open-browser.md, tab.md)
+- [ ] Issue #4: `--all-tabs` + `--open-browser` (open-browser.md, all-tabs.md)
+- [ ] Issue #5: `--output` + `--open-browser` (output.md)
+- [ ] Issue #6: `--tab` + `--user-data-dir` (tab.md)
+- [ ] Issue #7: `--all-tabs` + `--user-data-dir` (all-tabs.md)
+
+#### Phase 2: Warning Message Standardization (7 issues)
+- [ ] Issue #8: `--user-agent` + `--tab` wording
+- [ ] Issue #9: `--user-agent` + `--all-tabs` wording
+- [ ] Issue #10: `--close-tab` + `--open-browser` wording
+- [ ] Issue #11: `--format` + `--open-browser` missing warning
+- [ ] Issue #12: `--timeout` + `--open-browser` missing warning
+- [ ] Issue #13: `--output-dir` + `--open-browser` missing warning
+- [ ] Issue #14: `--wait-for` + `--open-browser` phrasing
+
+#### Phase 3: Verification
+- [ ] Re-run cross-review to verify all contradictions resolved
+- [ ] Verify examples sections match documented behavior
+- [ ] Check validation.md for needed updates
+- [ ] Check README.md compatibility matrices for needed updates
+
+---
+
 **Review Completed:** 2025-10-23 23:00 AEST
-**Status:** Ready for Grant's review and approval before implementation
+**Implementation Started:** 2025-10-24 09:30 AEST
+**Status:** Phase 1 in progress - 1 of 7 critical contradictions resolved
