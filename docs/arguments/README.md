@@ -31,10 +31,10 @@
 - [**`--help`** / **`-h`** - Show help](./help.md)
 - [**`--version`** / **`-v`** - Show version](./version.md)
 - [**`--all-tabs`** / **`-a`** - Process all open tabs](./all-tabs.md)
+- [**`--user-agent STRING`** - Custom user agent](./user-agent.md)
 
 ### In Progress 🚧
 
-- [**`--user-agent STRING`** - Custom user agent](./user-agent.md)
 - [**`--user-data-dir DIRECTORY`** - Custom browser profile](./user-data-dir.md)
 
 ### Advanced Topics
