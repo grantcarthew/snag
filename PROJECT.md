@@ -798,6 +798,43 @@ snag --wait-for ""                                             # Ignored (empty)
 
 ---
 
+### Task 22: `--user-data-dir DIRECTORY`
+
+**Questions to answer:**
+- What happens with wrong values? (doesn't exist, not a directory, permission denied, invalid path, empty string)
+- What happens when combined with:
+  - `<url>` (single)
+  - `<url>` (multiple)
+  - `--url-file`
+  - `--output` / `-o`
+  - `--output-dir` / `-d`
+  - `--format` / `-f`
+  - `--timeout`
+  - `--wait-for` / `-w`
+  - `--port` / `-p`
+  - `--close-tab` / `-c`
+  - `--force-headless`
+  - `--force-visible`
+  - `--open-browser` / `-b`
+  - `--list-tabs` / `-l`
+  - `--tab` / `-t`
+  - `--all-tabs` / `-a`
+  - `--verbose`
+  - `--quiet` / `-q`
+  - `--debug`
+  - `--user-agent`
+  - Another `--user-data-dir`
+
+**Define:** Directory creation behavior, default value, session isolation, multi-instance support
+
+**Use Cases:**
+- Multiple authenticated sessions (personal vs work accounts)
+- Session isolation per project/client
+- Privacy (separate from personal browsing)
+- Enable true multi-instance browsers with different ports
+
+---
+
 ## Completion Status
 
 Track completion of each task:
@@ -817,12 +854,13 @@ Track completion of each task:
 - [ ] Task 13: `--list-tabs` / `-l`
 - [ ] Task 14: `--tab` / `-t`
 - [ ] Task 15: `--all-tabs` / `-a`
-- [ ] Task 16: `--verbose`
-- [ ] Task 17: `--quiet` / `-q`
-- [ ] Task 18: `--debug`
+- [x] Task 16: `--verbose` - **COMPLETE** (2025-10-23)
+- [x] Task 17: `--quiet` / `-q` - **COMPLETE** (2025-10-23)
+- [x] Task 18: `--debug` - **COMPLETE** (2025-10-23)
 - [ ] Task 19: `--user-agent`
-- [ ] Task 20: `--help` / `-h`
-- [ ] Task 21: `--version` / `-v`
+- [x] Task 20: `--help` / `-h` - **COMPLETE** (2025-10-23)
+- [x] Task 21: `--version` / `-v` - **COMPLETE** (2025-10-23)
+- [ ] Task 22: `--user-data-dir`
 
 ---
 
