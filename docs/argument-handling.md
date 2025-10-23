@@ -88,7 +88,6 @@ snag -d output/ https://example.com https://google.com
 |-------------|----------|-------|
 | `<url>` + `--open-browser` | Navigate to URL, **do not fetch** content, leave browser open | Opens URL in tab for manual interaction |
 | `<url>` + `--force-headless` | Force headless mode even if browser already open | Override auto-detection |
-| `<url>` + `--force-visible` | Open visible browser, navigate, **fetch content**, leave browser open | Useful for authenticated sessions |
 
 **Output Control:**
 
@@ -118,7 +117,6 @@ snag example.com                                   # Auto-adds https://
 snag http://localhost:3000                         # Local development
 snag file:///path/to/file.html                     # Local file
 snag https://example.com -o page.md                # Save to file
-snag https://example.com --force-visible           # Visible browser + fetch
 snag https://example.com --open-browser            # Open URL, no fetch
 ```
 
@@ -240,8 +238,6 @@ snag --url-file urls.txt https://example.com https://go.dev
 |-------------|----------|-------|
 | `--url-file` + `--open-browser` | Opens all URLs in tabs, **no fetch** | Only --open-browser prevents fetching |
 | `--url-file` + `--force-headless` | Works normally, auto-save | Force headless, fetch all URLs |
-| `--url-file` + `--force-visible` | Works normally, auto-save | Force visible, fetch all URLs |
-| `--url-file` + `--force-headless --force-visible` | **Error** | Conflicting browser modes |
 
 **Page Loading:**
 
@@ -288,7 +284,6 @@ snag --url-file urls.txt --all-tabs                # ERROR: Conflicting sources
 snag --url-file urls.txt --list-tabs               # ERROR: List-tabs standalone
 snag --url-file urls.txt --close-tab               # ERROR: Ambiguous for batch
 snag --url-file f1.txt --url-file f2.txt           # ERROR: Only one --url-file allowed
-snag --url-file urls.txt --force-headless --force-visible  # ERROR: Conflicting modes
 ```
 
 **File Format Examples:**
@@ -470,7 +465,6 @@ All these flags work normally with `-d`:
 - ✅ `--wait-for` - Wait for selector before extraction
 - ✅ `--close-tab` - Close tab after fetching
 - ✅ `--force-headless` - Force headless browser mode
-- ✅ `--force-visible` - Force visible browser mode
 - ✅ `--verbose` / `--quiet` / `--debug` - Logging levels
 - ✅ `--user-agent` - Custom user agent (applies to all new pages)
 - ✅ `--port` - Remote debugging port
@@ -636,7 +630,6 @@ All browser mode flags work normally with `--timeout`:
 | Combination | Behavior |
 |-------------|----------|
 | `--timeout` + `--force-headless` | Works normally |
-| `--timeout` + `--force-visible` | Works normally |
 | `--timeout` + `--close-tab` | Works normally |
 | `--timeout` + `--port` | Works normally |
 
@@ -834,7 +827,6 @@ All work normally:
 | Combination | Behavior |
 |-------------|----------|
 | `--format` + `--force-headless` | Works normally |
-| `--format` + `--force-visible` | Works normally |
 | `--format` + `--open-browser` + URL | Works normally (current behavior) |
 
 **Page Loading Interactions:**
@@ -1057,7 +1049,6 @@ All these flags work normally with `-o`:
 - ✅ `--wait-for` - Wait for selector before extraction
 - ✅ `--close-tab` - Close tab after fetching
 - ✅ `--force-headless` - Force headless browser mode
-- ✅ `--force-visible` - Force visible browser mode
 - ✅ `--verbose` / `--quiet` / `--debug` - Logging levels
 - ✅ `--user-agent` - Custom user agent
 - ✅ `--port` - Remote debugging port
@@ -1175,7 +1166,6 @@ snag --port 9223 https://example.com
 | `--port 9223` + browser on 9223 | Connect to existing | Reuse instance |
 | `--port 9223` + browser on 9222 | No cross-detection | 9222 browser not detected, try 9223 |
 | `--port` + `--force-headless` | Launch headless on port | Works normally |
-| `--port` + `--force-visible` | Launch visible on port | Works normally |
 | `--port` + `--open-browser` | Open browser on port | Works normally |
 | `--port` + `--list-tabs` | List tabs from port | Works normally |
 | `--port` + `--tab` | Fetch tab from port | Works normally |
@@ -1802,7 +1792,6 @@ snag --help --version                               # Shows HELP (not version)
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
 | `--close-tab` + `--force-headless` | **Warning** | `"Warning: --close-tab has no effect in headless mode (tabs close automatically)"`, proceeds normally |
-| `--close-tab` + `--force-visible` | Works normally | Primary use case for --close-tab |
 
 **Output Control (All work normally):**
 
@@ -1833,7 +1822,6 @@ snag --url-file urls.txt --close-tab              # Close each tab after fetch
 snag --tab 1 --close-tab                          # Fetch from existing tab, close it
 snag --tab "dashboard" --close-tab -o report.md   # Fetch, save, close tab
 snag --all-tabs --close-tab -d ./output           # Fetch all, save all, close all, close browser
-snag --force-visible https://example.com --close-tab  # Visible mode, close after fetch
 ```
 
 **Invalid:**
@@ -1911,7 +1899,6 @@ snag --all-tabs --close-tab                       # Closes all tabs → closes b
 
 **Browser Mode Conflicts:**
 - Multiple `--force-headless`: **Error** - `"Only one --force-headless flag allowed"`
-- With `--force-visible`: **Error** - `"Cannot use both --force-headless and --force-visible (conflicting flags)"`
 - With `--open-browser`: **Error** - `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
 
 #### Interaction Matrix
@@ -1936,7 +1923,6 @@ snag --all-tabs --close-tab                       # Closes all tabs → closes b
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--force-headless` + `--force-visible` | **Error** | Conflicting browser modes |
 | `--force-headless` + `--open-browser` | **Error** | Conflicting modes (open-browser implies visible) |
 | `--force-headless` + `--user-data-dir` | Works normally | Launch headless with custom profile |
 
@@ -1973,9 +1959,6 @@ snag --force-headless https://example.com --format pdf
 
 **Invalid (Errors):**
 ```bash
-# ERROR: Conflicting browser modes
-snag --force-headless --force-visible https://example.com
-
 # ERROR: Conflicting modes
 snag --force-headless --open-browser
 
@@ -2010,14 +1993,13 @@ snag --force-headless --url-file urls.txt          # Flag ignored (no browser)
 
 **How it works:**
 1. Check if `--force-headless` is set
-2. If set with conflicting flags (`--force-visible`, `--open-browser`, tab operations) → Error
+2. If set with conflicting flags (`--open-browser`, tab operations) → Error
 3. If set with `--close-tab` → Warning (redundant)
 4. If no existing browser running → Silently ignore (default is headless)
 5. If existing browser on default port → Let connection fail (port conflict)
 6. If existing browser + custom `--port` → Launch new headless on custom port
 
 **Error Messages:**
-- Browser mode conflicts: `"Cannot use both --force-headless and --force-visible (conflicting flags)"`
 - Tab operation conflicts: `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"`
 - Multiple flags: `"Only one --force-headless flag allowed"`
 
@@ -2056,7 +2038,6 @@ snag --force-headless --url-file urls.txt          # Flag ignored (no browser)
 | `--port`           | `-p`    | Int    | `9222`  | Chrome remote debugging port               |
 | `--close-tab`      | `-c`    | Bool   | `false` | Close browser tab after fetching           |
 | `--force-headless` | -       | Bool   | `false` | Force headless mode                        |
-| `--force-visible`  | -       | Bool   | `false` | Force visible browser mode                 |
 | `--open-browser`   | `-b`    | Bool   | `false` | Open browser in visible state              |
 | `--list-tabs`      | `-l`    | Bool   | `false` | List all open tabs                         |
 | `--tab`            | `-t`    | String | -       | Fetch from existing tab (index or pattern) |
@@ -2125,11 +2106,8 @@ These determine the primary operation mode:
 | -------------------------------------- | ------------------------------ | ---------- |
 | No browser flags                       | Auto-detect or launch headless | ✅ Current |
 | `--force-headless`                     | Always headless                | ✅ Current |
-| `--force-visible`                      | Always visible                 | ✅ Current |
-| `--force-headless` + `--force-visible` | ❌ ERROR: conflicting flags    | ✅ Current |
 | `--open-browser`                       | Open visible browser           | ✅ Current |
 | `--open-browser` + `--force-headless`  | ⚠️ UNDEFINED                   | ❓ Unknown |
-| `--open-browser` + `--force-visible`   | ✅ Redundant but allowed       | ✅ Current |
 
 ### Logging Level (Last Flag Wins) ✅
 
@@ -2196,11 +2174,6 @@ These determine the primary operation mode:
 
 1. Auto-detect (default, no flags)
 2. Force headless: `--force-headless`
-3. Force visible: `--force-visible`
-
-**Conflict:**
-
-- `--force-headless` + `--force-visible`: ❌ ERROR: `"Conflicting flags: --force-headless and --force-visible cannot be used together"`
 
 ---
 
@@ -2218,7 +2191,7 @@ These determine the primary operation mode:
 - ✅ `--wait-for` - Wait for selector
 - ✅ `--port` - Remote debugging port
 - ✅ `--close-tab` - Close after fetch
-- ✅ `--force-headless, --force-visible` - Browser mode
+- ✅ `--force-headless` - Browser mode
 - ✅ `--open-browser` - Open in visible browser
 - ✅ `--user-agent` - Custom UA
 - ✅ Logging flags
@@ -2247,7 +2220,7 @@ These determine the primary operation mode:
 - ✅ `--timeout` - Applied to each URL
 - ✅ `--wait-for` - Applied to each page
 - ✅ `--port` - Remote debugging port
-- ✅ `--force-headless, --force-visible` - Browser mode
+- ✅ `--force-headless` - Browser mode
 - ✅ `--open-browser` - 🚧 Opens all URLs in tabs, NO fetch
 - ✅ `--user-agent` - Applied to all
 - ✅ Logging flags
@@ -2294,7 +2267,6 @@ These determine the primary operation mode:
 - ❌ `--list-tabs` - Standalone only
 - ❌ `--open-browser` - ⚠️ UNDEFINED
 - ❌ `--force-headless` - Error (tab requires visible browser)
-- ❌ `--force-visible` - Ignored (browser already running visible)
 
 **Special Behavior:**
 
@@ -2325,7 +2297,6 @@ These determine the primary operation mode:
 - ❌ `--open-browser` - ⚠️ UNDEFINED
 - ❌ `--close-tab` - Error (ambiguous for batch operations)
 - ❌ `--force-headless` - Error (tabs require visible browser)
-- ❌ `--force-visible` - Ignored (browser already running visible)
 - ❌ `--user-agent` - Ignored (tabs already open with their own user agents)
 
 **Special Behavior:**
@@ -2363,7 +2334,6 @@ These determine the primary operation mode:
 **Compatible Flags:**
 
 - ✅ `--port` - Remote debugging port
-- ✅ `--force-visible` - Redundant but allowed
 - ✅ Logging flags
 
 **Incompatible Flags:**
@@ -2498,12 +2468,10 @@ snag --all-tabs         # Connects to existing browser
 
 **Decision:**
 - `--force-headless` → **Error** (tabs require visible browser)
-- `--force-visible` → **Ignored** (browser already running visible)
 
 **Rationale:**
 - Tabs require visible browser with remote debugging
 - `--force-headless` conflicts with this requirement → Error
-- `--force-visible` is redundant but harmless → Ignore
 
 ### Case 6: --user-agent with Tab Features
 
@@ -2571,8 +2539,7 @@ snag --url-file empty.txt
 5. Handle `--tab` (check for URL conflict, exit early)
 6. Validate URL argument required
 7. Validate URL format
-8. Validate `--force-headless` + `--force-visible` conflict
-9. Validate `-o` + `-d` conflict
+8. Validate `-o` + `-d` conflict
 10. Validate format
 11. Validate timeout
 12. Validate port
@@ -2611,9 +2578,7 @@ These combinations need clarification and implementation decisions:
 | Combination                     | Current      | Recommendation                     |
 | ------------------------------- | ------------ | ---------------------------------- |
 | `--tab 1 --close-tab`           | ⚠️ Undefined | ✅ Allow: Close the tab            |
-| `--tab 1 --force-visible`       | ⚠️ Undefined | ✅ Ignore: Browser already running |
 | `--tab 1 --user-agent "Custom"` | ⚠️ Undefined | ✅ Ignore: Tab already open        |
-| `--all-tabs --force-visible`    | ⚠️ Undefined | ✅ Ignore: Browser already running |
 | `--all-tabs --close-tab`        | ⚠️ Undefined | ❌ ERROR: Ambiguous                |
 | `--all-tabs --user-agent`       | ⚠️ Undefined | ✅ Ignore: Tabs already open       |
 
@@ -2652,13 +2617,12 @@ These combinations need clarification and implementation decisions:
 
 ### Browser Control Flags
 
-|                      | --port | --close-tab | --force-headless | --force-visible | --open-browser |
-| -------------------- | ------ | ----------- | ---------------- | --------------- | -------------- |
-| **--port**           | -      | ✅          | ✅               | ✅              | ✅             |
-| **--close-tab**      | ✅     | -           | ✅               | ✅              | ✅             |
-| **--force-headless** | ✅     | ✅          | -                | ❌              | ⚠️             |
-| **--force-visible**  | ✅     | ✅          | ❌               | -               | ✅             |
-| **--open-browser**   | ✅     | ✅          | ⚠️               | ✅              | -              |
+|                      | --port | --close-tab | --force-headless | --open-browser |
+| -------------------- | ------ | ----------- | ---------------- | -------------- |
+| **--port**           | -      | ✅          | ✅               | ✅             |
+| **--close-tab**      | ✅     | -           | ✅               | ✅             |
+| **--force-headless** | ✅     | ✅          | -                | ⚠️             |
+| **--open-browser**   | ✅     | ✅          | ⚠️               | -              |
 
 ### Tab Feature Flags
 
@@ -2699,7 +2663,6 @@ All logging flag conflicts resolved using "last flag wins" approach (Unix standa
 
 ### Existing Validations ✅
 
-- [x] `--force-headless` + `--force-visible` → ERROR
 - [x] `-o` + `-d` → ERROR
 - [x] `--tab` + URL → ERROR
 - [x] `--all-tabs` + URL → ERROR
@@ -2767,7 +2730,6 @@ snag --all-tabs -d ./tabs                   # All tabs
 snag --open-browser                         # Open browser only
 snag --open-browser https://example.com     # Open + fetch (current)
 snag --force-headless https://example.com   # Force headless
-snag --force-visible https://example.com    # Force visible
 ```
 
 ### Advanced Options

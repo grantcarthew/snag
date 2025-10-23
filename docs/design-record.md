@@ -187,7 +187,6 @@ snag [options] <url>
   -p, --port <port>          Chrome remote debugging port (default: 9222)
   -c, --close-tab            Close the browser tab after fetching content
   -fh, --force-headless      Force headless mode even if Chrome is running
-  -fv, --force-visible       Force visible mode for authentication
   -ob, --open-browser        Open Chrome browser in visible state (no URL required)
 ```
 
@@ -820,7 +819,7 @@ $ snag https://example.com
 
   ```
   ✗ Authentication required for https://private.example.com
-    Try: snag https://private.example.com --force-visible
+    Try: snag --open-browser https://private.example.com
 
   ✗ Page load timeout exceeded (5s)
     The page took too long to load. Try increasing timeout with --timeout
@@ -1191,7 +1190,7 @@ Phase 2 implementation complete (2025-10-21) with 8 additional design decisions 
 
 - **Remote debugging port configuration** (browser.go:259-260)
 - **Problem**: Rod launcher wouldn't set `--remote-debugging-port` when using default port 9222, causing random port selection
-- **Impact**: Browsers launched with `--force-visible` couldn't be reached by `--list-tabs`
+- **Impact**: Browsers launched in visible mode couldn't be reached by `--list-tabs`
 - **Fix**: Always explicitly set remote-debugging-port flag regardless of value
 - **Lesson**: Never rely on framework defaults for critical connection parameters
 
