@@ -80,7 +80,7 @@ snag -d output/ https://example.com https://google.com
 | `<url>` + `--url-file` | **Merge** both sources | Allow combining CLI URLs with file URLs |
 | `<url>` + `--tab` | **Error** | Mutually exclusive content sources |
 | `<url>` + `--all-tabs` | **Error** | Mutually exclusive content sources |
-| `<url>` + `--list-tabs` | **Error** | List-tabs is standalone action only |
+| `<url>` + `--list-tabs` | URL **ignored**, tabs listed | `--list-tabs` acts like `--help`, overrides other args |
 
 **Browser Mode:**
 
@@ -125,7 +125,7 @@ snag https://example.com --open-browser            # Open URL, no fetch
 snag ftp://example.com                             # ERROR: Invalid scheme
 snag https://example.com --tab 1                   # ERROR: Conflicting sources
 snag https://example.com --all-tabs                # ERROR: Conflicting sources
-snag https://example.com --list-tabs               # ERROR: List-tabs standalone
+snag https://example.com --list-tabs               # URL ignored, lists tabs from existing browser
 snag url1 url2 -o out.md                           # ERROR: Multiple URLs need -d
 ```
 
@@ -220,7 +220,7 @@ snag --url-file urls.txt https://example.com https://go.dev
 | `--url-file` + another `--url-file` | **Error** | Only one --url-file flag allowed, user must merge files |
 | `--url-file` + `--tab` | **Error** | Mutually exclusive content sources |
 | `--url-file` + `--all-tabs` | **Error** | Mutually exclusive content sources |
-| `--url-file` + `--list-tabs` | **Error** | List-tabs is standalone action only |
+| `--url-file` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` acts like `--help`, overrides other args |
 
 **Output Control:**
 
@@ -281,7 +281,7 @@ snag --url-file empty.txt                          # ERROR: No valid URLs (if no
 snag --url-file urls.txt -o output.md              # ERROR: Multiple URLs need -d
 snag --url-file urls.txt --tab 1                   # ERROR: Conflicting sources
 snag --url-file urls.txt --all-tabs                # ERROR: Conflicting sources
-snag --url-file urls.txt --list-tabs               # ERROR: List-tabs standalone
+snag --url-file urls.txt --list-tabs               # --url-file ignored, lists tabs from existing browser
 snag --url-file urls.txt --close-tab               # ERROR: Ambiguous for batch
 snag --url-file f1.txt --url-file f2.txt           # ERROR: Only one --url-file allowed
 ```
@@ -437,12 +437,9 @@ snag https://example.com -d ""
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `-d ./dir` + `--list-tabs` | **Error** | List-tabs outputs to stdout only, no content |
+| `-d ./dir` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
 | `-d ./dir` + `--open-browser` (no URL/url-file) | `-d` ignored | Only opens browser, nothing to fetch/save |
 | `-d ./dir` + `--open-browser` + `<url>` | Works normally | Opens browser, fetches URL, saves to directory |
-
-**Error messages:**
-- `--list-tabs`: `"Cannot use --output-dir with --list-tabs (informational output only)"`
 
 **Format Combinations:**
 
@@ -495,7 +492,7 @@ snag https://example.com -d ./existing-file.txt      # ERROR: Path is file, not 
 snag https://example.com -d /root/restricted         # ERROR: Permission denied
 snag https://example.com -d ./dir -o file.md         # ERROR: -d and -o conflict
 snag https://example.com -d ./dir1 -d ./dir2         # ERROR: Multiple -d flags
-snag --list-tabs -d ./tabs                           # ERROR: List-tabs standalone
+snag --list-tabs -d ./tabs                           # --output-dir ignored, lists tabs from existing browser
 snag --open-browser -d ./output                      # OK but -d ignored (nothing to fetch)
 ```
 
@@ -601,11 +598,8 @@ snag --url-file urls.txt --timeout 60
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--timeout` + `--list-tabs` | **Error** | List-tabs standalone, no navigation |
+| `--timeout` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
 | `--timeout` + `--open-browser` (no URL) | Timeout **ignored** | No navigation occurs |
-
-**Error messages:**
-- `--list-tabs`: `"Cannot use --timeout with --list-tabs (no navigation)"`
 
 **Timing-Related Interactions:**
 
@@ -670,7 +664,7 @@ snag https://example.com --timeout 45.5             # ERROR: Non-integer
 snag https://example.com --timeout abc              # ERROR: Non-numeric
 snag https://example.com --timeout                  # ERROR: Missing value
 snag https://example.com --timeout 30 --timeout 60  # ERROR: Multiple flags
-snag --list-tabs --timeout 30                       # ERROR: No navigation
+snag --list-tabs --timeout 30                       # --timeout ignored, lists tabs from existing browser
 ```
 
 **With Warnings:**
@@ -817,7 +811,7 @@ snag https://example.com --format html -o page.md
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--format` + `--list-tabs` | Format **ignored** | List-tabs only displays tab list, no content |
+| `--format` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
 | `--format` + `--open-browser` (no URL) | Format **ignored** | Open-browser only opens browser, no content |
 
 **Browser Mode Interactions:**
@@ -1011,13 +1005,12 @@ snag https://example.com -o myfile --format markdown
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `-o file.txt` + `--list-tabs` | **Error** | List-tabs outputs to stdout only |
+| `-o file.txt` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
 | `-o file.md` + `--open-browser` (no URL) | **Error** | Nothing to fetch |
 | `-o file.md` + `--tab <pattern>` | Works normally | Fetch from tab, save to file |
 | `-o file.md` + `--tab <pattern>` (no browser) | **Error** | Tab requires running browser |
 
 **Error messages:**
-- `--list-tabs`: `"Cannot use --output with --list-tabs (informational output only)"`
 - `--open-browser` only: `"Cannot use --output without content source (URL or --tab)"`
 - `--tab` no browser: `"No browser instance running with remote debugging"`
 
@@ -1074,7 +1067,7 @@ snag url1 url2 -o out.md                             # ERROR: Multiple URLs
 snag --url-file urls.txt -o out.md                   # ERROR: Multiple sources
 snag https://example.com -o out.md -o out2.md        # ERROR: Multiple -o flags
 snag https://example.com -o file.md -d ./dir         # ERROR: -o and -d conflict
-snag --list-tabs -o tabs.txt                         # ERROR: List-tabs standalone
+snag --list-tabs -o tabs.txt                         # --output ignored, lists tabs from existing browser
 snag --open-browser -o file.md                       # ERROR: Nothing to fetch
 snag --tab 1 -o file.md                              # ERROR: No browser running
 snag https://example.com -o /root/file.md            # ERROR: Permission denied
@@ -1783,7 +1776,7 @@ snag --help --version                               # Shows HELP (not version)
 | `--close-tab` + `--url-file` | Works normally | Close each tab after fetching |
 | `--close-tab` + `--tab` | Works normally | Fetch from existing tab, then close it; if last tab, close browser |
 | `--close-tab` + `--all-tabs` | Works normally | Fetch from all tabs, close all tabs, close browser |
-| `--close-tab` + `--list-tabs` | **Error** | `"Cannot use --close-tab with --list-tabs. --list-tabs is standalone"` |
+| `--close-tab` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
 | `--close-tab` + `--open-browser` (no URL) | **Warning** | `"Warning: --close-tab has no effect with --open-browser (no content to close)"`, browser stays open |
 | `--close-tab` + `--open-browser` + URL | Works | Open browser, fetch URL in tab, close tab/browser |
 
@@ -1826,7 +1819,7 @@ snag --all-tabs --close-tab -d ./output           # Fetch all, save all, close a
 
 **Invalid:**
 ```bash
-snag --list-tabs --close-tab                      # ERROR: list-tabs standalone
+snag --list-tabs --close-tab                      # --close-tab ignored, lists tabs from existing browser
 ```
 
 **With Warnings:**
@@ -1912,11 +1905,11 @@ snag --all-tabs --close-tab                       # Closes all tabs → closes b
 | `--force-headless` + `--url-file` | **Silently ignore** flag | Headless is default, not needed |
 | `--force-headless` + `--tab` | **Error** | `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"` |
 | `--force-headless` + `--all-tabs` | **Error** | `"Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)"` |
-| `--force-headless` + `--list-tabs` | **Error** | `"Cannot use --force-headless with --list-tabs (--list-tabs requires existing browser connection)"` |
+| `--force-headless` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
 
 **Rationale for Tab Errors:**
 - `--force-headless` implies launching a new browser
-- Tab operations (`--tab`, `--all-tabs`, `--list-tabs`) require existing browser with tabs
+- Tab operations (`--tab`, `--all-tabs`) require existing browser with tabs
 - These are fundamentally incompatible operations
 
 **Browser Mode Interactions:**
@@ -1965,7 +1958,7 @@ snag --force-headless --open-browser
 # ERROR: Tab operations require existing browser
 snag --force-headless --tab 1
 snag --force-headless --all-tabs
-snag --force-headless --list-tabs
+snag --force-headless --list-tabs                    # --force-headless ignored, lists tabs from existing browser
 
 # ERROR: Multiple flags
 snag --force-headless --force-headless https://example.com
@@ -2069,12 +2062,12 @@ snag --force-headless --url-file urls.txt          # Flag ignored (no browser)
 | `--open-browser` + `--url-file` | Open browser with multiple tabs from file, exit snag | One tab per URL, no fetch |
 | `--open-browser` + `--tab` | **Warning** | `"Warning: --tab ignored with --open-browser (no content fetching)"` - Opens browser and exits |
 | `--open-browser` + `--all-tabs` | **Warning** | `"Warning: --all-tabs ignored with --open-browser (no content fetching)"` - Opens browser and exits |
-| `--open-browser` + `--list-tabs` | **Error** | `"Cannot use --list-tabs with --open-browser (--list-tabs is standalone)"` |
+| `--open-browser` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
 
 **Rationale:**
 - `--open-browser` is purely for launching browser, not fetching content
 - Tab operations (`--tab`, `--all-tabs`) imply fetching, which conflicts with open-browser's purpose
-- `--list-tabs` is standalone and doesn't combine with any other mode
+
 
 **Output Control Interactions:**
 
@@ -2151,7 +2144,7 @@ snag --open-browser --verbose https://example.com
 # ERROR: Conflicting modes
 snag --open-browser --force-headless
 
-# ERROR: List-tabs is standalone
+# --open-browser ignored, lists tabs from existing browser
 snag --open-browser --list-tabs
 ```
 
@@ -2186,7 +2179,7 @@ snag --open-browser https://example.com --close-tab
 
 **How it works:**
 1. Check if `--open-browser` is set
-2. Validate conflicts with `--force-headless` and `--list-tabs` → Error if present
+2. Validate conflicts with `--force-headless` → Error if present
 3. Warn about ignored flags (output, format, timing, tab operations, etc.)
 4. Launch visible browser on specified port
 5. If URLs provided: Navigate to each URL in separate tabs
@@ -2194,7 +2187,7 @@ snag --open-browser https://example.com --close-tab
 
 **Error Messages:**
 - Mode conflict: `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
-- List-tabs conflict: `"Cannot use --list-tabs with --open-browser (--list-tabs is standalone)"`
+
 
 **Warning Messages:**
 - Output flags: `"Warning: --output ignored with --open-browser (no content fetching)"`
@@ -2204,6 +2197,156 @@ snag --open-browser https://example.com --close-tab
 - Tab operations: `"Warning: --tab ignored with --open-browser (no content fetching)"`
 - Close-tab: `"Warning: --close-tab ignored with --open-browser (no content fetching)"`
 - User agent (no URLs): `"Warning: --user-agent ignored with --open-browser (no navigation)"`
+
+---
+
+### `--list-tabs` / `-l` ✅
+
+**Status:** Complete (2025-10-23)
+
+#### Validation Rules
+
+**Boolean Flag:**
+- No value required (presence = enabled)
+- No validation errors possible
+
+**Multiple Flags:**
+- Multiple `--list-tabs` flags → **Silently ignore** (duplicate boolean values)
+
+#### Behavior
+
+**Primary Purpose:**
+- List all open tabs in an existing browser connection
+- Acts like `--help` or `--version`: Overrides all other flags except those needed for its operation
+- Lists tabs and exits snag immediately
+
+**Core Mode:**
+
+```bash
+snag --list-tabs
+snag --list-tabs --port 9223
+snag --list-tabs --verbose
+```
+- Connects to existing browser (or errors if none found)
+- Displays tab list to stdout
+- Exits snag immediately
+- Ignores all other flags except `--port` and logging flags
+
+**No Browser Connection:**
+- Error: Connection error with helpful hint
+- Message: `"No browser found. Try running 'snag --open-browser' first"`
+
+**Precedence Order:**
+1. `--help` (highest priority, overrides everything)
+2. `--version` (overrides everything below)
+3. `--list-tabs` (overrides everything below)
+4. All other flags (ignored when `--list-tabs` is present)
+
+#### Interaction Matrix
+
+**Flags That Work WITH `--list-tabs`:**
+
+| Combination | Behavior | Notes |
+|-------------|----------|-------|
+| `--list-tabs` + `--port` | Works normally | Specify which browser instance to connect to |
+| `--list-tabs` + `--verbose` | Works normally | Verbose logging during tab listing |
+| `--list-tabs` + `--quiet` | Works normally | Quiet mode (minimal output) |
+| `--list-tabs` + `--debug` | Works normally | Debug/CDP logging during tab listing |
+
+**All Other Flags Are SILENTLY IGNORED:**
+
+`--list-tabs` acts like `--help` and overrides all other arguments:
+
+| Combination | Behavior | Notes |
+|-------------|----------|-------|
+| `--list-tabs` + `<url>` | URL ignored, tabs listed | Lists tabs, ignores URL |
+| `--list-tabs` + `--url-file` | Flag ignored, tabs listed | Lists tabs, ignores file |
+| `--list-tabs` + `--output` | Flag ignored, tabs listed | Lists tabs to stdout only |
+| `--list-tabs` + `--output-dir` | Flag ignored, tabs listed | Lists tabs to stdout only |
+| `--list-tabs` + `--format` | Flag ignored, tabs listed | Lists tabs in fixed format |
+| `--list-tabs` + `--timeout` | Flag ignored, tabs listed | Lists tabs (no navigation) |
+| `--list-tabs` + `--wait-for` | Flag ignored, tabs listed | Lists tabs (no content fetch) |
+| `--list-tabs` + `--close-tab` | Flag ignored, tabs listed | Lists tabs (no tab closing) |
+| `--list-tabs` + `--force-headless` | Flag ignored, tabs listed | Lists tabs from existing browser |
+| `--list-tabs` + `--open-browser` | Flag ignored, tabs listed | Lists tabs (no browser launch) |
+| `--list-tabs` + `--tab` | Flag ignored, tabs listed | Lists all tabs (no single tab fetch) |
+| `--list-tabs` + `--all-tabs` | Flag ignored, tabs listed | Lists tabs (no fetching) |
+| `--list-tabs` + `--user-agent` | Flag ignored, tabs listed | Lists tabs (no navigation) |
+| `--list-tabs` + `--user-data-dir` | Flag ignored, tabs listed | Connects to existing browser |
+
+**Rationale:**
+- `--list-tabs` is a simple informational command like `--help` or `--version`
+- Users expect it to "just work" without complex argument validation
+- Simplifies UX: No need to remember which flags conflict with `--list-tabs`
+- Other tools follow this pattern (e.g., `git --version <any-args>` ignores all args)
+
+#### Examples
+
+**Valid:**
+```bash
+# Basic tab listing
+snag --list-tabs
+
+# List tabs on custom port
+snag --list-tabs --port 9223
+
+# List tabs with verbose logging
+snag --list-tabs --verbose
+
+# List tabs quietly (minimal output)
+snag --list-tabs --quiet
+
+# List tabs with debug logging
+snag --list-tabs --debug
+```
+
+**Silently Ignores Other Flags:**
+```bash
+# All other flags are ignored, tabs are listed
+snag --list-tabs https://example.com
+snag --list-tabs --output file.md
+snag --list-tabs --format pdf --wait-for ".content"
+snag --list-tabs --tab 1 --close-tab
+snag --list-tabs --force-headless --user-agent "Bot/1.0"
+```
+
+**Error Cases:**
+```bash
+# No browser running
+snag --list-tabs
+# → Error: "No browser found. Try running 'snag --open-browser' first"
+```
+
+#### Implementation Details
+
+**Location:**
+- Flag definition: `main.go` (CLI flag definitions)
+- Handler: `main.go:345-383` (`handleListTabs()`)
+- Browser connection: `browser.go:404-434` (`ListTabs()`)
+
+**How it works:**
+1. Check if `--list-tabs` is set (should be checked early, like `--help` and `--version`)
+2. Extract `--port` and logging flags (`--verbose`, `--quiet`, `--debug`)
+3. Silently ignore all other flags (no warnings, no errors)
+4. Connect to existing browser on specified port
+5. If no browser found: Error with helpful hint
+6. List tabs to stdout (index, URL, title)
+7. Exit snag immediately
+
+**Output Format:**
+```
+Available tabs in Chrome (3 tabs):
+  [1] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
+  [2] https://example.com - Example Domain
+  [3] https://go.dev/doc/ - Documentation - The Go Programming Language
+```
+
+**Error Messages:**
+- No browser: `"No browser found. Try running 'snag --open-browser' first"`
+- Connection error: Standard browser connection error messages
+
+**Design Note:**
+- Output goes to stdout (not stderr) to enable piping: `snag --list-tabs | grep github`
 
 ---
 
@@ -2274,8 +2417,8 @@ These determine the primary operation mode:
 | ------------------------------------ | --------------------------------- | ------------------ |
 | No flags, no URL                     | ❌ ERROR: URL required            | ✅ Current         |
 | `<url>` only                         | Fetch URL to stdout               | ✅ Current         |
-| `--list-tabs` only                   | List tabs, exit                   | ✅ Current         |
-| `--list-tabs` + anything else        | ❌ ERROR: standalone only         | ✅ Current         |
+| `--list-tabs` (any args)            | List tabs, exit, ignore other args | ✅ Current         |
+
 | `--tab <pattern>`                    | Fetch from existing tab           | ✅ Current         |
 | `--tab` + `<url>`                    | ❌ ERROR: cannot mix              | ✅ Current         |
 | `--all-tabs`                         | Fetch all tabs to files           | ✅ Current         |
@@ -2344,16 +2487,16 @@ These determine the primary operation mode:
 | **Multi-URL** 🚧            | N/A | ✅           | 🚧 ❌ | 🚧 ❌      | 🚧 ❌       | N/A                     |
 | **--tab**                   | ❌  | 🚧 ❌        | ✅    | ❌         | ❌          | N/A                     |
 | **--all-tabs**              | ❌  | 🚧 ❌        | ❌    | ✅         | ❌          | N/A                     |
-| **--list-tabs**             | ❌  | 🚧 ❌        | ❌    | ❌         | ✅          | N/A                     |
+| **--list-tabs**             | Ignores  | Ignores        | Ignores    | Ignores         | ✅          | Ignores                     |
 | **--open-browser (no URL)** | N/A | N/A          | N/A   | N/A        | N/A         | ✅                      |
 
 **Error Messages:**
 
 - `--tab` + URL: `"Cannot use --tab with URL argument. Use either --tab to fetch from existing tab OR provide URL to fetch new page"`
 - `--all-tabs` + URL: `"Cannot use --all-tabs with URL argument. Use --all-tabs alone to process all existing tabs"`
-- `--list-tabs` + URL: 🚧 `"Cannot use --list-tabs with URL argument. --list-tabs is standalone"`
-- `--list-tabs` + `--tab`: 🚧 `"Cannot use --list-tabs with --tab. --list-tabs is standalone"`
-- `--list-tabs` + `--all-tabs`: 🚧 `"Cannot use --list-tabs with --all-tabs. --list-tabs is standalone"`
+
+
+
 
 ### Group 2: Output Destination
 
@@ -2399,7 +2542,7 @@ These determine the primary operation mode:
 
 - ❌ `--tab` - Conflicts with URL
 - ❌ `--all-tabs` - Conflicts with URL
-- ❌ `--list-tabs` - Standalone only
+
 
 **Output Behavior:**
 
@@ -2430,7 +2573,7 @@ These determine the primary operation mode:
 - ❌ `--close-tab` - Ambiguous for batch
 - ❌ `--tab` - Conflicts with URLs
 - ❌ `--all-tabs` - Conflicts with URLs
-- ❌ `--list-tabs` - Standalone only
+
 
 **Output Behavior:**
 
@@ -2463,7 +2606,7 @@ These determine the primary operation mode:
 
 - ❌ `<url>` - Conflicts with tab (mutually exclusive content sources)
 - ❌ `--all-tabs` - Use one or the other (mutually exclusive)
-- ❌ `--list-tabs` - Standalone only
+
 - ❌ `--open-browser` - ⚠️ UNDEFINED
 - ❌ `--force-headless` - Error (tab requires visible browser)
 
@@ -2492,7 +2635,7 @@ These determine the primary operation mode:
 - ❌ `<url>` - Conflicts with all-tabs (mutually exclusive content sources)
 - ❌ `-o` - Multiple outputs (use `-d`)
 - ❌ `--tab` - Use one or the other (mutually exclusive)
-- ❌ `--list-tabs` - Standalone only
+
 - ❌ `--open-browser` - ⚠️ UNDEFINED
 - ❌ `--close-tab` - Error (ambiguous for batch operations)
 - ❌ `--force-headless` - Error (tabs require visible browser)
@@ -2733,7 +2876,7 @@ snag --url-file empty.txt
 
 1. Initialize logger (`--quiet`, `--verbose`, `--debug`)
 2. Handle `--open-browser` without URL (exit early)
-3. Handle `--list-tabs` (exit early)
+3. Handle `--list-tabs` (extract --port and logging flags, ignore all others, list tabs, exit early)
 4. Handle `--all-tabs` (check for URL conflict, exit early)
 5. Handle `--tab` (check for URL conflict, exit early)
 6. Validate URL argument required
@@ -2751,7 +2894,7 @@ snag --url-file empty.txt
 - Check `--url-file` + URLs (allowed)
 - Check multiple URLs + `-o` (error)
 - Check multiple URLs + `--close-tab` (error)
-- Check `--list-tabs` + any tab feature (error)
+
 - Check `--open-browser` + `--force-headless` (error)
 
 ---
@@ -2766,8 +2909,8 @@ These combinations need clarification and implementation decisions:
 | --------------------------------- | ------------ | ------------------------------ |
 | `--all-tabs -o file.md`           | ⚠️ Undefined | ❌ ERROR: "Use --output-dir"   |
 | `--tab <pattern> --all-tabs`      | ⚠️ Undefined | ❌ ERROR: Mutually exclusive   |
-| `--list-tabs --tab 1`             | ⚠️ Undefined | ❌ ERROR: list-tabs standalone |
-| `--list-tabs --all-tabs`          | ⚠️ Undefined | ❌ ERROR: list-tabs standalone |
+| `--list-tabs --tab 1`             | --tab ignored | Lists tabs from existing browser |
+| `--list-tabs --all-tabs`          | --all-tabs ignored | Lists tabs from existing browser |
 | `--open-browser --force-headless` | ⚠️ Undefined | ❌ ERROR: Conflicting modes    |
 | `--tab --force-headless`          | ⚠️ Undefined | ❌ ERROR: Tabs require visible browser |
 | `--all-tabs --force-headless`     | ⚠️ Undefined | ❌ ERROR: Tabs require visible browser |
@@ -2827,15 +2970,15 @@ These combinations need clarification and implementation decisions:
 
 |                 | --list-tabs | --tab | --all-tabs |
 | --------------- | ----------- | ----- | ---------- |
-| **--list-tabs** | -           | ⚠️ ❌ | ⚠️ ❌      |
-| **--tab**       | ⚠️ ❌       | -     | ⚠️ ❌      |
-| **--all-tabs**  | ⚠️ ❌       | ⚠️ ❌ | -          |
+| **--list-tabs** | Ignores           | Ignores | Ignores      |
+| **--tab**       | Ignored       | -     | ⚠️ ❌      |
+| **--all-tabs**  | Ignored       | ⚠️ ❌ | -          |
 
 ### Arguments with Tab Features
 
 |                 | \<url\> | Multiple URLs 🚧 | --url-file 🚧 |
 | --------------- | ------- | ---------------- | ------------- |
-| **--list-tabs** | ❌      | 🚧 ❌            | 🚧 ❌         |
+| **--list-tabs** | Ignores      | Ignores            | Ignores         |
 | **--tab**       | ❌      | 🚧 ❌            | 🚧 ❌         |
 | **--all-tabs**  | ❌      | 🚧 ❌            | 🚧 ❌         |
 
@@ -2873,9 +3016,9 @@ All logging flag conflicts resolved using "last flag wins" approach (Unix standa
 
 ### Missing Validations (Current)
 
-- [ ] `--list-tabs` + URL → Should ERROR
-- [ ] `--list-tabs` + `--tab` → Should ERROR
-- [ ] `--list-tabs` + `--all-tabs` → Should ERROR
+
+
+
 - [ ] `--tab` + `--all-tabs` → Should ERROR
 - [ ] `--all-tabs` + `-o` → Should ERROR
 - [ ] `--open-browser` + `--force-headless` → Should ERROR
@@ -2887,7 +3030,7 @@ All logging flag conflicts resolved using "last flag wins" approach (Unix standa
 - [ ] Multiple URLs + `--close-tab` → ERROR
 - [ ] `--url-file` + `--tab` → ERROR
 - [ ] `--url-file` + `--all-tabs` → ERROR
-- [ ] `--url-file` + `--list-tabs` → ERROR
+
 - [ ] `--url-file` file not found → ERROR
 - [ ] `--url-file` no valid URLs → ERROR
 

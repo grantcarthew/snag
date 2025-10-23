@@ -856,7 +856,7 @@ Track completion of each task:
 - [x] Task 9: `--close-tab` / `-c` - **COMPLETE** (2025-10-23)
 - [x] Task 10: `--force-headless` - **COMPLETE** (2025-10-23)
 - [x] Task 11: `--open-browser` / `-b` - **COMPLETE** (2025-10-23)
-- [ ] Task 12: `--list-tabs` / `-l`
+- [x] Task 12: `--list-tabs` / `-l` - **COMPLETE** (2025-10-23)
 - [ ] Task 13: `--tab` / `-t`
 - [ ] Task 14: `--all-tabs` / `-a`
 - [x] Task 15: `--verbose` - **COMPLETE** (2025-10-23)
