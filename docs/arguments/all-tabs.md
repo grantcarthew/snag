@@ -72,7 +72,7 @@
 | Combination | Behavior | Error Message |
 |-------------|----------|---------------|
 | `--all-tabs` + `--force-headless` | **Error** | `"Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)"` |
-| `--all-tabs` + `--open-browser` | **Error** | `"Cannot use both --all-tabs and --open-browser (conflicting purposes)"` |
+| `--all-tabs` + `--open-browser` | **Warning**, flag ignored | `"Warning: --all-tabs ignored with --open-browser (no content fetching)"` |
 
 **Output Control:**
 
@@ -98,7 +98,7 @@
 | `--all-tabs` + `--port` | Works normally | Connect to browser on specific port |
 | `--all-tabs` + `--close-tab` | Works normally | Close each tab after fetching; last tab closes browser |
 | `--all-tabs` + `--user-agent` | **Warning**, ignored | `"Warning: --user-agent has no effect with --all-tabs (cannot change existing tabs' user agents)"` |
-| `--all-tabs` + `--user-data-dir` | Works normally | Connects to browser using specified profile |
+| `--all-tabs` + `--user-data-dir` | **Warning**, ignored | `"Warning: --user-data-dir ignored when connecting to existing browser"` |
 
 **Logging Flags (All Work Normally):**
 
@@ -146,12 +146,12 @@ snag --all-tabs url1 url2                       # ERROR: Cannot mix with URLs
 snag --all-tabs --url-file urls.txt             # ERROR: Cannot mix with --url-file
 snag --all-tabs --tab 1                         # ERROR: Cannot mix with --tab
 snag --all-tabs -o output.md                    # ERROR: Use -d for multiple outputs
-snag --all-tabs --open-browser                  # ERROR: Conflicting purposes
 snag --all-tabs --force-headless                # ERROR: Requires existing browser
 ```
 
 **With Warnings:**
 ```bash
+snag --all-tabs --open-browser                  # ⚠️  Warning: --all-tabs ignored (no content fetching)
 snag --all-tabs --timeout 30                    # ⚠️  Warning: timeout has no effect (no --wait-for)
 snag --all-tabs --user-agent "Bot/1.0"          # ⚠️  Warning: can't change existing tabs' user agents
 snag --all-tabs                                 # ⚠️  Skipping tab: chrome://settings (not fetchable)

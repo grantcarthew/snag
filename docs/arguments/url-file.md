@@ -121,7 +121,7 @@ snag --url-file urls.txt https://example.com https://go.dev
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--url-file` + `--close-tab` | **Error** | Ambiguous for batch operations |
+| `--url-file` + `--close-tab` | Works normally | Close each tab after fetching |
 
 **Logging Flags:**
 - `--verbose`: Works normally - show verbose logs for all URLs
@@ -151,7 +151,7 @@ snag --url-file urls.txt -o output.md              # ERROR: Multiple URLs need -
 snag --url-file urls.txt --tab 1                   # ERROR: Conflicting sources
 snag --url-file urls.txt --all-tabs                # ERROR: Conflicting sources
 snag --url-file urls.txt --list-tabs               # --url-file ignored, lists tabs from existing browser
-snag --url-file urls.txt --close-tab               # ERROR: Ambiguous for batch
+snag --url-file urls.txt --close-tab               # Close each tab after fetching
 snag --url-file f1.txt --url-file f2.txt           # ERROR: Only one --url-file allowed
 ```
 

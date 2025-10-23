@@ -51,14 +51,14 @@ Completed a comprehensive cross-review of all 21 argument documentation files pl
 - url-file.md explicitly lists it as an error in the "Special Behaviors" section
 - Both documents agree that `--close-tab` + multiple `<url>` arguments works normally (close-tab.md line 35, url-file.md doesn't cover this since multiple URLs are planned)
 
-**Recommendation:**
+**Resolution:**
 - **Works normally** (no error)
 - Rationale: Consistent with multiple URLs behavior; close each tab after fetch in batch operations
-- Note: PROJECT.md TODO line 902-907 mentions "parallel processing strategy" needs definition for multiple URLs, which affects close-tab behavior
-- Update url-file.md line 123 to change from "Error" to "Works normally"
+- Note: Parallel processing strategy still needs definition for multiple URLs (affects implementation)
+- Updated url-file.md line 124 to change from "Error" to "Works normally"
 
-**Files to Update:**
-- `docs/arguments/url-file.md` (lines 123-124)
+**Files Updated:**
+- `docs/arguments/url-file.md` (lines 124, 154)
 
 ---
 
@@ -73,15 +73,15 @@ Completed a comprehensive cross-review of all 21 argument documentation files pl
 - tab.md shows it as a mutually exclusive error in the Browser Mode Conflicts section
 - This is a fundamental design decision: does `--open-browser` override everything, or do they conflict?
 
-**Recommendation:**
-- **Error** (mutually exclusive)
-- Rationale: `--tab` and `--open-browser` have fundamentally different purposes (fetch from existing tab vs launch browser); user intent is unclear when both specified
-- This aligns with the pattern that conflicting content sources error rather than warn
-- Update open-browser.md lines 60-61 to change from "Warning" to "Error"
-- Add error message: "Cannot use both --tab and --open-browser (conflicting purposes)"
+**Resolution (UPDATED 2025-10-24):**
+- **Warning + Ignore** (--open-browser takes precedence)
+- Rationale: `--open-browser` is a standalone mode that opens browser without fetching; it takes precedence over other flags with warnings
+- User decision: Prefer warning over error for better UX
+- Update tab.md line 82 to change from "Error" to "Warning, flag ignored"
+- Add warning message: "Warning: --tab ignored with --open-browser (no content fetching)"
 
-**Files to Update:**
-- `docs/arguments/open-browser.md` (lines 60-61, and line 160 in examples)
+**Files Updated:**
+- `docs/arguments/tab.md` (lines 82, 155, examples section)
 
 ---
 
@@ -95,14 +95,15 @@ Completed a comprehensive cross-review of all 21 argument documentation files pl
 - Same issue as #3 above, but for `--all-tabs`
 - Same design decision needed
 
-**Recommendation:**
-- **Error** (mutually exclusive)
-- Rationale: Same as #3 - conflicting purposes, unclear user intent
-- Update open-browser.md line 61 to change from "Warning" to "Error"
-- Add error message: "Cannot use both --all-tabs and --open-browser (conflicting purposes)"
+**Resolution (UPDATED 2025-10-24):**
+- **Warning + Ignore** (--open-browser takes precedence)
+- Rationale: Same as #3 - `--open-browser` takes precedence as standalone mode
+- User decision: Prefer warning over error for better UX
+- Update all-tabs.md line 75 to change from "Error" to "Warning, flag ignored"
+- Add warning message: "Warning: --all-tabs ignored with --open-browser (no content fetching)"
 
-**Files to Update:**
-- `docs/arguments/open-browser.md` (lines 61-62, and line 161 in examples)
+**Files Updated:**
+- `docs/arguments/all-tabs.md` (lines 75, 149, examples section)
 
 ---
 
@@ -117,15 +118,15 @@ Completed a comprehensive cross-review of all 21 argument documentation files pl
 - open-browser.md treats all output flags as warnings (they're ignored because no fetching)
 - This is about whether `--open-browser` (no URL) is considered "having no content source" or is a valid mode that ignores output flags
 
-**Recommendation:**
-- **Warning** (flag ignored)
+**Resolution:**
+- **Warning + Ignore** (flag ignored)
 - Rationale: `--open-browser` is a valid operation mode (launch browser), just doesn't fetch content; better UX to warn than error
 - Consistent with open-browser.md's treatment of all output/timing flags as warnings
-- Update output.md line 95 to change from "Error" to "Flag ignored"
-- Update output.md line 100 to change error message to warning: "Warning: --output ignored with --open-browser (no content fetching)"
+- Updated output.md line 95 to change from "Error" to "Warning, flag ignored"
+- Updated output.md to add warning message: "Warning: --output ignored with --open-browser (no content fetching)"
 
-**Files to Update:**
-- `docs/arguments/output.md` (lines 95-100)
+**Files Updated:**
+- `docs/arguments/output.md` (lines 95, 99-103, 159, examples section)
 
 ---
 
@@ -140,15 +141,14 @@ Completed a comprehensive cross-review of all 21 argument documentation files pl
 - tab.md says it works normally to connect to browser using specified profile
 - This is about whether you can specify which profile to connect to when using `--tab`
 
-**Recommendation:**
+**Resolution:**
 - **Warning + Ignore**
 - Rationale: When you use `--tab`, you're connecting to an ALREADY RUNNING browser instance that already has its profile loaded; you can't change the profile of a running browser
-- However, if you're using `--tab` with `--port` to connect to a specific browser instance, the user might reasonably specify `--user-data-dir` to document which profile that browser is using
 - Best UX: Warn that the flag has no effect (browser already running with its profile)
-- Update tab.md line 108 to change from "Works normally" to "Warning, ignored"
-- Add note: "Warning: --user-data-dir ignored when connecting to existing browser"
+- Updated tab.md line 108 to change from "Works normally" to "Warning, ignored"
+- Added warning message: "Warning: --user-data-dir ignored when connecting to existing browser"
 
-**Files to Update:**
+**Files Updated:**
 - `docs/arguments/tab.md` (line 108)
 
 ---
@@ -163,13 +163,13 @@ Completed a comprehensive cross-review of all 21 argument documentation files pl
 - Same issue as #6 above, but for `--all-tabs`
 - Same reasoning applies
 
-**Recommendation:**
+**Resolution:**
 - **Warning + Ignore**
 - Rationale: Same as #6 - connecting to existing browser with existing profile
-- Update all-tabs.md line 101 to change from "Works normally" to "Warning, ignored"
-- Add note: "Warning: --user-data-dir ignored when connecting to existing browser"
+- Updated all-tabs.md line 101 to change from "Works normally" to "Warning, ignored"
+- Added warning message: "Warning: --user-data-dir ignored when connecting to existing browser"
 
-**Files to Update:**
+**Files Updated:**
 - `docs/arguments/all-tabs.md` (line 101)
 
 ---
@@ -306,17 +306,19 @@ Summary of all files that need changes:
 
 ## Recommended Resolution Approach
 
-### Phase 1: Resolve Critical Contradictions (Issues #1-7)
+### Phase 1: Resolve Critical Contradictions (Issues #1-7) ✅ COMPLETE
 
-For each issue, make a decision on the correct behavior:
+Resolutions implemented (2025-10-24):
 
-1. **Issue #1** (`--list-tabs` + `--wait-for`): Change to **silently ignore** ✓
-2. **Issue #2** (`--close-tab` + `--url-file`): Change to **works normally** ✓
-3. **Issue #3** (`--tab` + `--open-browser`): Change to **error** ✓
-4. **Issue #4** (`--all-tabs` + `--open-browser`): Change to **error** ✓
-5. **Issue #5** (`--output` + `--open-browser`): Change to **warning** ✓
-6. **Issue #6** (`--tab` + `--user-data-dir`): Change to **warning/ignore** ✓
-7. **Issue #7** (`--all-tabs` + `--user-data-dir`): Change to **warning/ignore** ✓
+1. **Issue #1** (`--list-tabs` + `--wait-for`): Changed to **silently ignore** ✅
+2. **Issue #2** (`--close-tab` + `--url-file`): Changed to **works normally** ✅
+3. **Issue #3** (`--tab` + `--open-browser`): Changed to **warning/ignore** ✅ (updated from "error" recommendation)
+4. **Issue #4** (`--all-tabs` + `--open-browser`): Changed to **warning/ignore** ✅ (updated from "error" recommendation)
+5. **Issue #5** (`--output` + `--open-browser`): Changed to **warning/ignore** ✅
+6. **Issue #6** (`--tab` + `--user-data-dir`): Changed to **warning/ignore** ✅
+7. **Issue #7** (`--all-tabs` + `--user-data-dir`): Changed to **warning/ignore** ✅
+
+**Key Design Decision:** `--open-browser` takes precedence over conflicting flags and warns (rather than errors), treating it as a standalone mode similar to `--help` and `--version`.
 
 ### Phase 2: Standardize Warning Messages (Issues #8-14)
 
@@ -392,7 +394,7 @@ Before implementing changes, confirm:
 ## Implementation Progress
 
 **Started:** 2025-10-24
-**Status:** In Progress - Phase 1 (Critical Contradictions)
+**Status:** Phase 1 Complete - Phase 2 Ready
 
 ### Completed
 
@@ -413,15 +415,24 @@ Before implementing changes, confirm:
 
 **Result:** All `--list-tabs` documentation is now consistent across all argument files. The flag behaves as a standalone mode (like `--help` and `--version`) and silently ignores all other flags except `--port` and logging flags.
 
-### Remaining Work
+### Phase 1: Critical Contradictions ✅ COMPLETE (2025-10-24)
 
-#### Phase 1: Critical Contradictions (6 remaining)
-- [ ] Issue #2: `--close-tab` + `--url-file` (url-file.md)
-- [ ] Issue #3: `--tab` + `--open-browser` (open-browser.md, tab.md)
-- [ ] Issue #4: `--all-tabs` + `--open-browser` (open-browser.md, all-tabs.md)
-- [ ] Issue #5: `--output` + `--open-browser` (output.md)
-- [ ] Issue #6: `--tab` + `--user-data-dir` (tab.md)
-- [ ] Issue #7: `--all-tabs` + `--user-data-dir` (all-tabs.md)
+All 7 critical contradictions resolved:
+
+- [x] Issue #1: `--list-tabs` + `--wait-for` (wait-for.md) - 2025-10-24
+- [x] Issue #2: `--close-tab` + `--url-file` (url-file.md) - 2025-10-24
+- [x] Issue #3: `--tab` + `--open-browser` (tab.md) - 2025-10-24
+- [x] Issue #4: `--all-tabs` + `--open-browser` (all-tabs.md) - 2025-10-24
+- [x] Issue #5: `--output` + `--open-browser` (output.md) - 2025-10-24
+- [x] Issue #6: `--tab` + `--user-data-dir` (tab.md) - 2025-10-24
+- [x] Issue #7: `--all-tabs` + `--user-data-dir` (all-tabs.md) - 2025-10-24
+
+**Files Modified:**
+- `docs/arguments/url-file.md`
+- `docs/arguments/tab.md`
+- `docs/arguments/all-tabs.md`
+- `docs/arguments/output.md`
+- `docs/arguments/wait-for.md` (from Issue #1)
 
 #### Phase 2: Warning Message Standardization (7 issues)
 - [ ] Issue #8: `--user-agent` + `--tab` wording
@@ -442,4 +453,5 @@ Before implementing changes, confirm:
 
 **Review Completed:** 2025-10-23 23:00 AEST
 **Implementation Started:** 2025-10-24 09:30 AEST
-**Status:** Phase 1 in progress - 1 of 7 critical contradictions resolved
+**Phase 1 Completed:** 2025-10-24 09:50 AEST
+**Status:** Phase 1 complete - All 7 critical contradictions resolved. Ready for Phase 2 (Warning Message Standardization).

@@ -79,7 +79,7 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 | Combination | Behavior | Error Message |
 |-------------|----------|---------------|
 | `--tab` + `--force-headless` | **Error** | `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"` |
-| `--tab` + `--open-browser` | **Error** | `"Cannot use both --tab and --open-browser (conflicting purposes)"` |
+| `--tab` + `--open-browser` | **Warning**, flag ignored | `"Warning: --tab ignored with --open-browser (no content fetching)"` |
 
 **Output Control (All Work Normally):**
 
@@ -105,7 +105,7 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 | `--tab` + `--port` | Works normally | Connect to browser on specific port |
 | `--tab` + `--close-tab` | Works normally | Close tab after fetching (covered in Task 9) |
 | `--tab` + `--user-agent` | **Warning**, ignored | `"Warning: --user-agent has no effect with --tab (cannot change existing tab's user agent)"` |
-| `--tab` + `--user-data-dir` | Works normally | Connects to browser using specified profile |
+| `--tab` + `--user-data-dir` | **Warning**, ignored | `"Warning: --user-data-dir ignored when connecting to existing browser"` |
 
 **Logging Flags (All Work Normally):**
 
@@ -152,11 +152,11 @@ snag --tab 1 https://example.com                # ERROR: Mutually exclusive with
 snag --tab 1 --url-file urls.txt                # ERROR: Mutually exclusive with --url-file
 snag --tab 1 --all-tabs                         # ERROR: Mutually exclusive with --all-tabs
 snag --tab 1 --force-headless                   # ERROR: Tab requires existing browser
-snag --tab 1 --open-browser                     # ERROR: Conflicting purposes
 ```
 
 **With Warnings:**
 ```bash
+snag --tab 1 --open-browser                     # ⚠️  Warning: --tab ignored (no content fetching)
 snag --tab 1 --timeout 30                       # ⚠️  Warning: timeout has no effect (no --wait-for)
 snag --tab 1 --user-agent "Bot/1.0"             # ⚠️  Warning: can't change existing tab's user agent
 ```
