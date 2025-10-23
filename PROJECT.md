@@ -1,915 +1,393 @@
-# Argument Handling Analysis - Design Decision Document
+# Argument Documentation Cross-Review Results
 
-**Project:** Systematically analyze each snag CLI argument's behavior and interactions
-
-**Goal:** Create comprehensive design decisions for every argument combination
-
-**Deliverable:** Complete `docs/arguments/` directory with all behaviors defined
+**Review Date:** 2025-10-23
+**Reviewer:** Claude Code (Sonnet 4.5)
+**Task:** Cross-review all argument documentation in `docs/arguments/` for inconsistencies
 
 ---
 
-## Design Process
+## Executive Summary
 
-This document tracks a systematic design session for the snag CLI tool's argument handling behavior.
+Completed a comprehensive cross-review of all 21 argument documentation files plus README.md and validation.md. Found **7 critical contradictions** where the same flag combination is documented differently in the two relevant files, and **7 minor inconsistencies** in warning message wording.
 
-### Why This Process?
+**Critical Issues:** These are cases where one document says "error" and the other says "works" or "warning" - fundamentally incompatible behaviors that must be resolved.
 
-Before implementing new features or fixing edge cases, we need crystal-clear design decisions for every argument interaction. This prevents:
-
-- Inconsistent behavior across similar scenarios
-- Undocumented edge cases discovered by users
-- Implementation decisions made without considering all implications
-- Technical debt from "we'll figure it out later" approaches
-
-### Strict Process
-
-This is a **design-first, implementation-later** methodology:
-
-1. **Question Phase**: For each argument, I will ask you design questions about:
-   - What happens with invalid/wrong values?
-   - How it interacts with every other argument
-   - Whether combinations should error, work together, modify behavior, or be ignored
-
-2. **Discussion Phase**: We discuss and decide together on the correct behavior
-
-3. **Documentation Phase**: Only after your explicit permission, I will:
-   - Update this PROJECT.md with progress tracking
-   - Update `docs/arguments/[argument].md` with the design decisions
-
-4. **No Implementation**: This is design-only. No code changes, only documentation.
-
-### Question Format Rules
-
-To enable structured responses, questions will be asked ONE CATEGORY AT A TIME with clear numbering:
-
-```
-Question 1: Invalid Values
-1. Scenario description
-2. Scenario description
-3. Scenario description
-
-Question 2: Key Combinations
-1. Scenario description
-2. Scenario description
-```
-
-You can respond with structured answers like:
-- `1.1` - answer for Question 1, item 1
-- `1.2` - answer for Question 1, item 2
-- `2.1` - answer for Question 2, item 1
-
-### Rules
-
-- I will NOT make assumptions about behavior without asking
-- I will NOT update documentation without your permission
-- I will ask about every combination systematically
-- I will ask ONE category at a time with clear numbering
-- We decide together, document completely, implement later
+**Minor Issues:** These are cases where both documents agree on the behavior but use different wording for warning messages or descriptions.
 
 ---
 
-## Analysis Structure
+## Critical Contradictions (Require Resolution)
 
-For each argument, answer:
-1. **What happens if we supply wrong values?** (validation, error messages)
-2. **What happens when combined with every other argument?** (compatibility matrix)
-3. **Define behavior:** Error, ignore, modify behavior, work together?
+### 1. `--list-tabs` + `--wait-for`: Error vs Silently Ignored
 
----
+**Contradiction:**
+- **wait-for.md (line 51)** says: **Error** with message "Cannot use --wait-for with --list-tabs (no content fetching)"
+- **list-tabs.md (line 66)** says: **Flag ignored** - Lists tabs (no content fetch)
 
-## Tasks by Argument
+**Context:**
+- `--list-tabs` is documented as a standalone mode like `--help` and `--version`
+- list-tabs.md lines 18-19 explicitly say it "acts like `--help` or `--version`: Overrides all other flags except those needed for its operation"
+- list-tabs.md lines 54-73 show comprehensive list of flags that are "SILENTLY IGNORED"
 
-### Task 1: `<url>` (Positional Argument)
+**Recommendation:**
+- **Silently ignore** (no error)
+- Rationale: `--list-tabs` is standalone mode, should ignore all flags except `--port` and logging flags
+- Update wait-for.md line 51 to change from "Error" to "Silently ignored"
+- Update wait-for.md line 54 to remove the error message
 
-**Questions to answer:**
-- What happens with invalid URL values? (malformed, missing protocol, etc.)
-- What happens with multiple URLs? (current vs planned)
-- What happens when combined with:
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
-
-**Define:** Which combinations error, which work together, which modify behavior?
+**Files to Update:**
+- `docs/arguments/wait-for.md` (lines 51-54)
 
 ---
 
-### Task 2: `--url-file FILE`
+### 2. `--close-tab` + `--url-file`: Works Normally vs Error
 
-**Questions to answer:**
-- What happens with wrong values? (file doesn't exist, empty file, all invalid URLs, permission denied)
-- What happens when combined with:
-  - `<url>`
-  - Another `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+**Contradiction:**
+- **close-tab.md (line 36)** says: **Works normally** - "Close each tab after fetching"
+- **url-file.md (line 123)** says: **Error** - "Ambiguous for batch operations"
 
-**Define:** Error conditions, valid combinations, output behavior
+**Context:**
+- close-tab.md says it works with `--url-file` normally
+- url-file.md explicitly lists it as an error in the "Special Behaviors" section
+- Both documents agree that `--close-tab` + multiple `<url>` arguments works normally (close-tab.md line 35, url-file.md doesn't cover this since multiple URLs are planned)
+
+**Recommendation:**
+- **Works normally** (no error)
+- Rationale: Consistent with multiple URLs behavior; close each tab after fetch in batch operations
+- Note: PROJECT.md TODO line 902-907 mentions "parallel processing strategy" needs definition for multiple URLs, which affects close-tab behavior
+- Update url-file.md line 123 to change from "Error" to "Works normally"
+
+**Files to Update:**
+- `docs/arguments/url-file.md` (lines 123-124)
 
 ---
 
-### Task 3: `--output FILE` / `-o`
+### 3. `--tab` + `--open-browser`: Warning vs Error
 
-**Questions to answer:**
-- What happens with wrong values? (invalid path, permission denied, directory instead of file)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - Another `--output`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+**Contradiction:**
+- **open-browser.md (line 60)** says: **Warning** with "Warning: --tab ignored with --open-browser (no content fetching)"
+- **tab.md (line 82)** says: **Error** with "Cannot use both --tab and --open-browser (conflicting purposes)"
 
-**Define:** Conflicts with `--output-dir`, behavior with multiple sources
+**Context:**
+- open-browser.md shows tab operations warned and ignored
+- tab.md shows it as a mutually exclusive error in the Browser Mode Conflicts section
+- This is a fundamental design decision: does `--open-browser` override everything, or do they conflict?
+
+**Recommendation:**
+- **Error** (mutually exclusive)
+- Rationale: `--tab` and `--open-browser` have fundamentally different purposes (fetch from existing tab vs launch browser); user intent is unclear when both specified
+- This aligns with the pattern that conflicting content sources error rather than warn
+- Update open-browser.md lines 60-61 to change from "Warning" to "Error"
+- Add error message: "Cannot use both --tab and --open-browser (conflicting purposes)"
+
+**Files to Update:**
+- `docs/arguments/open-browser.md` (lines 60-61, and line 160 in examples)
 
 ---
 
-### Task 4: `--output-dir DIRECTORY` / `-d`
+### 4. `--all-tabs` + `--open-browser`: Warning vs Error
 
-**Questions to answer:**
-- What happens with wrong values? (doesn't exist, not a directory, permission denied)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - Another `--output-dir`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+**Contradiction:**
+- **open-browser.md (line 61)** says: **Warning** with "Warning: --all-tabs ignored with --open-browser (no content fetching)"
+- **all-tabs.md (line 75)** says: **Error** with "Cannot use both --all-tabs and --open-browser (conflicting purposes)"
 
-**Define:** Filename generation behavior, conflicts with `--output`
+**Context:**
+- Same issue as #3 above, but for `--all-tabs`
+- Same design decision needed
+
+**Recommendation:**
+- **Error** (mutually exclusive)
+- Rationale: Same as #3 - conflicting purposes, unclear user intent
+- Update open-browser.md line 61 to change from "Warning" to "Error"
+- Add error message: "Cannot use both --all-tabs and --open-browser (conflicting purposes)"
+
+**Files to Update:**
+- `docs/arguments/open-browser.md` (lines 61-62, and line 161 in examples)
 
 ---
 
-### Task 5: `--format FORMAT` / `-f`
+### 5. `--output` + `--open-browser` (no URL): Error vs Warning
 
-**Questions to answer:**
-- What happens with wrong values? (invalid format, empty string, case sensitivity)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - Another `--format`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+**Contradiction:**
+- **output.md (line 95)** says: **Error** with "Cannot use --output without content source (URL or --tab)"
+- **open-browser.md (line 75)** says: **Warning**, flag ignored with "Warning: --output ignored with --open-browser (no content fetching)"
 
-**Define:** Binary format auto-save behavior, stdout vs file interaction
+**Context:**
+- output.md treats lack of content source as an error
+- open-browser.md treats all output flags as warnings (they're ignored because no fetching)
+- This is about whether `--open-browser` (no URL) is considered "having no content source" or is a valid mode that ignores output flags
+
+**Recommendation:**
+- **Warning** (flag ignored)
+- Rationale: `--open-browser` is a valid operation mode (launch browser), just doesn't fetch content; better UX to warn than error
+- Consistent with open-browser.md's treatment of all output/timing flags as warnings
+- Update output.md line 95 to change from "Error" to "Flag ignored"
+- Update output.md line 100 to change error message to warning: "Warning: --output ignored with --open-browser (no content fetching)"
+
+**Files to Update:**
+- `docs/arguments/output.md` (lines 95-100)
 
 ---
 
-### Task 6: `--timeout SECONDS`
+### 6. `--tab` + `--user-data-dir`: Warning/Ignore vs Works Normally
 
-**Questions to answer:**
-- What happens with wrong values? (negative, zero, non-integer, extremely large)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - Another `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+**Contradiction:**
+- **user-data-dir.md (line 97)** says: **Warning**, ignore flag with "Warning: Ignoring --user-data-dir (connecting to existing browser for tab operations)"
+- **tab.md (line 108)** says: **Works normally** - "Connects to browser using specified profile"
 
-**Define:** Timeout behavior with `--wait-for`, batch operations
+**Context:**
+- user-data-dir.md says tab operations connect to existing browser, so profile flag is ignored
+- tab.md says it works normally to connect to browser using specified profile
+- This is about whether you can specify which profile to connect to when using `--tab`
+
+**Recommendation:**
+- **Warning + Ignore**
+- Rationale: When you use `--tab`, you're connecting to an ALREADY RUNNING browser instance that already has its profile loaded; you can't change the profile of a running browser
+- However, if you're using `--tab` with `--port` to connect to a specific browser instance, the user might reasonably specify `--user-data-dir` to document which profile that browser is using
+- Best UX: Warn that the flag has no effect (browser already running with its profile)
+- Update tab.md line 108 to change from "Works normally" to "Warning, ignored"
+- Add note: "Warning: --user-data-dir ignored when connecting to existing browser"
+
+**Files to Update:**
+- `docs/arguments/tab.md` (line 108)
 
 ---
 
-### Task 7: `--wait-for SELECTOR` / `-w` ✅
+### 7. `--all-tabs` + `--user-data-dir`: Warning/Ignore vs Works Normally
 
-**Status:** Complete (2025-10-23)
+**Contradiction:**
+- **user-data-dir.md (line 98)** says: **Warning**, ignore flag with "Warning: Ignoring --user-data-dir (connecting to existing browser for tab operations)"
+- **all-tabs.md (line 101)** says: **Works normally** - "Connects to browser using specified profile"
 
-#### Invalid Values
+**Context:**
+- Same issue as #6 above, but for `--all-tabs`
+- Same reasoning applies
 
-**Empty string:**
-- Behavior: **Ignored** (silently skipped, no error or warning)
-- Rationale: Empty string is effectively "don't use wait-for", which is default behavior
-- Many CLI tools silently ignore empty string values for optional flags
+**Recommendation:**
+- **Warning + Ignore**
+- Rationale: Same as #6 - connecting to existing browser with existing profile
+- Update all-tabs.md line 101 to change from "Works normally" to "Warning, ignored"
+- Add note: "Warning: --user-data-dir ignored when connecting to existing browser"
 
-**Whitespace-only string:**
-- Behavior: **Ignored** after trimming
-- All string arguments should be trimmed using `strings.TrimSpace()` after reading from CLI framework
-- This is standard behavior in most CLI tools (git, docker, etc.)
-
-**Invalid CSS selector syntax:**
-- Behavior: **Error at runtime** (caught by rod's `Element()` method)
-- No upfront validation - selector validation happens when rod tries to use it
-- Error message from rod will indicate invalid selector
-
-**Valid selector that never appears:**
-- Behavior: **Timeout error** after `--timeout` duration expires
-- Error message: "Timeout waiting for selector {selector}" with suggestion to increase timeout
-- This is normal/expected behavior tested in test suite
-
-**Multiple `--wait-for` flags:**
-- Behavior: **Error**
-- Error message: "Only one --wait-for flag allowed"
-
-**Extremely complex selector:**
-- Behavior: **Allow** if valid CSS syntax
-- User's responsibility to provide working selectors
-
-#### Content Source Interactions
-
-**With URL arguments:**
-
-| Combination | Behavior | Notes |
-|-------------|----------|-------|
-| `--wait-for` + single `<url>` | Works normally | Wait for selector after navigation |
-| `--wait-for` + multiple `<url>` | Works normally | Same selector applied to all URLs |
-| `--wait-for` + `--url-file` | Works normally | Same selector applied to all URLs from file |
-
-**With tab operations:**
-
-| Combination | Behavior | Notes |
-|-------------|----------|-------|
-| `--wait-for` + `--tab` | **Works** | Supports automation with persistent browser - wait for selector in existing tab |
-| `--wait-for` + `--all-tabs` | **Works** | Same selector applied to all tabs before fetching |
-| `--wait-for` + `--list-tabs` | **Error** | List-tabs doesn't fetch content, standalone only |
-
-**Error messages:**
-- `--list-tabs`: "Cannot use --wait-for with --list-tabs (no content fetching)"
-
-**Use case for tabs + wait-for:**
-- Persistent visible browser with authenticated sessions
-- Automated script runs periodically (e.g., cron job)
-- Dynamic content loads asynchronously in existing tabs
-- `--wait-for` ensures script waits for content before extracting
-- Example: `snag --tab "dashboard" --wait-for ".data-loaded" -o daily-report.md`
-
-#### Output Control Interactions
-
-All output flags work normally with `--wait-for`:
-
-| Combination | Behavior |
-|-------------|----------|
-| `--wait-for` + `--output` | Works normally - wait before writing to file |
-| `--wait-for` + `--output-dir` | Works normally - wait before auto-saving |
-| `--wait-for` + `--format` (all) | Works normally - wait before format conversion |
-
-#### Browser Mode Interactions
-
-| Combination | Behavior | Notes |
-|-------------|----------|-------|
-| `--wait-for` + `--force-headless` | Works normally | Wait in headless mode |
-| `--wait-for` + `--open-browser` (no URL) | **Warning** | Flag ignored, no content to fetch |
-| `--wait-for` + `--open-browser` + URL | **Warning** | Flag ignored, `--open-browser` doesn't fetch content |
-
-**Warning message:**
-- "Warning: --wait-for has no effect with --open-browser (no content fetching)"
-
-#### Timing Interactions
-
-| Combination | Behavior | Notes |
-|-------------|----------|-------|
-| `--wait-for` + `--timeout` | Works normally | `--timeout` applies to navigation; `--wait-for` has separate timeout logic |
-| `--wait-for` + `--timeout` + `--tab` | Works normally | `--timeout` applies to `--wait-for` selector wait (warns if no --wait-for) |
-
-**Current implementation:**
-- Navigation timeout: Controlled by `--timeout` flag (default 30s)
-- Selector wait timeout: Uses same `--timeout` duration
-- Both use rod's timeout mechanism via `page.Timeout(duration)`
-
-#### Other Flag Interactions
-
-**Compatible flags (work normally):**
-- `--port` - Remote debugging port
-- `--close-tab` - Close tab after fetching (works with `--tab`)
-- `--verbose` / `--quiet` / `--debug` - Logging levels
-- `--user-agent` - Set user agent for new pages (ignored for existing tabs)
-
-#### Examples
-
-**Valid:**
-```bash
-snag https://example.com --wait-for ".content"              # Basic usage
-snag https://example.com --wait-for "#main-content"         # ID selector
-snag https://example.com --wait-for "div > .loaded"         # Complex selector
-snag https://example.com -w ".content" --timeout 60         # Custom timeout
-snag url1 url2 --wait-for ".content"                        # Multiple URLs
-snag --url-file urls.txt --wait-for ".content"              # URL file
-snag --tab 1 --wait-for ".content" -o output.md             # Existing tab (automation)
-snag --all-tabs --wait-for ".content" -d ./output           # All tabs
-snag https://example.com --wait-for ".content" --format pdf # With PDF output
-```
-
-**Invalid:**
-```bash
-snag --list-tabs --wait-for ".content"                      # ERROR: List-tabs standalone
-snag --wait-for ".content" --wait-for ".other"              # ERROR: Multiple flags
-```
-
-**With Warnings:**
-```bash
-snag --open-browser https://example.com --wait-for ".content"  # ⚠️  No effect (no fetch)
-snag --wait-for "   "                                          # Ignored after trim
-snag --wait-for ""                                             # Ignored (empty)
-```
-
-#### Implementation Details
-
-**Location:**
-- Flag definition: `main.go:108-111`
-- Wait logic: `fetch.go:167-193` (`waitForSelector()` helper function)
-- Usage in fetch: `fetch.go:71-84`
-- Usage in tab handlers: `handlers.go` (various locations)
-
-**How it works:**
-1. Takes CSS selector string value
-2. If empty string after trim, silently skip (no validation error)
-3. Wait for element to appear using `page.Element(selector)` with timeout
-4. Wait for element to be visible using `elem.WaitVisible()`
-5. Return error if selector never appears or never becomes visible
-6. Timeout errors include helpful suggestion to increase `--timeout`
-
-**Validation:**
-- No upfront CSS syntax validation
-- All validation happens at runtime through rod's CDP implementation
-- Invalid selectors caught by rod's `Element()` method
-- Timeout handled by rod's context deadline mechanism
-
-**Timeout behavior:**
-- Uses `--timeout` flag value (default 30 seconds)
-- Applied to both `Element()` and `WaitVisible()` calls
-- Errors include context about which operation timed out
+**Files to Update:**
+- `docs/arguments/all-tabs.md` (line 101)
 
 ---
 
-### Task 8: `--port PORT` / `-p`
+## Minor Inconsistencies (Warning Message Wording)
 
-**Questions to answer:**
-- What happens with wrong values? (negative, zero, > 65535, non-integer, in-use)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - Another `--port`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+These are cases where both documents agree on the behavior (warning/ignore) but use different wording in the warning messages or descriptions.
 
-**Define:** Port availability checking, all operation modes
+### 8. `--user-agent` + `--tab`: Different Warning Message Wording
+
+**Inconsistency:**
+- **user-agent.md (line 59)**: "Warning: --user-agent has no effect with --tab (tab already has its user agent)"
+- **tab.md (line 107)**: "Warning: --user-agent has no effect with --tab (cannot change existing tab's user agent)"
+
+**Recommendation:**
+- Standardize on one message
+- Suggested: "Warning: --user-agent has no effect with --tab (cannot change existing tab's user agent)"
+- Rationale: More explicit about WHY (can't change) vs just stating the fact (already has)
+
+**Files to Update:**
+- `docs/arguments/user-agent.md` (line 59)
 
 ---
 
-### Task 9: `--close-tab` / `-c` ✅
+### 9. `--user-agent` + `--all-tabs`: Different Warning Message Wording
 
-**Status:** Complete (2025-10-23)
+**Inconsistency:**
+- **user-agent.md (line 60)**: "tabs already have their user agents"
+- **all-tabs.md (line 100)**: "cannot change existing tabs' user agents"
 
-#### Behavior
+**Recommendation:**
+- Standardize on one message
+- Suggested: "Warning: --user-agent has no effect with --all-tabs (cannot change existing tabs' user agents)"
+- Rationale: Consistent with #8 recommendation
 
-**Primary use case:**
-- Visible browser mode: Close tab after fetch
-- Headless mode: Warning (tabs close automatically anyway)
-
-**Default behavior (no flag):**
-- Headless: Tabs closed automatically
-- Visible: Tabs remain open
-
-**Last tab handling:**
-- Closing last tab also closes browser
-- Message: "Closing last tab, browser will close"
-
-**Close failure:**
-- Warning issued but fetch considered successful
-- Content already retrieved before close attempted
-
-#### Content Source Interactions
-
-- Single/multiple URLs: Works - close each tab after fetch ✅
-- `--url-file`: Works - close each tab after fetch ✅
-- `--tab`: Works - close existing tab; if last, close browser ✅
-- `--all-tabs`: Works - close all tabs and browser ✅
-- `--list-tabs`: ❌ ERROR (standalone)
-- `--open-browser` (no URL): ⚠️ Warning, ignored
-- `--open-browser` + URL: Works - close tab/browser ✅
-
-#### Browser Mode
-
-- `--force-headless`: ⚠️ Warning (redundant), proceeds
-
-#### All Other Flags
-
-Output control, wait-for, timeout, port, user-agent, logging: All work normally ✅
-
-**Note:** Parallel processing strategy for multiple URLs tracked in TODO.
+**Files to Update:**
+- `docs/arguments/user-agent.md` (line 60)
 
 ---
 
-### Task 10: `--force-headless` ✅
+### 10. `--close-tab` + `--open-browser`: Different Warning Reason Wording
 
-**Status:** Complete (2025-10-23)
+**Inconsistency:**
+- **close-tab.md (line 40)**: "Warning: --close-tab has no effect with --open-browser (no content to close)"
+- **open-browser.md (line 91)**: "Warning: --close-tab ignored with --open-browser (no content fetching)"
 
-#### Core Behavior & Browser Connection
+**Recommendation:**
+- Standardize on one reason
+- Suggested: "Warning: --close-tab ignored with --open-browser (no content fetching)"
+- Rationale: Consistent with other open-browser warnings about "no content fetching"
 
-**No existing browser:**
-- Flag **silently ignored** (headless is default behavior)
-
-**Existing browser on default port:**
-- Connection attempt fails with port conflict error
-
-**Existing browser + custom `--port`:**
-- Works normally (launches new headless on custom port)
-
-**Multiple flags:**
-- Multiple `--force-headless` → **Error**: `"Only one --force-headless flag allowed"`
-
-#### Browser Mode Conflicts
-
-- `--force-headless` + `--open-browser` → **Error**: `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
-
-#### Content Source Interactions
-
-- Single/multiple URLs, `--url-file` → **Silently ignore** (headless is default)
-- `--tab` → **Error**: `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"`
-- `--all-tabs` → **Error**: `"Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)"`
-- `--list-tabs` → **Error**: `"Cannot use --force-headless with --list-tabs (--list-tabs requires existing browser connection)"`
-
-#### Other Flag Interactions
-
-- `--close-tab` → **Warning**: `"--close-tab has no effect in headless mode (tabs close automatically)"`
-- `--user-data-dir` → Works normally (launch headless with custom profile)
-- All others (output, format, timeout, wait-for, port, user-agent, logging) → Work normally
+**Files to Update:**
+- `docs/arguments/close-tab.md` (line 40)
 
 ---
 
-### Task 11: `--open-browser` / `-b` ✅
+### 11. `--format` + `--open-browser`: Missing Warning Mention
 
-**Status:** Complete (2025-10-23)
+**Inconsistency:**
+- **format.md (line 106)**: Says format is "ignored" but doesn't mention warning
+- **open-browser.md (line 77)**: Says "Warning, flag ignored" with explicit warning message
 
-#### Core Behavior
+**Recommendation:**
+- Add warning to format.md
+- Suggested: "**Warning**, flag ignored" with message "Warning: --format ignored with --open-browser (no content fetching)"
 
-**Primary purpose:**
-- Launch persistent visible browser and exit snag (browser stays open)
-- "Launch and exit" means **exit snag**, not the browser
-- **Does not fetch content** - purely a browser launcher
-
-**Multiple flags:**
-- Multiple `--open-browser` → **Silently ignore** (duplicate boolean)
-
-**Modes:**
-1. Standalone (no URLs): Open browser, exit snag
-2. With URLs: Open browser, navigate to URLs in tabs, exit snag (no fetch)
-
-#### Browser Mode Conflicts
-
-- `--open-browser` + `--force-headless` → **Error**: `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
-- `--open-browser` + `--list-tabs` → **Error**: `"Cannot use --list-tabs with --open-browser (--list-tabs is standalone)"`
-
-#### Content Source Interactions
-
-- Single/multiple `<url>`, `--url-file` → Navigate to URLs in tabs, exit (no fetch)
-- `--tab`, `--all-tabs` → **Warning**: Flags ignored (no content fetching)
-
-#### Output & Timing Flags
-
-All **warned and ignored** (no content fetching):
-- `--output`, `--output-dir`, `--format` → Warning
-- `--timeout`, `--wait-for` → Warning
-
-#### Browser Configuration
-
-- `--port`, `--user-data-dir` → Work normally
-- `--close-tab` → **Warning**: Ignored (no fetching)
-- `--user-agent` (no URLs) → **Warning**: Ignored (no navigation)
-- `--user-agent` + URLs → Works normally (applied during navigation)
-
-#### Logging
-
-- `--verbose`, `--quiet`, `--debug` → Work normally
+**Files to Update:**
+- `docs/arguments/format.md` (line 106-107)
 
 ---
 
-### Task 12: `--list-tabs` / `-l`
+### 12. `--timeout` + `--open-browser`: Missing Warning Mention
 
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - Another `--list-tabs`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+**Inconsistency:**
+- **timeout.md (line 76)**: Says timeout is "ignored" but doesn't mention warning
+- **open-browser.md (line 83)**: Says "Warning, flag ignored" with explicit warning message
 
-**Define:** Standalone mode requirement, all conflicts
+**Recommendation:**
+- Add warning to timeout.md
+- Suggested: "**Warning**, flag ignored" with message "Warning: --timeout ignored with --open-browser (no content fetching)"
+
+**Files to Update:**
+- `docs/arguments/timeout.md` (line 76-77)
 
 ---
 
-### Task 13: `--tab PATTERN` / `-t`
+### 13. `--output-dir` + `--open-browser`: Missing Warning Mention
 
-**Questions to answer:**
-- What happens with wrong values? (no match found, invalid regex, empty pattern)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - Another `--tab`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+**Inconsistency:**
+- **output-dir.md (line 92)**: Says `-d` is "ignored" but doesn't mention warning
+- **open-browser.md (line 76)**: Says "Warning, flag ignored" with explicit warning message
 
-**Define:** Pattern matching priority, conflicts, should-ignore flags
+**Recommendation:**
+- Add warning to output-dir.md
+- Suggested: "**Warning**, flag ignored" with message "Warning: --output-dir ignored with --open-browser (no content fetching)"
+
+**Files to Update:**
+- `docs/arguments/output-dir.md` (line 92-93)
 
 ---
 
-### Task 14: `--all-tabs` / `-a`
+### 14. `--wait-for` + `--open-browser`: Phrasing Difference
 
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - Another `--all-tabs`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+**Inconsistency:**
+- **wait-for.md (line 82)**: "has no effect with --open-browser"
+- **open-browser.md (line 84)**: "ignored with --open-browser"
 
-**Define:** Output requirement, conflicts, error handling behavior
+**Recommendation:**
+- Standardize on "ignored with" phrasing
+- Suggested: "Warning, flag ignored" (consistent with other open-browser warnings)
+
+**Files to Update:**
+- `docs/arguments/wait-for.md` (lines 78-82)
 
 ---
 
-### Task 15: `--verbose`
+## Files Requiring Updates
 
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - Another `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+Summary of all files that need changes:
 
-**Define:** Logging level priority order, conflicts with `--quiet` and `--debug`
+1. **docs/arguments/wait-for.md** - Issues #1, #14
+2. **docs/arguments/url-file.md** - Issue #2
+3. **docs/arguments/open-browser.md** - Issues #3, #4
+4. **docs/arguments/output.md** - Issue #5
+5. **docs/arguments/tab.md** - Issues #3, #6
+6. **docs/arguments/all-tabs.md** - Issues #4, #7
+7. **docs/arguments/user-agent.md** - Issues #8, #9
+8. **docs/arguments/close-tab.md** - Issue #10
+9. **docs/arguments/format.md** - Issue #11
+10. **docs/arguments/timeout.md** - Issue #12
+11. **docs/arguments/output-dir.md** - Issue #13
 
 ---
 
-### Task 16: `--quiet` / `-q`
+## Recommended Resolution Approach
 
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - Another `--quiet`
-  - `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+### Phase 1: Resolve Critical Contradictions (Issues #1-7)
 
-**Define:** Logging level priority order, conflicts with `--verbose` and `--debug`
+For each issue, make a decision on the correct behavior:
+
+1. **Issue #1** (`--list-tabs` + `--wait-for`): Change to **silently ignore** ✓
+2. **Issue #2** (`--close-tab` + `--url-file`): Change to **works normally** ✓
+3. **Issue #3** (`--tab` + `--open-browser`): Change to **error** ✓
+4. **Issue #4** (`--all-tabs` + `--open-browser`): Change to **error** ✓
+5. **Issue #5** (`--output` + `--open-browser`): Change to **warning** ✓
+6. **Issue #6** (`--tab` + `--user-data-dir`): Change to **warning/ignore** ✓
+7. **Issue #7** (`--all-tabs` + `--user-data-dir`): Change to **warning/ignore** ✓
+
+### Phase 2: Standardize Warning Messages (Issues #8-14)
+
+Standardize all warning message wording across documents.
+
+### Phase 3: Verification
+
+After updates:
+1. Re-run cross-review to verify all contradictions resolved
+2. Verify examples sections match the documented behavior
+3. Check that validation.md is updated if any validation rules changed
+4. Check that README.md quick reference matrices are updated
 
 ---
 
-### Task 17: `--debug`
+## Additional Notes
 
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - Another `--debug`
-  - `--user-agent`
-  - `--user-data-dir`
+### Related TODO Items from PROJECT.md
 
-**Define:** Logging level priority order, output format, conflicts
+- Line 900: "Argument trimming" - Apply `strings.TrimSpace()` to all string arguments
+- Lines 902-907: "Parallel processing strategy" - Affects `--close-tab` behavior with multiple URLs
+- Lines 909-915: "Review `--user-data-dir` interactions" - This review partially addresses this TODO
+- Lines 917-923: "Remove `--force-visible` from code" - Not related to documentation issues
 
----
+### Pattern Observations
 
-### Task 18: `--user-agent STRING`
+1. **Standalone flags** (`--help`, `--version`, `--list-tabs`) should silently ignore all other flags except those needed for operation
+2. **Conflicting content sources** (URL vs `--tab` vs `--all-tabs` vs `--url-file`) should **error**, not warn
+3. **Browser mode conflicts** (`--force-headless` vs `--open-browser`) should **error**
+4. **Ignored flags with no effect** (like `--user-agent` with existing tabs) should **warn**, not error
+5. **All `--open-browser` ignored flags** should use consistent wording: "Warning: {flag} ignored with --open-browser (no content fetching)"
 
-**Questions to answer:**
-- What happens with wrong values? (empty string, extremely long string)
-- What happens when combined with:
-  - `<url>` (single)
-  - `<url>` (multiple)
-  - `--url-file`
-  - `--output` / `-o`
-  - `--output-dir` / `-d`
-  - `--format` / `-f`
-  - `--timeout`
-  - `--wait-for` / `-w`
-  - `--port` / `-p`
-  - `--close-tab` / `-c`
-  - `--force-headless`
-  - `--open-browser` / `-b`
-  - `--list-tabs` / `-l`
-  - `--tab` / `-t`
-  - `--all-tabs` / `-a`
-  - `--verbose`
-  - `--quiet` / `-q`
-  - `--debug`
-  - Another `--user-agent`
-  - `--user-data-dir`
+### Cross-Reference Check Methodology
 
-**Define:** Behavior with new pages vs existing tabs (should ignore for existing tabs)
+For future reviews, the systematic approach:
+1. For each flag in `docs/arguments/{flag}.md`
+2. Read the "Interaction Matrix" section
+3. For each interaction listed (e.g., "flag X + flag Y")
+4. Open `docs/arguments/{flag-y}.md`
+5. Find the reverse interaction ("flag Y + flag X")
+6. Verify both documents say the same thing (behavior AND error/warning messages)
+7. If mismatch found, document as inconsistency
 
 ---
 
-### Task 19: `--help` / `-h`
+## Next Steps
 
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with any other argument (including `--user-data-dir`)?
-
-**Define:** Should display help and exit, ignoring all other flags
-
----
-
-### Task 20: `--version` / `-v`
-
-**Questions to answer:**
-- What happens with wrong values? (N/A - boolean flag)
-- What happens when combined with any other argument (including `--user-data-dir`)?
-
-**Define:** Should display version and exit, ignoring all other flags
+1. Review this document and approve recommendations for critical contradictions (#1-7)
+2. Implement updates to all 11 files listed above
+3. Run verification cross-review
+4. Update validation.md if any validation rules changed
+5. Update README.md compatibility matrices if needed
+6. Consider updating PROJECT.md to mark the user-data-dir review TODO as complete
 
 ---
 
-### Task 21: `--user-data-dir DIRECTORY` ✅
+## Questions for Grant
 
-**Status:** Complete (2025-10-23)
+Before implementing changes, confirm:
 
-#### Invalid Values & Basic Behavior
+1. **Issue #2** (`--close-tab` + `--url-file`): Confirm it should work normally (close each tab after fetch). Note that the parallel processing TODO may affect implementation.
 
-**Empty/whitespace:**
-- Warn and use browser default profile
+2. **Issues #3 & #4** (`--tab`/`--all-tabs` + `--open-browser`): Confirm these should error rather than warn. This is a stricter approach but clearer UX.
 
-**Directory doesn't exist:**
-- Error
+3. **Issue #5** (`--output` + `--open-browser` no URL): Confirm warning is better than error. This treats `--open-browser` as a valid mode that just doesn't fetch content.
 
-**Path is file not directory:**
-- Error
+4. **Issues #6 & #7** (`--tab`/`--all-tabs` + `--user-data-dir`): Confirm the flag should be ignored with warning. User might specify it for documentation purposes (knowing which profile the running browser uses), but it has no effect.
 
-**Permission denied:**
-- Error
-
-**Invalid path characters:**
-- Error
-
-**Relative/absolute paths:**
-- Both supported, browser handles as needed
-
-**Multiple flags:**
-- Last wins
-
-**Tilde expansion:**
-- Snag expands `~` to home directory
-
-#### Browser Mode Interactions
-
-- Works with `--force-headless` and `--open-browser`
-- Existing browser connection → Warn and ignore flag
-- Multiple instances same profile → Let browser error
-- Profile persists between invocations (headless and visible)
-
-#### Content Source Interactions
-
-- Works with URLs, `--url-file`
-- Tab operations (`--tab`, `--all-tabs`) → Warn and ignore
-- `--list-tabs` → List-tabs wins (standalone like `--help`)
-
-#### Other Flag Interactions
-
-- Output control, timing, wait, close-tab → All work normally
-- `--user-agent` → Custom profile WITH custom UA (both applied)
-- Logging flags → Work normally
-- `--help` / `--version` → These win, ignore profile
+5. Are there any other flag combinations I should specifically verify in a second pass?
 
 ---
 
-## Completion Status
-
-Track completion of each task:
-
-- [x] Task 1: `<url>` - **COMPLETE** (2025-10-22)
-- [x] Task 2: `--url-file` - **COMPLETE** (2025-10-22)
-- [x] Task 3: `--output` / `-o` - **COMPLETE** (2025-10-22)
-- [x] Task 4: `--output-dir` / `-d` - **COMPLETE** (2025-10-22)
-- [x] Task 5: `--format` / `-f` - **COMPLETE** (2025-10-22)
-- [x] Task 6: `--timeout` - **COMPLETE** (2025-10-22)
-- [x] Task 7: `--wait-for` / `-w` - **COMPLETE** (2025-10-23)
-- [x] Task 8: `--port` / `-p` - **COMPLETE** (2025-10-23)
-- [x] Task 9: `--close-tab` / `-c` - **COMPLETE** (2025-10-23)
-- [x] Task 10: `--force-headless` - **COMPLETE** (2025-10-23)
-- [x] Task 11: `--open-browser` / `-b` - **COMPLETE** (2025-10-23)
-- [x] Task 12: `--list-tabs` / `-l` - **COMPLETE** (2025-10-23)
-- [x] Task 13: `--tab` / `-t` - **COMPLETE** (2025-10-23)
-- [x] Task 14: `--all-tabs` / `-a` - **COMPLETE** (2025-10-23)
-- [x] Task 15: `--verbose` - **COMPLETE** (2025-10-23)
-- [x] Task 16: `--quiet` / `-q` - **COMPLETE** (2025-10-23)
-- [x] Task 17: `--debug` - **COMPLETE** (2025-10-23)
-- [x] Task 18: `--user-agent` - **COMPLETE** (2025-10-23)
-- [x] Task 19: `--help` / `-h` - **COMPLETE** (2025-10-23)
-- [x] Task 20: `--version` / `-v` - **COMPLETE** (2025-10-23)
-- [x] Task 21: `--user-data-dir` - **COMPLETE** (2025-10-23)
-
----
-
-## Output Document
-
-All findings are documented in `docs/arguments/` directory with:
-- Individual files for each argument's behavior definitions
-- README.md with compatibility matrices and quick reference
-- validation.md with error conditions, validation requirements, and edge cases
-- Organized by argument for easy navigation
-
----
-
-## TODO Items
-
-- [ ] **Argument trimming**: Scan all string arguments (`--wait-for`, `--user-agent`, `--output`, `--output-dir`, `--tab`, etc.) and apply `strings.TrimSpace()` after reading from CLI framework. This is standard behavior in most CLI tools (git, docker, etc.) and handles copy-paste trailing spaces gracefully.
-
-- [ ] **Parallel processing strategy**: Define and implement strategy for processing multiple URLs (from multiple `<url>` arguments, `--url-file`, or `--all-tabs`). Decide between:
-  - Sequential: Process URLs one-by-one (current behavior)
-  - Parallel: Process multiple URLs concurrently with goroutines
-  - Hybrid: Parallel with configurable concurrency limit
-  - Consider impact on: browser resource usage, tab creation/closing order, error handling, output ordering, and `--close-tab` behavior
-
-- [ ] **Review `--user-data-dir` interactions**: After completing all argument analysis tasks, review every completed task (1-21) to ensure `--user-data-dir` flag behavior is properly documented in `docs/arguments/[argument].md` files. This flag was added after initial tasks were designed, so it needs to be retroactively documented for Tasks 1-9, 16-18, 20-21.
-
-- [ ] **Remove `--force-visible` from code**: Remove the `--force-visible` flag from the codebase. This includes:
-  - Remove flag definition from `main.go`
-  - Remove all references and logic in `browser.go`
-  - Remove validation logic and error messages
-  - Update any tests that reference this flag
-  - Ensure browser mode logic works correctly without this flag
+**Review Completed:** 2025-10-23 23:00 AEST
+**Status:** Ready for Grant's review and approval before implementation
