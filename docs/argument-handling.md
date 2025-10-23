@@ -1882,6 +1882,150 @@ snag --all-tabs --close-tab                       # Closes all tabs → closes b
 
 ---
 
+### `--force-headless` ✅
+
+**Status:** Complete (2025-10-23)
+
+#### Validation Rules
+
+**Boolean Flag:**
+- No value required (presence = enabled)
+- No validation errors possible
+
+**Multiple Flags:**
+- Multiple `--force-headless` flags → **Error**: `"Only one --force-headless flag allowed"`
+
+#### Behavior
+
+**Primary Purpose:**
+- Override auto-detection to force launching a headless browser
+- Useful for automation that requires consistent headless behavior
+
+**When No Existing Browser:**
+- Flag is **silently ignored** (headless is already default behavior)
+- Browser launches in headless mode on default or specified port
+
+**When Existing Browser Running:**
+- Default port (9222): Connection attempt fails with port conflict error
+- Custom port via `--port`: Works normally (launches new headless browser on custom port, ignoring existing browser)
+
+**Browser Mode Conflicts:**
+- Multiple `--force-headless`: **Error** - `"Only one --force-headless flag allowed"`
+- With `--force-visible`: **Error** - `"Cannot use both --force-headless and --force-visible (conflicting flags)"`
+- With `--open-browser`: **Error** - `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
+
+#### Interaction Matrix
+
+**Content Source Interactions:**
+
+| Combination | Behavior | Notes |
+|-------------|----------|-------|
+| `--force-headless` + single `<url>` | **Silently ignore** flag | Headless is default, not needed |
+| `--force-headless` + multiple `<url>` | **Silently ignore** flag | Headless is default, not needed |
+| `--force-headless` + `--url-file` | **Silently ignore** flag | Headless is default, not needed |
+| `--force-headless` + `--tab` | **Error** | `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"` |
+| `--force-headless` + `--all-tabs` | **Error** | `"Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)"` |
+| `--force-headless` + `--list-tabs` | **Error** | `"Cannot use --force-headless with --list-tabs (--list-tabs requires existing browser connection)"` |
+
+**Rationale for Tab Errors:**
+- `--force-headless` implies launching a new browser
+- Tab operations (`--tab`, `--all-tabs`, `--list-tabs`) require existing browser with tabs
+- These are fundamentally incompatible operations
+
+**Browser Mode Interactions:**
+
+| Combination | Behavior | Notes |
+|-------------|----------|-------|
+| `--force-headless` + `--force-visible` | **Error** | Conflicting browser modes |
+| `--force-headless` + `--open-browser` | **Error** | Conflicting modes (open-browser implies visible) |
+| `--force-headless` + `--user-data-dir` | Works normally | Launch headless with custom profile |
+
+**Other Flag Interactions:**
+
+| Combination | Behavior | Notes |
+|-------------|----------|-------|
+| `--force-headless` + `--close-tab` | **Warning** | `"Warning: --close-tab has no effect in headless mode (tabs close automatically)"` |
+| `--force-headless` + `--port` | Works normally | Launch headless on specified port |
+| `--force-headless` + `--output` / `--output-dir` | Works normally | Output control unaffected by browser mode |
+| `--force-headless` + `--format` (any) | Works normally | Format conversion unaffected by browser mode |
+| `--force-headless` + `--timeout` | Works normally | Navigation timeout applies |
+| `--force-headless` + `--wait-for` | Works normally | Selector wait applies |
+| `--force-headless` + `--user-agent` | Works normally | User agent set for headless browser |
+| `--force-headless` + `--verbose`/`--quiet`/`--debug` | Works normally | Logging levels apply |
+
+#### Examples
+
+**Valid:**
+```bash
+# Force headless when browser might be open (silently ignored if none open)
+snag --force-headless https://example.com
+
+# Force headless with custom port (avoids conflict with existing browser)
+snag --force-headless --port 9223 https://example.com
+
+# Force headless with custom profile
+snag --force-headless --user-data-dir /tmp/snag-profile https://example.com
+
+# Force headless with output options
+snag --force-headless https://example.com -o output.md
+snag --force-headless https://example.com --format pdf
+```
+
+**Invalid (Errors):**
+```bash
+# ERROR: Conflicting browser modes
+snag --force-headless --force-visible https://example.com
+
+# ERROR: Conflicting modes
+snag --force-headless --open-browser
+
+# ERROR: Tab operations require existing browser
+snag --force-headless --tab 1
+snag --force-headless --all-tabs
+snag --force-headless --list-tabs
+
+# ERROR: Multiple flags
+snag --force-headless --force-headless https://example.com
+```
+
+**With Warnings:**
+```bash
+# ⚠️ Warning: redundant in headless mode
+snag --force-headless --close-tab https://example.com
+```
+
+**Silently Ignored (Not Needed):**
+```bash
+# Headless is default behavior when no browser open
+snag --force-headless https://example.com          # Flag ignored (no browser)
+snag --force-headless url1 url2                    # Flag ignored (no browser)
+snag --force-headless --url-file urls.txt          # Flag ignored (no browser)
+```
+
+#### Implementation Details
+
+**Location:**
+- Flag definition: `main.go` (in CLI flag definitions)
+- Browser launch logic: `browser.go` (browser mode detection and launch)
+
+**How it works:**
+1. Check if `--force-headless` is set
+2. If set with conflicting flags (`--force-visible`, `--open-browser`, tab operations) → Error
+3. If set with `--close-tab` → Warning (redundant)
+4. If no existing browser running → Silently ignore (default is headless)
+5. If existing browser on default port → Let connection fail (port conflict)
+6. If existing browser + custom `--port` → Launch new headless on custom port
+
+**Error Messages:**
+- Browser mode conflicts: `"Cannot use both --force-headless and --force-visible (conflicting flags)"`
+- Tab operation conflicts: `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"`
+- Multiple flags: `"Only one --force-headless flag allowed"`
+
+**Warning Messages:**
+- With `--close-tab`: `"Warning: --close-tab has no effect in headless mode (tabs close automatically)"`
+
+---
+
 ## All Arguments and Flags
 
 ### Positional Arguments
