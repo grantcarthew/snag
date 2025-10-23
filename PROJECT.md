@@ -4,7 +4,7 @@
 
 **Goal:** Create comprehensive design decisions for every argument combination
 
-**Deliverable:** Complete `docs/argument-handling.md` with all behaviors defined
+**Deliverable:** Complete `docs/arguments/` directory with all behaviors defined
 
 ---
 
@@ -34,7 +34,7 @@ This is a **design-first, implementation-later** methodology:
 
 3. **Documentation Phase**: Only after your explicit permission, I will:
    - Update this PROJECT.md with progress tracking
-   - Update `docs/argument-handling.md` with the design decisions
+   - Update `docs/arguments/[argument].md` with the design decisions
 
 4. **No Implementation**: This is design-only. No code changes, only documentation.
 
@@ -857,7 +857,7 @@ Track completion of each task:
 - [x] Task 10: `--force-headless` - **COMPLETE** (2025-10-23)
 - [x] Task 11: `--open-browser` / `-b` - **COMPLETE** (2025-10-23)
 - [x] Task 12: `--list-tabs` / `-l` - **COMPLETE** (2025-10-23)
-- [ ] Task 13: `--tab` / `-t`
+- [x] Task 13: `--tab` / `-t` - **COMPLETE** (2025-10-23)
 - [ ] Task 14: `--all-tabs` / `-a`
 - [x] Task 15: `--verbose` - **COMPLETE** (2025-10-23)
 - [x] Task 16: `--quiet` / `-q` - **COMPLETE** (2025-10-23)
@@ -871,12 +871,11 @@ Track completion of each task:
 
 ## Output Document
 
-All findings will be documented in `docs/argument-handling.md` with:
-- Behavior definitions for each argument
-- Compatibility matrix
-- Error conditions and messages
-- Validation requirements
-- Edge case handling
+All findings are documented in `docs/arguments/` directory with:
+- Individual files for each argument's behavior definitions
+- README.md with compatibility matrices and quick reference
+- validation.md with error conditions, validation requirements, and edge cases
+- Organized by argument for easy navigation
 
 ---
 
@@ -890,7 +889,7 @@ All findings will be documented in `docs/argument-handling.md` with:
   - Hybrid: Parallel with configurable concurrency limit
   - Consider impact on: browser resource usage, tab creation/closing order, error handling, output ordering, and `--close-tab` behavior
 
-- [ ] **Review `--user-data-dir` interactions**: After completing all argument analysis tasks, review every completed task (1-21) to ensure `--user-data-dir` flag behavior is properly documented in `docs/argument-handling.md`. This flag was added after initial tasks were designed, so it needs to be retroactively documented for Tasks 1-9, 16-18, 20-21.
+- [ ] **Review `--user-data-dir` interactions**: After completing all argument analysis tasks, review every completed task (1-21) to ensure `--user-data-dir` flag behavior is properly documented in `docs/arguments/[argument].md` files. This flag was added after initial tasks were designed, so it needs to be retroactively documented for Tasks 1-9, 16-18, 20-21.
 
 - [ ] **Remove `--force-visible` from code**: Remove the `--force-visible` flag from the codebase. This includes:
   - Remove flag definition from `main.go`
