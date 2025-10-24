@@ -1,5 +1,7 @@
 # Validation Rules and Special Cases
 
+**Last Updated:** 2025-10-24
+
 This document describes validation order, special cases, edge cases, and the implementation checklist for argument handling.
 
 ---
@@ -161,13 +163,13 @@ These combinations need clarification and implementation decisions:
 
 | Combination                       | Current        | Recommendation                                |
 | --------------------------------- | -------------- | --------------------------------------------- |
-| `--all-tabs -o file.md`           | ⚠️ Undefined   | ❌ ERROR: "Use --output-dir instead"          |
-| `--tab <pattern> --all-tabs`      | ⚠️ Undefined   | ❌ ERROR: Mutually exclusive                  |
-| `--list-tabs --tab 1`             | --tab ignored  | Lists tabs from existing browser (no error)   |
-| `--list-tabs --all-tabs`          | Ignored        | Lists tabs from existing browser (no error)   |
-| `--open-browser --force-headless` | ⚠️ Undefined   | ❌ ERROR: Conflicting modes                   |
-| `--tab --force-headless`          | ⚠️ Undefined   | ❌ ERROR: Tabs require existing browser       |
-| `--all-tabs --force-headless`     | ⚠️ Undefined   | ❌ ERROR: Tabs require existing browser       |
+| `--all-tabs -o file.md`           | ✅ Defined     | ❌ ERROR: "Use --output-dir instead"          |
+| `--tab <pattern> --all-tabs`      | ✅ Defined     | ❌ ERROR: Mutually exclusive                  |
+| `--list-tabs --tab 1`             | ✅ Defined     | Lists tabs from existing browser (no error)   |
+| `--list-tabs --all-tabs`          | ✅ Defined     | Lists tabs from existing browser (no error)   |
+| `--open-browser --force-headless` | ✅ Defined     | ❌ ERROR: Conflicting modes                   |
+| `--tab --force-headless`          | ✅ Defined     | ❌ ERROR: Tabs require existing browser       |
+| `--all-tabs --force-headless`     | ✅ Defined     | ❌ ERROR: Tabs require existing browser       |
 
 ### Priority 2: Should Be Defined
 
@@ -270,9 +272,9 @@ All logging flag conflicts resolved using "last flag wins" approach (Unix standa
 
 ### Missing Validations (Current)
 
-- [ ] `--tab` + `--all-tabs` → Should ERROR
-- [ ] `--all-tabs` + `-o` → Should ERROR
-- [ ] `--open-browser` + `--force-headless` → Should ERROR
+- [x] `--tab` + `--all-tabs` → Should ERROR ✅
+- [x] `--all-tabs` + `-o` → Should ERROR ✅
+- [x] `--open-browser` + `--force-headless` → Should ERROR ✅
 - [x] Multiple logging flags → Last flag wins (Unix standard) ✅
 
 ### Planned Validations 🚧

@@ -2,9 +2,7 @@
 
 **Status:** Complete (2025-10-23)
 
-## Overview
-
-Specify a custom user data directory (profile) for the browser instance, enabling session isolation and multi-instance support.
+#### Validation Rules
 
 **Use Cases:**
 - Multiple authenticated sessions (personal vs work accounts)
@@ -12,7 +10,7 @@ Specify a custom user data directory (profile) for the browser instance, enablin
 - Privacy (separate from personal browsing)
 - Enable true multi-instance browsers with different ports
 
-## Invalid Values
+**Invalid Values:**
 
 **Empty string:**
 - Behavior: **Warning**, use browser default profile
@@ -58,7 +56,9 @@ Specify a custom user data directory (profile) for the browser instance, enablin
 - Browser uses its default profile location
 - Varies by OS and browser (Chrome, Chromium, Edge, Brave)
 
-## Browser Mode Interactions
+#### Interaction Matrix
+
+**Browser Mode Interactions:**
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
@@ -136,14 +136,14 @@ All logging flags work normally with `--user-data-dir`:
 | `--user-data-dir` + `--quiet` | Works normally |
 | `--user-data-dir` + `--debug` | Works normally |
 
-## Special Cases
+**Special Cases:**
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
 | `--user-data-dir` + `--help` | Help wins | Display help, ignore all other flags |
 | `--user-data-dir` + `--version` | Version wins | Display version, ignore all other flags |
 
-## Multi-Instance Support
+**Multi-Instance Support:**
 
 **Enable multiple browser instances:**
 
@@ -167,7 +167,7 @@ snag --port 9223 --tab "gmail" -o work-email.md
 - Same port with different profiles → Port conflict error
 - Must use both different port AND different profile for true multi-instance
 
-## Examples
+#### Examples
 
 **Valid:**
 ```bash
