@@ -372,7 +372,7 @@ See [open-browser.md](./open-browser.md) for complete details.
 
 ### Filename Generation Format
 
-**Pattern:** `yyyy-mm-dd-hhmmss-{title-slug}.{ext}`
+**Pattern:** `yyyy-mm-dd-hhmmss-{page-title}-{slug}.{ext}`
 
 **Examples:**
 

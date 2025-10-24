@@ -9,7 +9,7 @@
 - No validation errors possible
 
 **Multiple Flags:**
-- Multiple `--force-headless` flags → **Silently ignore** (duplicate boolean values)
+- Multiple `--force-headless` flags → **Silently ignored** (duplicate boolean)
 
 #### Behavior
 

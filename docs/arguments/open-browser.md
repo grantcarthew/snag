@@ -9,7 +9,7 @@
 - No validation errors possible
 
 **Multiple Flags:**
-- Multiple `--open-browser` flags → **Silently ignore** (duplicate boolean values)
+- Multiple `--open-browser` flags → **Silently ignored** (duplicate boolean)
 
 #### Behavior
 

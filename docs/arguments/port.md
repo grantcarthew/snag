@@ -22,7 +22,7 @@
 | Non-integer (e.g., `9222.5`) | Error immediately | "Invalid port value: must be an integer" |
 | Non-numeric (e.g., `abc`) | Error immediately | "Invalid port value: {value}" |
 | Empty string | Fall back to default (9222) | No error |
-| Multiple `--port` flags | Error immediately | "Only one --port option allowed" |
+| Multiple `--port` flags | Last wins | No error (standard CLI behavior) |
 | Port in use (by non-Chrome process) | Error at connection time | "Failed to connect to port {port}: {error}" |
 
 **Default behavior:**
@@ -132,6 +132,7 @@ snag --open-browser --port 9223 --user-data-dir ~/.snag/work
 # Fetch from different instances
 snag --port 9222 --tab "gmail" -o personal.md
 snag --port 9223 --tab "gmail" -o work.md
+snag --port 9222 --port 9223 https://example.com  # Uses 9223 (last wins)
 ```
 
 **Invalid:**
@@ -142,7 +143,6 @@ snag --port 80 https://example.com                # ERROR: Privileged port
 snag --port 70000 https://example.com             # ERROR: Above 65535
 snag --port 9222.5 https://example.com            # ERROR: Non-integer
 snag --port abc https://example.com               # ERROR: Non-numeric
-snag --port 9222 --port 9223 https://example.com  # ERROR: Multiple flags
 ```
 
 **With Warnings:**

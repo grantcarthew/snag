@@ -14,13 +14,12 @@
 - Extremely large values (e.g., 999999999) → **Allowed** (user responsibility)
 
 **Multiple Timeout Flags:**
-- Multiple `--timeout` flags → Error: `"Only one --timeout option allowed"`
+- Multiple `--timeout` flags → **Last wins** (standard CLI behavior, no error, no warning)
 
 **Error Messages:**
 - Negative/zero: `"Timeout must be positive"`
 - Non-integer: `"Timeout must be an integer"`
 - Non-numeric: `"Invalid timeout value: {value}"`
-- Multiple flags: `"Only one --timeout option allowed"`
 
 #### Behavior
 
@@ -130,6 +129,7 @@ snag https://example.com --timeout 60 -o page.md    # With output file
 snag https://example.com --timeout 60 --format pdf  # With PDF format
 snag https://example.com --timeout 60 --wait-for ".content"  # With wait-for
 snag --open-browser https://example.com --timeout 30  # Timeout ignored (no nav in open-browser)
+snag https://example.com --timeout 30 --timeout 60  # Uses 60 (last wins)
 ```
 
 **Invalid:**
@@ -139,7 +139,6 @@ snag https://example.com --timeout 0                # ERROR: Zero value
 snag https://example.com --timeout 45.5             # ERROR: Non-integer
 snag https://example.com --timeout abc              # ERROR: Non-numeric
 snag https://example.com --timeout                  # ERROR: Missing value
-snag https://example.com --timeout 30 --timeout 60  # ERROR: Multiple flags
 snag --list-tabs --timeout 30                       # --timeout ignored, lists tabs from existing browser
 ```
 

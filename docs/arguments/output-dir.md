@@ -16,15 +16,14 @@
 - Path exists but is a file (not directory) → Error: `"Output directory path is a file, not a directory: {path}"`
 - Permission denied (no write access) → Error: `"Cannot write to output directory: permission denied"`
 
-**Multiple Directory Conflicts:**
-- Multiple `-d` flags → Error: `"Only one --output-dir option allowed"`
+**Multiple Directory Flags:**
+- Multiple `-d` flags → **Last wins** (standard CLI behavior, no error, no warning)
 
 **Error Messages:**
 - Directory doesn't exist: `"Output directory does not exist: {path}"`
 - Path is file: `"Output directory path is a file, not a directory: {path}"`
 - Permission denied: `"Cannot write to output directory: permission denied"`
 - Empty after trim: Uses current directory (no error)
-- Multiple flags: `"Only one --output-dir option allowed"`
 
 #### Behavior
 
@@ -33,7 +32,7 @@
 snag https://example.com -d ./output
 ```
 - Fetches URL content
-- Generates filename automatically: `yyyy-mm-dd-hhmmss-{page-title-slug}.{ext}`
+- Generates filename automatically: `yyyy-mm-dd-hhmmss-{page-title}-{slug}.{ext}`
 - Writes to `./output/{generated-filename}`
 - Creates file if it doesn't exist
 
@@ -42,7 +41,7 @@ snag https://example.com -d ./output
 snag https://example.com -d ./docs
 # Creates: ./docs/2025-10-22-214530-example-domain.md
 ```
-- Format: `yyyy-mm-dd-hhmmss-{title-slug}.{ext}`
+- Format: `yyyy-mm-dd-hhmmss-{page-title}-{slug}.{ext}`
 - Extension matches `--format` flag
 - Page title used for slug (sanitized, lowercased, hyphens)
 
@@ -68,11 +67,10 @@ snag https://example.com -d ""
 | Combination | Behavior | Rationale |
 |-------------|----------|-----------|
 | `-d directory/` + `-o file.md` | **Error** | Mutually exclusive output destinations |
-| Multiple `-d` flags | **Error** | Only one output directory allowed |
+| Multiple `-d` flags | **Last wins** | Standard CLI behavior (e.g., `-d dir1 -d dir2` uses `dir2`) |
 
 **Error messages:**
 - `-d` + `-o`: `"Cannot use --output and --output-dir together"`
-- Multiple `-d`: `"Only one --output-dir option allowed"`
 
 **Content Source Interactions:**
 
@@ -135,6 +133,7 @@ snag --tab 1 -d ./tabs                               # From existing tab
 snag --all-tabs -d ./all                             # All tabs
 snag https://example.com -d ./out --timeout 60       # With timeout
 snag https://example.com -d ./out --wait-for ".content"  # With wait
+snag https://example.com -d ./dir1 -d ./dir2         # Uses ./dir2 (last wins)
 ```
 
 **Invalid:**
@@ -143,7 +142,6 @@ snag https://example.com -d /nonexistent/dir         # ERROR: Directory doesn't 
 snag https://example.com -d ./existing-file.txt      # ERROR: Path is file, not directory
 snag https://example.com -d /root/restricted         # ERROR: Permission denied
 snag https://example.com -d ./dir -o file.md         # ERROR: -d and -o conflict
-snag https://example.com -d ./dir1 -d ./dir2         # ERROR: Multiple -d flags
 snag --list-tabs -d ./tabs                           # --output-dir ignored, lists tabs from existing browser
 snag --open-browser -d ./output                      # OK but -d ignored (nothing to fetch)
 ```

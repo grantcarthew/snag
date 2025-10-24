@@ -17,8 +17,8 @@
 - File overwrite behavior: Silently overwrite (standard Unix `cp` behavior)
 - Read-only existing file → Error: `"Cannot write to read-only file: {path}"`
 
-**Multiple Output Conflicts:**
-- Multiple `-o` flags → Error: `"Only one --output option allowed"`
+**Multiple Output Flags:**
+- Multiple `-o` flags → **Last wins** (standard CLI behavior, no error, no warning)
 
 **Error Messages:**
 - Invalid path: `"Output path invalid: parent directory does not exist"`
@@ -26,7 +26,6 @@
 - Directory provided: `"Output path is a directory, not a file"`
 - Empty string: `"Output file path cannot be empty"`
 - Read-only file: `"Cannot write to read-only file: {path}"`
-- Multiple flags: `"Only one --output option allowed"`
 
 #### Behavior
 
@@ -71,12 +70,11 @@ snag https://example.com -o myfile --format markdown
 | `-o file.md` + single `<url>` | Works normally | Standard single-file output |
 | `-o file.md` + multiple `<url>` | **Error** | Ambiguous: cannot concatenate multiple sources |
 | `-o file.md` + `--url-file` | **Error** | Ambiguous: cannot concatenate multiple sources |
-| Multiple `-o` flags | **Error** | Only one output destination allowed |
+| Multiple `-o` flags | **Last wins** | Standard CLI behavior (e.g., `-o a.md -o b.md` uses `b.md`) |
 
 **Error messages:**
 - Multiple URLs + `-o`: `"Cannot use --output with multiple content sources. Use --output-dir instead"`
 - `--url-file` + `-o`: `"Cannot use --output with multiple content sources. Use --output-dir instead"`
-- Multiple `-o`: `"Only one --output option allowed"`
 
 **Output Destination Conflicts:**
 
@@ -148,13 +146,13 @@ snag https://example.com -o page.pdf --format pdf    # PDF format
 snag --tab 1 -o content.md                           # From existing tab
 snag https://example.com -o page.md --timeout 60     # With timeout
 snag https://example.com -o page.md --wait-for ".content"  # With wait
+snag https://example.com -o out.md -o out2.md        # Uses out2.md (last wins)
 ```
 
 **Invalid:**
 ```bash
 snag url1 url2 -o out.md                             # ERROR: Multiple URLs
 snag --url-file urls.txt -o out.md                   # ERROR: Multiple sources
-snag https://example.com -o out.md -o out2.md        # ERROR: Multiple -o flags
 snag https://example.com -o file.md -d ./dir         # ERROR: -o and -d conflict
 snag --list-tabs -o tabs.txt                         # --output ignored, lists tabs from existing browser
 snag --tab 1 -o file.md                              # ERROR: No browser running

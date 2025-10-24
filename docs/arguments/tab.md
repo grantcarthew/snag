@@ -10,7 +10,7 @@
 - Empty/whitespace: **Error + list tabs**
 
 **Multiple Flags:**
-- Multiple `--tab` flags → **Error**: `"Only one --tab option allowed"`
+- Multiple `--tab` flags → **Last wins** (standard CLI behavior, no error, no warning)
 
 **Pattern Matching Priority (Progressive Fallthrough):**
 1. **Integer** → Tab index (1-based)
@@ -24,7 +24,6 @@
 - No matching tabs: `"No tab matches pattern '{pattern}'"` + list available tabs
 - Index out of range: `"Tab index {n} out of range (only {count} tabs open)"` + list available tabs
 - Invalid regex: `"Invalid regex pattern: {error}"`
-- Multiple flags: `"Only one --tab option allowed"`
 
 #### Behavior
 
@@ -147,7 +146,7 @@ snag --tab "   "                                # ERROR: Whitespace only + list 
 snag --tab 99                                   # ERROR: Index out of range + list tabs
 snag --tab "nonexistent"                        # ERROR: No match + list tabs
 snag --tab "([invalid"                          # ERROR: Invalid regex
-snag --tab 1 --tab 2                            # ERROR: Multiple flags
+snag --tab 1 --tab 2                            # Uses tab 2 (last wins)
 snag --tab 1 https://example.com                # ERROR: Mutually exclusive with URL
 snag --tab 1 --url-file urls.txt                # ERROR: Mutually exclusive with --url-file
 snag --tab 1 --all-tabs                         # ERROR: Mutually exclusive with --all-tabs
