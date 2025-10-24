@@ -48,10 +48,7 @@
 |-------------|----------|-------|
 | `--wait-for` + `--tab` | **Works** | Supports automation with persistent browser - wait for selector in existing tab |
 | `--wait-for` + `--all-tabs` | **Works** | Same selector applied to all tabs before fetching |
-| `--wait-for` + `--list-tabs` | **Error** | List-tabs doesn't fetch content, standalone only |
-
-**Error messages:**
-- `--list-tabs`: "Cannot use --wait-for with --list-tabs (no content fetching)"
+| `--wait-for` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` acts like `--help`, overrides other args |
 
 **Use case for tabs + wait-for:**
 - Persistent visible browser with authenticated sessions
@@ -118,7 +115,6 @@ snag https://example.com --wait-for ".content" --format pdf # With PDF output
 
 **Invalid:**
 ```bash
-snag --list-tabs --wait-for ".content"                      # ERROR: List-tabs standalone
 snag --wait-for ".content" --wait-for ".other"              # ERROR: Multiple flags
 ```
 
