@@ -18,7 +18,7 @@
 - Read-only existing file → Error: `"Cannot write to read-only file: {path}"`
 
 **Multiple Output Conflicts:**
-- Multiple `-o` flags → Error: `"Only one --output flag allowed"`
+- Multiple `-o` flags → Error: `"Only one --output option allowed"`
 
 **Error Messages:**
 - Invalid path: `"Output path invalid: parent directory does not exist"`
@@ -26,7 +26,7 @@
 - Directory provided: `"Output path is a directory, not a file"`
 - Empty string: `"Output file path cannot be empty"`
 - Read-only file: `"Cannot write to read-only file: {path}"`
-- Multiple flags: `"Only one --output flag allowed"`
+- Multiple flags: `"Only one --output option allowed"`
 
 #### Behavior
 
@@ -76,7 +76,7 @@ snag https://example.com -o myfile --format markdown
 **Error messages:**
 - Multiple URLs + `-o`: `"Cannot use --output with multiple URLs. Use --output-dir instead"`
 - `--url-file` + `-o`: `"Cannot use --output with --url-file. Use --output-dir instead"`
-- Multiple `-o`: `"Only one --output flag allowed"`
+- Multiple `-o`: `"Only one --output option allowed"`
 
 **Output Destination Conflicts:**
 

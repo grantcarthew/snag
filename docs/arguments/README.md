@@ -182,8 +182,8 @@ These determine the primary operation mode:
 
 **Error Messages:**
 
-- `--tab` + URL: `"Cannot use --tab with URL argument. Use either --tab to fetch from existing tab OR provide URL to fetch new page"`
-- `--all-tabs` + URL: `"Cannot use --all-tabs with URL argument. Use --all-tabs alone to process all existing tabs"`
+- `--tab` + URL: `"Cannot use both --tab and URL arguments (mutually exclusive content sources)"`
+- `--all-tabs` + URL: `"Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)"`
 
 ### Group 2: Output Destination
 
