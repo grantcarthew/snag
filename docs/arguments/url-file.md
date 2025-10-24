@@ -95,7 +95,7 @@ snag --url-file urls.txt https://example.com https://go.dev
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
 | `--url-file` alone | Auto-save to current dir | Each URL gets auto-generated filename |
-| `--url-file` + `--output FILE` | **Error** | Cannot combine multiple sources into single file |
+| `--url-file` + `--output FILE` | **Error** | `"Cannot use --output with multiple content sources. Use --output-dir instead"` |
 | `--url-file` + `--output-dir DIR` | Works normally | Save all to specified directory |
 | `--url-file` + `--format md/html/text` | Works normally, auto-save | Apply format to all URLs, save with generated names |
 | `--url-file` + `--format pdf/png` | Works normally, auto-save | Binary formats always auto-save |
