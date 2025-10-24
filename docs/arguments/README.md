@@ -44,9 +44,9 @@
 
 ### Positional Arguments
 
-| Argument | Type   | Description  | Current         | Planned                    |
-| -------- | ------ | ------------ | --------------- | -------------------------- |
-| `<url>`  | String | URL to fetch | Single URL only | Multiple URLs supported 🚧 |
+| Argument | Type   | Description  |
+| -------- | ------ | ------------ |
+| `<url>`  | String | URL to fetch (supports multiple URLs) |
 
 ### Output Control Flags
 
@@ -76,11 +76,11 @@
 | `--all-tabs`       | `-a`    | Bool   | `false` | Process all open tabs                      |
 | `--user-data-dir`  | -       | String | -       | Custom browser profile directory           |
 
-### URL Input Flags (Planned 🚧)
+### URL Input Flags
 
-| Flag         | Aliases | Type   | Default | Description                           |
-| ------------ | ------- | ------ | ------- | ------------------------------------- |
-| `--url-file` | -       | String | -       | Read URLs from file (one per line) 🚧 |
+| Flag         | Aliases | Type   | Default | Description                       |
+| ------------ | ------- | ------ | ------- | --------------------------------- |
+| `--url-file` | -       | String | -       | Read URLs from file (one per line) |
 
 ### Logging Flags
 
@@ -104,55 +104,54 @@
 
 These determine the primary operation mode:
 
-| Combination                          | Behavior                           | Status             |
-| ------------------------------------ | ---------------------------------- | ------------------ |
-| No flags, no URL                     | ❌ ERROR: URL required             | ✅ Current         |
-| `<url>` only                         | Fetch URL to stdout                | ✅ Current         |
-| `--list-tabs` (any args)             | List tabs, exit, ignore other args | ✅ Current         |
-| `--tab <pattern>`                    | Fetch from existing tab            | ✅ Current         |
-| `--tab` + `<url>`                    | ❌ ERROR: cannot mix               | ✅ Current         |
-| `--all-tabs`                         | Fetch all tabs to files            | ✅ Current         |
-| `--all-tabs` + `<url>`               | ❌ ERROR: cannot mix               | ✅ Current         |
-| `--open-browser` only                | Open browser, keep open, no fetch  | ✅ Current         |
-| `--open-browser` + `<url>`           | Open browser AND fetch content     | ✅ Current         |
-| `--open-browser` + `<url>` (planned) | 🚧 Open in tab, NO fetch           | 🚧 Breaking change |
-| `<url> <url> <url>`                  | 🚧 Batch fetch multiple URLs       | 🚧 Planned         |
-| `--url-file urls.txt`                | 🚧 Fetch URLs from file            | 🚧 Planned         |
+| Combination                | Behavior                           |
+| -------------------------- | ---------------------------------- |
+| No flags, no URL           | ❌ ERROR: URL required             |
+| `<url>` only               | Fetch URL to stdout                |
+| `--list-tabs` (any args)   | List tabs, exit, ignore other args |
+| `--tab <pattern>`          | Fetch from existing tab            |
+| `--tab` + `<url>`          | ❌ ERROR: cannot mix               |
+| `--all-tabs`               | Fetch all tabs to files            |
+| `--all-tabs` + `<url>`     | ❌ ERROR: cannot mix               |
+| `--open-browser` only      | Open browser, keep open, no fetch  |
+| `--open-browser` + `<url>` | Open browser, navigate, NO fetch   |
+| `<url> <url> <url>`        | Batch fetch multiple URLs          |
+| `--url-file urls.txt`      | Fetch URLs from file               |
 
 ### Output Destination (Mutually Exclusive)
 
-| Combination                        | Behavior                                | Status     |
-| ---------------------------------- | --------------------------------------- | ---------- |
-| No output flags                    | Content to stdout                       | ✅ Current |
-| `-o file.md`                       | Content to specific file                | ✅ Current |
-| `-d ./dir`                         | Content to auto-generated file in dir   | ✅ Current |
-| `-o` + `-d`                        | ❌ ERROR: cannot use both               | ✅ Current |
-| Multiple URLs + `-o`               | 🚧 ❌ ERROR: use `-d` instead           | 🚧 Planned |
-| Multiple URLs + `-d`               | 🚧 ✅ Each URL gets auto-generated name | 🚧 Planned |
-| Multiple URLs, no output flags     | 🚧 ✅ Auto-save to current dir          | 🚧 Planned |
-| Binary format (PDF/PNG), no output | Auto-generates filename in current dir  | ✅ Current |
+| Combination                        | Behavior                                |
+| ---------------------------------- | --------------------------------------- |
+| No output flags                    | Content to stdout                       |
+| `-o file.md`                       | Content to specific file                |
+| `-d ./dir`                         | Content to auto-generated file in dir   |
+| `-o` + `-d`                        | ❌ ERROR: cannot use both               |
+| Multiple URLs + `-o`               | ❌ ERROR: use `-d` instead              |
+| Multiple URLs + `-d`               | ✅ Each URL gets auto-generated name    |
+| Multiple URLs, no output flags     | ✅ Auto-save to current dir             |
+| Binary format (PDF/PNG), no output | Auto-generates filename in current dir  |
 
 ### Browser Mode (Mutually Exclusive)
 
-| Combination                           | Behavior                       | Status     |
-| ------------------------------------- | ------------------------------ | ---------- |
-| No browser flags                      | Auto-detect or launch headless | ✅ Current |
-| `--force-headless`                    | Always headless                | ✅ Current |
-| `--open-browser`                      | Open visible browser           | ✅ Current |
-| `--open-browser` + `--force-headless` | ❌ ERROR                       | ✅ Defined |
+| Combination                           | Behavior                       |
+| ------------------------------------- | ------------------------------ |
+| No browser flags                      | Auto-detect or launch headless |
+| `--force-headless`                    | Always headless                |
+| `--open-browser`                      | Open visible browser           |
+| `--open-browser` + `--force-headless` | ❌ ERROR                       |
 
-### Logging Level (Last Flag Wins) ✅
+### Logging Level (Last Flag Wins)
 
-| Combination             | Effective Level     | Status     |
-| ----------------------- | ------------------- | ---------- |
-| No logging flags        | Normal              | ✅ Current |
-| `--quiet`               | Quiet               | ✅ Current |
-| `--verbose`             | Verbose             | ✅ Current |
-| `--debug`               | Debug               | ✅ Current |
-| `--quiet` + `--verbose` | Verbose (last wins) | ✅ Defined |
-| `--debug` + `--verbose` | Verbose (last wins) | ✅ Defined |
-| `--quiet` + `--debug`   | Debug (last wins)   | ✅ Defined |
-| `--verbose` + `--quiet` | Quiet (last wins)   | ✅ Defined |
+| Combination             | Effective Level     |
+| ----------------------- | ------------------- |
+| No logging flags        | Normal              |
+| `--quiet`               | Quiet               |
+| `--verbose`             | Verbose             |
+| `--debug`               | Debug               |
+| `--quiet` + `--verbose` | Verbose (last wins) |
+| `--debug` + `--verbose` | Verbose (last wins) |
+| `--quiet` + `--debug`   | Debug (last wins)   |
+| `--verbose` + `--quiet` | Quiet (last wins)   |
 
 ---
 
@@ -163,7 +162,7 @@ These determine the primary operation mode:
 **Only ONE of these can be active:**
 
 1. Fetch URL: `<url>`
-2. Fetch multiple URLs: `<url> <url>` or `--url-file` 🚧
+2. Fetch multiple URLs: `<url> <url>` or `--url-file`
 3. Fetch from tab: `--tab <pattern>`
 4. Fetch all tabs: `--all-tabs`
 5. List tabs: `--list-tabs`
@@ -171,14 +170,14 @@ These determine the primary operation mode:
 
 **Conflict Matrix:**
 
-|                             | URL | Multi-URL 🚧 | --tab | --all-tabs | --list-tabs | --open-browser (no URL) |
-| --------------------------- | --- | ------------ | ----- | ---------- | ----------- | ----------------------- |
-| **URL**                     | ✅  | 🚧 N/A       | ❌    | ❌         | ❌          | N/A                     |
-| **Multi-URL** 🚧            | N/A | ✅           | 🚧 ❌ | 🚧 ❌      | 🚧 ❌       | N/A                     |
-| **--tab**                   | ❌  | 🚧 ❌        | ✅    | ❌         | ❌          | N/A                     |
-| **--all-tabs**              | ❌  | 🚧 ❌        | ❌    | ✅         | ❌          | N/A                     |
-| **--list-tabs**             | Ignores    | Ignores      | Ignores    | Ignores         | ✅          | Ignores                     |
-| **--open-browser (no URL)** | N/A | N/A          | N/A   | N/A        | N/A         | ✅                      |
+|                             | URL     | Multi-URL | --tab   | --all-tabs | --list-tabs | --open-browser (no URL) |
+| --------------------------- | ------- | --------- | ------- | ---------- | ----------- | ----------------------- |
+| **URL**                     | ✅      | N/A       | ❌      | ❌         | ❌          | N/A                     |
+| **Multi-URL**               | N/A     | ✅        | ❌      | ❌         | ❌          | N/A                     |
+| **--tab**                   | ❌      | ❌        | ✅      | ❌         | ❌          | N/A                     |
+| **--all-tabs**              | ❌      | ❌        | ❌      | ✅         | ❌          | N/A                     |
+| **--list-tabs**             | Ignores | Ignores   | Ignores | Ignores    | ✅          | Ignores                 |
+| **--open-browser (no URL)** | N/A     | N/A       | N/A     | N/A        | N/A         | ✅                      |
 
 **Error Messages:**
 
@@ -238,7 +237,7 @@ These determine the primary operation mode:
 - `-d ./dir`: → auto-generated filename in dir
 - PDF/PNG without output flag: → auto-generated filename in current dir
 
-### Mode 2: Fetch Multiple URLs (Planned 🚧)
+### Mode 2: Fetch Multiple URLs
 
 **Invocation:** `snag <url1> <url2> <url3>` or `snag --url-file urls.txt [<url4> ...]`
 
@@ -251,7 +250,7 @@ These determine the primary operation mode:
 - ✅ `--close-tab` - Close each tab after fetching
 - ✅ `--port` - Remote debugging port
 - ✅ `--force-headless` - Browser mode
-- ✅ `--open-browser` - 🚧 Opens all URLs in tabs, NO fetch
+- ✅ `--open-browser` - Opens all URLs in tabs, NO fetch
 - ✅ `--user-agent` - Applied to all
 - ✅ Logging flags
 
@@ -260,8 +259,6 @@ These determine the primary operation mode:
 - ❌ `-o` - Ambiguous for multiple outputs
 - ❌ `--tab` - Conflicts with URLs
 - ❌ `--all-tabs` - Conflicts with URLs
-
-**Note:** `--close-tab` has been moved to Compatible Flags - it works normally with `--url-file`
 
 **Output Behavior:**
 
@@ -305,7 +302,7 @@ See [tab.md](./tab.md) for complete details.
 
 **Compatible Flags:**
 
-- ✅ `-d` - Output directory (REQUIRED or defaults to current dir)
+- ✅ `-d` - Output directory (optional, defaults to current dir)
 - ✅ `--format` - Applied to all tabs
 - ✅ `--timeout` - Applies to `--wait-for` if present (warns if no --wait-for)
 - ✅ `--wait-for` - Wait for same selector in each tab before fetching
@@ -364,11 +361,11 @@ See [open-browser.md](./open-browser.md) for complete details.
 | ----------------------------- | -------------------------------------- | --------------------------- |
 | Single URL, no flags          | stdout                                 | Default behavior            |
 | Single URL, `-o file.md`      | `file.md`                              | Specified file              |
-| Single URL, `-d ./dir`        | `./dir/{auto-generated}.md`            | Auto-generated name         |
-| Single URL, PDF/PNG, no flags | `./{auto-generated}.pdf`               | Binary formats never stdout |
-| Multiple URLs, no flags       | 🚧 `./{auto-generated}.md` (each)      | Batch auto-save             |
-| Multiple URLs, `-d ./dir`     | 🚧 `./dir/{auto-generated}.md` (each)  | Custom directory            |
-| `--tab`, no flags             | stdout                                 | Same as single URL          |
+| Single URL, `-d ./dir`        | `./dir/{auto-generated}.md`           | Auto-generated name         |
+| Single URL, PDF/PNG, no flags | `./{auto-generated}.pdf`              | Binary formats never stdout |
+| Multiple URLs, no flags       | `./{auto-generated}.md` (each)        | Batch auto-save             |
+| Multiple URLs, `-d ./dir`     | `./dir/{auto-generated}.md` (each)    | Custom directory            |
+| `--tab`, no flags             | stdout                                | Same as single URL          |
 | `--tab`, `-o file.md`         | `file.md`                              | Specified file              |
 | `--all-tabs`                  | `-d` or `./{auto-generated}.md` (each) | Always files                |
 | `--list-tabs`                 | stdout (tab list only)                 | Informational output        |
@@ -410,7 +407,7 @@ snag https://example.com --format html      # HTML output
 snag https://example.com --format pdf       # PDF (auto-saves)
 ```
 
-### Batch Processing (Planned 🚧)
+### Batch Processing
 
 ```bash
 snag url1 url2 url3                         # Multiple URLs
@@ -450,16 +447,19 @@ snag https://example.com --port 9223            # Custom port
 ## Notes
 
 1. **Exit Codes:**
+
    - `0`: Success (all operations succeeded)
    - `1`: Error (any operation failed)
    - `130`: SIGINT (Ctrl+C)
    - `143`: SIGTERM
 
 2. **Binary Formats:**
+
    - PDF and PNG formats always save to file (never stdout)
    - Auto-generated filenames used if no output flag specified
 
 3. **Browser Connection:**
+
    - Tab features require existing browser with remote debugging enabled
    - Use `snag --open-browser` to start persistent browser
 

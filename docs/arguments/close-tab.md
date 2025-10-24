@@ -16,7 +16,7 @@
 
 **With `--close-tab`:**
 - Visible browser: Close tab after fetch (primary use case)
-- Headless browser: Warning issued ("--close-tab has no effect in headless mode (tabs close automatically)"), proceeds normally
+- Headless browser: Warning issued ("--close-tab is ignored in headless mode (tabs close automatically)"), proceeds normally
 - Last tab: Closes tab AND browser with message: "Closing last tab, browser will close"
 - Close failure: Warning issued but fetch considered successful (content already retrieved)
 
@@ -44,7 +44,7 @@
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--close-tab` + `--force-headless` | **Warning** | `"Warning: --close-tab has no effect in headless mode (tabs close automatically)"`, proceeds normally |
+| `--close-tab` + `--force-headless` | **Warning** | `"Warning: --close-tab is ignored in headless mode (tabs close automatically)"`, proceeds normally |
 
 **Output Control (All work normally):**
 
@@ -86,7 +86,7 @@ snag --list-tabs --close-tab                      # --close-tab ignored, lists t
 **With Warnings:**
 ```bash
 snag --close-tab --open-browser                   # ⚠️ Warning: ignored (no content fetching)
-snag --force-headless https://example.com --close-tab  # ⚠️ Warning: headless closes anyway
+snag --force-headless https://example.com --close-tab  # ⚠️ Warning: --close-tab is ignored in headless mode (tabs close automatically)
 ```
 
 **Special Cases:**
