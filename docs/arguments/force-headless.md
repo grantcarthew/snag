@@ -57,7 +57,7 @@
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--force-headless` + `--close-tab` | **Warning** | `"Warning: --close-tab has no effect in headless mode (tabs close automatically)"` |
+| `--force-headless` + `--close-tab` | **Warning** | `"Warning: --close-tab is ignored in headless mode (tabs close automatically)"` |
 | `--force-headless` + `--port` | Works normally | Launch headless on specified port |
 | `--force-headless` + `--output` / `--output-dir` | Works normally | Output control unaffected by browser mode |
 | `--force-headless` + `--format` (any) | Works normally | Format conversion unaffected by browser mode |
@@ -130,6 +130,6 @@ snag --force-headless --force-headless https://example.com
 - Tab operation conflicts: `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"`
 
 **Warning Messages:**
-- With `--close-tab`: `"Warning: --close-tab has no effect in headless mode (tabs close automatically)"`
+- With `--close-tab`: `"Warning: --close-tab is ignored in headless mode (tabs close automatically)"`
 
 ---

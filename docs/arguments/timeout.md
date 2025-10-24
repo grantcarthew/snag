@@ -25,7 +25,8 @@
 #### Behavior
 
 **Scope:**
-- Timeout applies **only to page navigation** (not to format conversion, PDF/PNG generation, or selector waiting)
+- Timeout applies to **page navigation** and **`--wait-for` selector waiting**
+- Does not apply to format conversion or PDF/PNG generation
 - Default timeout: 30 seconds (if flag not specified)
 
 **Basic Usage:**
@@ -34,7 +35,7 @@ snag https://example.com --timeout 60
 ```
 - Sets 60-second timeout for initial page navigation
 - If page doesn't load within 60s → Error: `"Page load timeout"`
-- Does not affect `--wait-for` selector timeout
+- Also applies to `--wait-for` selector waiting (if used)
 - Does not affect format conversion time
 
 **Multiple URLs:**
@@ -65,8 +66,8 @@ snag --url-file urls.txt --timeout 60
 | `--timeout` + `--all-tabs` | Works with warning | Timeout applies to `--wait-for` if present, otherwise no effect |
 
 **Warning messages:**
-- `--tab` (no --wait-for): `"Warning: --timeout has no effect without --wait-for when using --tab"`
-- `--all-tabs` (no --wait-for): `"Warning: --timeout has no effect without --wait-for when using --all-tabs"`
+- `--tab` (no --wait-for): `"Warning: --timeout is ignored without --wait-for when using --tab"`
+- `--all-tabs` (no --wait-for): `"Warning: --timeout is ignored without --wait-for when using --all-tabs"`
 
 **Special Operation Modes:**
 
@@ -79,7 +80,7 @@ snag --url-file urls.txt --timeout 60
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--timeout` + `--wait-for` | Works normally | Timeout for navigation only, `--wait-for` has separate logic |
+| `--timeout` + `--wait-for` | Works normally | Timeout applies to both navigation and selector wait |
 
 **Output Control:**
 
@@ -144,8 +145,8 @@ snag --list-tabs --timeout 30                       # --timeout ignored, lists t
 
 **With Warnings:**
 ```bash
-snag --tab 1 --timeout 30                           # ⚠️  Warning: no effect without --wait-for
-snag --all-tabs --timeout 30                        # ⚠️  Warning: no effect without --wait-for
+snag --tab 1 --timeout 30                           # ⚠️  Warning: --timeout is ignored without --wait-for when using --tab
+snag --all-tabs --timeout 30                        # ⚠️  Warning: --timeout is ignored without --wait-for when using --all-tabs
 snag --tab 1 --timeout 30 --wait-for ".content"     # OK: timeout applies to selector
 ```
 
@@ -170,10 +171,10 @@ snag --open-browser --timeout 30                    # Timeout ignored, browser o
 
 **Scope Clarification:**
 - Navigation timeout: Time for page to load and become ready
+- Selector wait timeout: Time for `--wait-for` selector to appear (uses same timeout value)
 - Does NOT include:
   - Format conversion time (HTML → Markdown, Text)
   - PDF/PNG generation time (handled separately by Chrome)
-  - `--wait-for` selector waiting (separate timeout logic)
   - Network retry delays
   - Browser launch time
 

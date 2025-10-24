@@ -13,11 +13,11 @@
 **Invalid Values:**
 
 **Empty string:**
-- Behavior: **Warning**, use browser default profile
+- Behavior: **Warning + Ignored**, use browser default profile
 - Warning message: "Warning: Empty --user-data-dir provided, using default profile"
 
 **Whitespace-only string:**
-- Behavior: **Warning** after trimming, use browser default profile
+- Behavior: **Warning + Ignored** after trimming, use browser default profile
 - All string arguments trimmed using `strings.TrimSpace()`
 - Same warning as empty string
 
@@ -49,7 +49,7 @@
 - Example: `--user-data-dir ~/browsers/snag` → `/home/user/browsers/snag`
 
 **Multiple `--user-data-dir` flags:**
-- Behavior: **Last flag wins** (no error)
+- Behavior: **Last flag wins** (no error, no warning)
 - Example: `--user-data-dir dir1 --user-data-dir dir2` → Uses `dir2`
 
 **Default value (no flag):**
