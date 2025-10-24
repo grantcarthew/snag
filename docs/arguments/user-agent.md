@@ -2,11 +2,11 @@
 
 **Status:** Complete (2025-10-23)
 
-## Overview
+#### Validation Rules
 
 Set a custom user agent string for browser requests. This flag allows you to customize how the browser identifies itself to web servers, useful for bypassing headless detection or testing different user agent scenarios.
 
-## Invalid Values
+**Invalid Values:**
 
 **Empty string:**
 - Behavior: **Warning + Ignored**
@@ -42,7 +42,9 @@ Set a custom user agent string for browser requests. This flag allows you to cus
 - Rationale: Newlines break HTTP protocol (header injection risk)
 - Better UX than erroring; prevents security issues
 
-## Content Source Interactions
+#### Interaction Matrix
+
+**Content Source Interactions:**
 
 **With URL arguments:**
 
@@ -122,7 +124,7 @@ All logging flags work normally with `--user-agent`:
 | `--user-agent` + `--help` | `--help` overrides everything, exits immediately |
 | `--user-agent` + `--version` | `--version` overrides everything, exits immediately |
 
-## Examples
+#### Examples
 
 **Valid usage:**
 ```bash
@@ -211,7 +213,7 @@ snag --user-agent "MyCompanyBot/1.0 (+https://example.com/bot-info)" https://tar
 snag --user-agent "Googlebot/2.1 (+http://www.google.com/bot.html)" https://my-site.com
 ```
 
-## Implementation Details
+#### Implementation Details
 
 **Processing order:**
 1. Read flag value from CLI framework
@@ -245,7 +247,7 @@ snag --user-agent "Googlebot/2.1 (+http://www.google.com/bot.html)" https://my-s
 - No arbitrary restrictions on content (user responsibility)
 - Warnings for ignored flags prevent user confusion
 
-## Implementation Notes
+#### Implementation Notes
 
 **TODO items related to this flag:**
 - [ ] Add `strings.TrimSpace()` for all string arguments (see PROJECT.md TODO)

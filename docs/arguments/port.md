@@ -2,7 +2,9 @@
 
 **Status:** Complete (2025-10-23)
 
-#### Invalid Values
+#### Validation Rules
+
+**Invalid Values:**
 
 **Valid port range:**
 - Ports 1024-65535 allowed (non-privileged ports only)
