@@ -522,12 +522,6 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 		return ErrOutputFlagConflict
 	}
 
-	if c.Bool("close-tab") {
-		logger.Error("Cannot use --close-tab with multiple URLs")
-		logger.Info("--close-tab is only supported for single URL fetching")
-		return ErrCloseTabMultipleURLs
-	}
-
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
@@ -650,8 +644,8 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 			continue
 		}
 
-		// Close page in headless mode
-		if bm.launchedHeadless {
+		// Close page in headless mode or if --close-tab is set
+		if bm.launchedHeadless || c.Bool("close-tab") {
 			bm.ClosePage(page)
 		}
 

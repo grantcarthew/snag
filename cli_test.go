@@ -1696,16 +1696,17 @@ func TestCLI_MultipleURLs_WithOutput(t *testing.T) {
 	_ = stdout
 }
 
-// TestCLI_MultipleURLs_WithCloseTab tests error when using --close-tab with multiple URLs
+// TestCLI_MultipleURLs_WithCloseTab tests --close-tab works with multiple URLs
 func TestCLI_MultipleURLs_WithCloseTab(t *testing.T) {
-	stdout, stderr, err := runSnag("--force-headless", "--close-tab", "https://example.com", "https://go.dev")
+	tmpDir := t.TempDir()
+	stdout, stderr, err := runSnag("--force-headless", "--close-tab", "-d", tmpDir, "https://example.com", "https://go.dev")
 
-	// Should fail with conflict error
-	assertError(t, err)
-	assertExitCode(t, err, 1)
+	// Should succeed - --close-tab is now supported with multiple URLs
+	assertNoError(t, err)
 
 	output := stdout + stderr
-	assertContains(t, output, "Cannot use --close-tab with multiple URLs")
+	assertContains(t, output, "Processing 2 URLs")
+	assertContains(t, output, "Batch complete")
 
 	_ = stdout
 }
@@ -1738,16 +1739,21 @@ func TestCLI_MultipleURLs_WithAllTabs(t *testing.T) {
 	_ = stdout
 }
 
-// TestCLI_MultipleURLs_WithListTabs tests error when using --list-tabs with URL arguments
+// TestCLI_MultipleURLs_WithListTabs tests --list-tabs overrides URL arguments
 func TestCLI_MultipleURLs_WithListTabs(t *testing.T) {
 	stdout, stderr, err := runSnag("--list-tabs", "https://example.com")
 
-	// Should fail with conflict error
-	assertError(t, err)
-	assertExitCode(t, err, 1)
-
+	// Should succeed - --list-tabs overrides URL arguments, but may fail if no browser running
+	// Either succeeds with tab list, or fails with "no browser instance running"
 	output := stdout + stderr
-	assertContains(t, output, "Cannot use --list-tabs with URL arguments")
+
+	// Accept either outcome since test environment may not have browser running
+	if err != nil {
+		assertContains(t, output, "no browser instance running")
+	} else {
+		// If browser is running, should list tabs (URL is ignored)
+		assertContains(t, output, "Available tabs")
+	}
 
 	_ = stdout
 }

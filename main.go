@@ -220,12 +220,10 @@ func run(c *cli.Context) error {
 	}
 
 	// Handle --list-tabs flag (list tabs and exit)
+	// Note: --list-tabs overrides URL arguments if both are present (URLs are ignored)
 	if c.Bool("list-tabs") {
-		// Check for conflicting URL arguments
 		if len(urls) > 0 {
-			logger.Error("Cannot use --list-tabs with URL arguments")
-			logger.Info("Use --list-tabs alone to list existing tabs")
-			return fmt.Errorf("conflicting flags: --list-tabs and URL arguments")
+			logger.Verbose("--list-tabs overrides URL arguments (URLs will be ignored)")
 		}
 		return handleListTabs(c)
 	}

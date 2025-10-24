@@ -48,7 +48,4 @@ var (
 
 	// ErrOutputFlagConflict indicates --output cannot be used with multiple URLs
 	ErrOutputFlagConflict = errors.New("--output cannot be used with multiple URLs, use --output-dir instead")
-
-	// ErrCloseTabMultipleURLs indicates --close-tab is not supported with multiple URLs
-	ErrCloseTabMultipleURLs = errors.New("--close-tab not supported with multiple URLs")
 )
