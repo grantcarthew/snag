@@ -1,0 +1,118 @@
+# PROJECT: Argument Documentation Review and Implementation
+
+## Overview
+
+Comprehensive review and implementation of all CLI arguments documented in `docs/arguments/`. This project ensures that every argument is fully implemented, validated, and matches its documentation.
+
+## Objectives
+
+1. Review each argument documentation file in `docs/arguments/`
+2. Verify implementation status against source code
+3. Identify gaps between documentation and implementation
+4. Implement missing or partial functionality
+5. Ensure consistency across all arguments
+
+## Review Process
+
+For each argument documentation file:
+
+1. **Read Documentation**: Review the argument's documented behavior, flags, validation, and examples
+2. **Analyze Source Code**: Examine relevant source files (main.go, browser.go, fetch.go, validate.go, etc.)
+3. **Determine Status**:
+   - ✅ Fully Implemented: Documentation matches implementation completely
+   - ⚠️ Partially Implemented: Core functionality exists but missing features or validation
+   - ❌ Not Implemented: Argument not implemented or significantly incomplete
+4. **Implement/Fix**: Add missing functionality, validation, or corrections
+5. **Verify**: Test the implementation matches documentation
+6. **Mark Complete**: Check off task when fully implemented and verified
+
+## Tasks
+
+### Core Arguments
+
+- [ ] **url.md** - Primary URL argument(s) for fetching content
+- [ ] **url-file.md** - Batch URL processing from file input
+- [ ] **format.md** - Output format selection (markdown/html/text/pdf/png)
+- [ ] **output.md** - Output file specification (-o flag)
+- [ ] **output-dir.md** - Output directory for batch operations (-d flag)
+
+### Tab Management Arguments
+
+- [ ] **tab.md** - Tab selection by index or pattern (-t flag)
+- [ ] **list-tabs.md** - List all available browser tabs (-l flag)
+- [ ] **all-tabs.md** - Fetch content from all open tabs
+- [ ] **close-tab.md** - Close tab after fetching (headless default)
+
+### Browser Control Arguments
+
+- [ ] **open-browser.md** - Open persistent browser mode
+- [ ] **force-headless.md** - Force headless mode even with existing browser
+- [ ] **port.md** - Remote debugging port specification
+- [ ] **user-data-dir.md** - Custom Chrome user data directory
+- [ ] **user-agent.md** - Custom user agent string
+- [ ] **wait-for.md** - Wait for CSS selector before fetching
+
+### Logging and Output Arguments
+
+- [ ] **quiet.md** - Suppress all non-essential output (-q flag)
+- [ ] **verbose.md** - Enable verbose logging (-v flag)
+- [ ] **debug.md** - Enable debug-level logging (--debug flag)
+
+### Utility Arguments
+
+- [ ] **help.md** - Help text and usage information (-h, --help)
+- [ ] **version.md** - Version information (--version)
+- [ ] **timeout.md** - Page load timeout configuration
+
+### Meta Documentation
+
+- [ ] **README.md** - Argument documentation overview and index
+- [ ] **validation.md** - Argument validation rules and compatibility matrix
+
+## Implementation Checklist
+
+For each argument, verify:
+
+- [ ] CLI flag(s) defined in main.go
+- [ ] Flag aliases (short form) if applicable
+- [ ] Default values match documentation
+- [ ] Validation logic implemented (validate.go or inline)
+- [ ] Error messages are clear and actionable
+- [ ] Functionality implemented in appropriate module
+- [ ] Edge cases handled
+- [ ] Help text matches documentation
+- [ ] Examples in documentation are tested and working
+
+## Success Criteria
+
+- All 22 argument documentation files reviewed
+- All arguments marked as "Fully Implemented" (✅)
+- All documented features working as specified
+- All validation rules enforced
+- No contradictions between documentation and code
+- All examples in documentation verified working
+
+## Notes
+
+- Refer to AGENTS.md for code style guidelines
+- Follow conventional commit format for changes
+- Update documentation if implementation differs from spec
+- Run `go test -v` after each implementation
+- Test with real browser instances for tab-related arguments
+
+## Related Documentation
+
+- `docs/arguments/README.md` - Argument documentation index
+- `docs/arguments/validation.md` - Compatibility matrix
+- `docs/design-record.md` - Design decisions and rationale
+- `AGENTS.md` - Development guidelines and conventions
+
+## Status
+
+- **Started**: 2025-10-24
+- **Completed**: _In Progress_
+- **Total Arguments**: 22
+- **Reviewed**: 0
+- **Fully Implemented**: 0
+- **Partially Implemented**: 0
+- **Not Implemented**: 0
