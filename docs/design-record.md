@@ -36,48 +36,36 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 **26 major design decisions documented below:**
 
-### Phase 1 (MVP) Decisions
-
-| #   | Decision            | Choice                                                      |
-| --- | ------------------- | ----------------------------------------------------------- |
-| 1   | CLI Arguments       | 16 arguments, standard ordering: `snag [options] <url>`     |
-| 2   | Output Formats      | Markdown (default), HTML                                    |
-| 3   | Argument Parsing    | Options before URL (simplicity over flexibility)            |
-| 4   | Platform Support    | macOS (arm64/amd64), Linux (amd64/arm64) - Windows deferred |
-| 5   | Config File         | No config file support (permanent choice)                   |
-| 6   | HTML→Markdown       | `html-to-markdown/v2` (embedded library)                    |
-| 7   | License Attribution | `LICENSES/` directory                                       |
-| 8   | CLI Framework       | `urfave/cli/v2`                                             |
-| 9   | CDP Library         | `rod`                                                       |
-| 10  | Browser Discovery   | rod's `launcher.LookPath()` (Chromium-based only)           |
-| 11  | Logging Strategy    | Custom logger (4 levels, colors, emojis)                    |
-| 12  | Error Handling      | Exit 0/1, sentinel errors, clear messages                   |
-| 13  | Project Structure   | Flat structure at root                                      |
-| 14  | Testing Strategy    | Integration tests with real browser                         |
-
-### Phase 2 (Tab Management) Decisions
-
-| #   | Decision           | Choice                                                        |
-| --- | ------------------ | ------------------------------------------------------------- |
-| 15  | Flag Assignment    | `-t` moved from `--timeout` to `--tab` (more frequently used) |
-| 16  | Tab Indexing       | 1-based indexing (first tab is [1], not [0])                  |
-| 17  | Pattern Matching   | Progressive fallthrough (exact → contains → regex)            |
-| 18  | Case Sensitivity   | Case-insensitive matching for all modes                       |
-| 19  | Regex Support      | Full regex patterns (not just wildcards)                      |
-| 20  | Pattern Simplicity | No regex detection needed (try all methods in order)          |
-| 21  | Multiple Matches   | First match wins (predictable, simple)                        |
-| 22  | Performance        | Single-pass page.Info() caching (3x improvement)              |
-
-### Phase 3 (Format Refactoring) Decisions
-
 | #   | Decision                  | Choice                                                          |
 | --- | ------------------------- | --------------------------------------------------------------- |
+| 1   | CLI Arguments             | 21 arguments, standard ordering: `snag [options] <url>`         |
+| 2   | Output Formats            | Five formats: md, html, text, pdf, png                          |
+| 3   | Argument Parsing          | Options before URL (simplicity over flexibility)                |
+| 4   | Platform Support          | macOS (arm64/amd64), Linux (amd64/arm64) - Windows deferred     |
+| 5   | Config File               | No config file support (permanent choice)                       |
+| 6   | HTML→Markdown             | `html-to-markdown/v2` (embedded library)                        |
+| 7   | License Attribution       | `LICENSES/` directory                                           |
+| 8   | CLI Framework             | `urfave/cli/v2`                                                 |
+| 9   | CDP Library               | `rod`                                                           |
+| 10  | Browser Discovery         | rod's `launcher.LookPath()` (Chromium-based only)               |
+| 11  | Logging Strategy          | Custom logger (4 levels, colors, emojis)                        |
+| 12  | Error Handling            | Exit 0/1, sentinel errors, clear messages                       |
+| 13  | Project Structure         | Flat structure at root                                          |
+| 14  | Testing Strategy          | Integration tests with real browser                             |
+| 15  | Flag Assignment           | `-t` moved from `--timeout` to `--tab` (more frequently used)   |
+| 16  | Tab Indexing              | 1-based indexing (first tab is [1], not [0])                    |
+| 17  | Pattern Matching          | Progressive fallthrough (exact → contains → regex)              |
+| 18  | Case Sensitivity          | Case-insensitive matching for all modes                         |
+| 19  | Regex Support             | Full regex patterns (not just wildcards)                        |
+| 20  | Pattern Simplicity        | No regex detection needed (try all methods in order)            |
+| 21  | Multiple Matches          | First match wins (predictable, simple)                          |
+| 22  | Performance               | Single-pass page.Info() caching (3x improvement)                |
 | 23  | Format Name Normalization | `md` (not "markdown") for consistency with file extensions      |
 | 24  | Format Alias Support      | Case-insensitive formats with aliases (markdown→md, txt→text)   |
 | 25  | Screenshot → PNG Format   | Remove `--screenshot` flag, use `--format png` (consistency)    |
 | 26  | Binary Format Safety      | Auto-generate filenames for PDF/PNG (prevent stdout corruption) |
 
-See detailed rationale in [Design Decisions Made](#design-decisions-made) section below.
+See detailed rationale in design decisions section below.
 
 ## Detailed Argument Specifications
 
@@ -154,9 +142,7 @@ Alternative considered:
 
 ## Feature Set
 
-### Phase 1: Core (MVP)
-
-**Required:**
+### Core Features
 
 - Fetch URL and return content
 - Smart Chrome session detection
@@ -165,7 +151,7 @@ Alternative considered:
 - HTML to Markdown conversion
 - Output to stdout or file
 
-**CLI Arguments (MVP - v1.0.0):**
+**CLI Arguments:**
 
 Standard flag ordering - options before URL:
 
@@ -192,7 +178,7 @@ snag [options] <url>
 **Page Loading:**
 
 ```
-  -t, --timeout <seconds>    Page load timeout in seconds (default: 30)
+  --timeout <seconds>        Page load timeout in seconds (default: 30)
   -w, --wait-for <selector>  Wait for CSS selector before extracting content
 ```
 
@@ -201,14 +187,24 @@ snag [options] <url>
 ```
   -p, --port <port>          Chrome remote debugging port (default: 9222)
   -c, --close-tab            Close the browser tab after fetching content
-  -fh, --force-headless      Force headless mode even if Chrome is running
-  -ob, --open-browser        Open Chrome browser in visible state (no URL required)
+  --force-headless           Force headless mode even if Chrome is running
+  -b, --open-browser         Open Chrome browser in visible state (no URL required)
+  -l, --list-tabs            List all open tabs in browser
+  -t, --tab <pattern>        Fetch content from existing tab (index or pattern)
+  -a, --all-tabs             Process all open tabs
+  --user-data-dir <dir>      Custom browser profile directory
+```
+
+**URL Input:**
+
+```
+  --url-file <file>          Read URLs from file (one per line)
 ```
 
 **Logging/Debugging:**
 
 ```
-  -v, --verbose              Enable verbose logging output
+  --verbose                  Enable verbose logging output
   -q, --quiet                Suppress all output except errors and content
   --debug                    Enable debug output
 ```
@@ -219,13 +215,7 @@ snag [options] <url>
   --user-agent <string>      Custom user agent string (bypass headless detection)
 ```
 
-**Total MVP Arguments:** 16
-
-### Phase 2: Tab Management (Implemented - v0.1.0)
-
-**Status**: Implementation Complete (2025-10-21)
-
-**Features:**
+### Tab Management Features
 
 ```bash
 snag --list-tabs                    # List all open tabs (1-based indexing)
@@ -309,11 +299,7 @@ snag -t "github"                         # Contains "github"
 - **First match wins**: Simple, predictable, documented behavior
 - **Performance optimization**: Caching eliminates redundant network calls (3x improvement)
 
-### Phase 3: Additional Output Formats (Implemented - v0.0.4)
-
-**Status**: Implementation Complete (2025-10-22)
-
-**Implemented Features:**
+### Additional Output Formats
 
 ```bash
 snag --format text <url>              # Plain text extraction (strips all HTML)
@@ -321,7 +307,7 @@ snag --format pdf <url>               # PDF export using Chrome rendering
 snag --format png <url>               # PNG screenshot capture (full page)
 ```
 
-**Implementation Notes:**
+**Format Features:**
 
 - Text format uses plain text extraction (no HTML/Markdown)
 - PDF format uses Chrome's native PDF rendering API
@@ -331,9 +317,14 @@ snag --format png <url>               # PNG screenshot capture (full page)
 - Alias support: `markdown` → `md`, `txt` → `text` (backward compatibility)
 - Case-insensitive format input
 
-See [Phase 3 Implementation Notes](#phase-3-format-refactoring---implemented) for details.
+### Future Features Under Consideration
 
-### Phase 4+: Future Features Under Consideration
+**Tab Enhancements:**
+
+```
+  --tab-all <pattern>        Fetch from all matching tabs (batch processing)
+  --list-tabs --format json  JSON output for scripting
+```
 
 **JavaScript Control:**
 
@@ -367,8 +358,6 @@ See [Phase 3 Implementation Notes](#phase-3-format-refactoring---implemented) fo
 
 **Other Considerations:**
 
-- `--user-data-dir <path>`: Use specific Chrome profile
-- Batch processing from file list
 - JSON structured output mode
 
 ## Architecture
@@ -546,16 +535,14 @@ $ snag https://example.com
 # Leaves tab open
 ```
 
-## Migration from Current Implementation
-
-**Design Philosophy:**
+## Design Philosophy
 
 - Single-purpose tool: fetch web page content via browser engine
 - Smart session management: connect to existing Chrome or launch new instance
 - Format flexibility: Markdown (default) or raw HTML output
 - Unix philosophy: do one thing well, output to stdout for piping
 
-**Implementation Benefits:**
+**Technical Benefits:**
 
 - No runtime dependencies (single static binary)
 - Small binary size (~5MB)
@@ -576,8 +563,7 @@ $ snag https://example.com
 
 ### 2. Output Formats
 
-- **Decision**: MVP supports `md` (default) and `html` formats
-- **Phase 3 Addition**: `text`, `pdf`, and `png` formats added
+- **Decision**: Support five output formats: `md`, `html`, `text`, `pdf`, and `png`
 - **Rationale**:
   - Started with essential text formats (Markdown, HTML)
   - Added `text` for plain text extraction (no HTML/Markdown)
@@ -599,13 +585,13 @@ $ snag https://example.com
 
 ### 4. Platform Support
 
-- **Decision**: MVP targets macOS and Linux only; Windows is future consideration
-- **MVP Platforms**:
+- **Decision**: Target macOS and Linux; Windows is future consideration
+- **Supported Platforms**:
   - darwin/arm64 (macOS Apple Silicon)
   - darwin/amd64 (macOS Intel)
   - linux/amd64 (Linux 64-bit)
   - linux/arm64 (Linux ARM - Raspberry Pi, servers)
-- **Post-MVP**: Windows support (requires Windows-specific path handling)
+- **Future**: Windows support (requires Windows-specific path handling)
 - **Rationale**:
   - Primary development/use on macOS and Linux
   - Windows adds complexity (path conventions, file handling)
@@ -646,7 +632,7 @@ $ snag https://example.com
   - Include each dependency's license as separate file (e.g., `LICENSES/html-to-markdown.txt`)
   - Visible in GitHub, included in source releases
   - Complies with MIT license requirements (attribution for html-to-markdown)
-- **Post-MVP**: Consider `snag --licenses` command to print embedded licenses
+- **Future Consideration**: `snag --licenses` command to print embedded licenses
 - **Automation**: Use `go-licenses` tool during build/release process
 
 ### 8. CLI Framework Choice
@@ -657,7 +643,7 @@ $ snag https://example.com
   - Smaller binary size compared to Cobra (important for single-binary tool)
   - Simpler, less boilerplate code
   - Better dynamic bash autocompletion (can autocomplete argument values)
-  - Still supports subcommands for Phase 2 (--list-tabs, --tab)
+  - Supports subcommands (e.g., --list-tabs, --tab)
   - Declarative, clean API
   - Widely used (23.6k GitHub stars), well-maintained
   - Less globals-heavy than Cobra's architectural pattern
@@ -740,7 +726,7 @@ $ snag https://example.com
   - **stdout**: Content only (HTML/Markdown) - enables piping
   - **stderr**: All logs, warnings, errors, progress indicators
 - **Log Levels**:
-  - **Quiet** (`--quiet`): Only fatal errors to stderr
+  - **Quiet** (`--quiet`): Only errors to stderr (all error types, no warnings)
   - **Normal** (default): Key operations with emoji indicators
   - **Verbose** (`--verbose`): Detailed operation logs
   - **Debug** (`--debug`): Everything + CDP messages, timing info
@@ -774,7 +760,7 @@ $ snag https://example.com
   ✓ Success
 
   Quiet mode:
-  (no output unless fatal error)
+  (no output unless error occurs)
   ```
 
 - **No Timestamps**: CLI tools are short-lived, timestamps add noise
@@ -893,13 +879,13 @@ $ snag https://example.com
 - **Why Flat Structure**:
   - Simple and easy to navigate
   - Perfect for focused single-binary CLI
-  - No over-engineering for MVP (<2000 lines expected)
+  - No over-engineering for small codebase
   - Simpler Homebrew formula (`go build` vs `go build ./cmd/snag`)
   - Easy to refactor to `internal/` packages later if needed
   - Matches Go philosophy: "start simple, refactor as needed"
 - **When to Refactor to internal/**:
   - Code grows beyond ~2000 lines
-  - Phase 2/3 adds significant complexity
+  - Features add significant complexity
   - Multiple contributors need clear boundaries
   - Want to prevent external imports
 - **No pkg/ Directory**: Not building a reusable library
@@ -960,7 +946,7 @@ $ snag https://example.com
   - Simple test setup (no complex mocking)
   - Validates end-to-end flow
 
-### 15. Flag Assignment (Phase 2)
+### 15. Flag Assignment
 
 - **Decision**: Move `-t` alias from `--timeout` to `--tab`
 - **Rationale**:
@@ -971,7 +957,7 @@ $ snag https://example.com
 - **Breaking Change**: Yes (users using `-t` for timeout will need to use `--timeout`)
 - **Migration**: Document in release notes, minimal impact expected
 
-### 16. Tab Indexing (Phase 2)
+### 16. Tab Indexing
 
 - **Decision**: Use 1-based indexing (first tab is [1], not [0])
 - **Rationale**:
@@ -983,7 +969,7 @@ $ snag https://example.com
 - **Implementation**: Convert user input (1-based) to array index (0-based) internally
 - **Output**: Display tabs as [1], [2], [3], etc.
 
-### 17. Pattern Matching (Phase 2)
+### 17. Pattern Matching
 
 - **Decision**: Progressive fallthrough matching with 4 stages
 - **Matching Process**:
@@ -1004,7 +990,7 @@ $ snag https://example.com
 - **First match wins**: If multiple tabs match, return first one (predictable, simple)
 - **Implementation**: browser.go:473-544 (GetTabByPattern function)
 
-### 18. Case Sensitivity (Phase 2)
+### 18. Case Sensitivity
 
 - **Decision**: All pattern matching is case-insensitive
 - **Implementation**:
@@ -1017,7 +1003,7 @@ $ snag https://example.com
   - Matches user expectations (most search is case-insensitive)
   - No performance penalty (minimal overhead)
 
-### 19. Regex Support (Phase 2)
+### 19. Regex Support
 
 - **Decision**: Support full regex patterns (not just wildcards)
 - **Rationale**:
@@ -1029,7 +1015,7 @@ $ snag https://example.com
 - **Alternative Considered**: Wildcard-only (`*`) - rejected as same implementation cost
 - **User Support**: Provide clear examples and error messages for invalid regex
 
-### 20. Pattern Simplicity (Phase 2)
+### 20. Pattern Simplicity
 
 - **Decision**: No regex character detection - simply try all matching methods in order
 - **Rationale**:
@@ -1042,7 +1028,7 @@ $ snag https://example.com
 - **Alternative Rejected**: Detecting regex chars first, then routing to specific matcher
 - **Implementation**: No `hasRegexChars()` function needed
 
-### 21. Multiple Matches (Phase 2)
+### 21. Multiple Matches
 
 - **Decision**: First match wins when multiple tabs match pattern
 - **Rationale**:
@@ -1053,7 +1039,7 @@ $ snag https://example.com
 - **Documentation**: Clearly document that first match is returned
 - **Verbose Mode**: Show which tab matched and why
 
-### 22. Performance Optimization (Phase 2)
+### 22. Performance Optimization
 
 - **Decision**: Single-pass page.Info() caching in GetTabByPattern()
 - **Problem Identified**: Multiple `page.Info()` calls repeated for same pages (network round-trips)
@@ -1075,7 +1061,7 @@ $ snag https://example.com
 
 **See Also**: For complete tab selection specification and examples, see [arguments/tab.md](arguments/tab.md) and [arguments/list-tabs.md](arguments/list-tabs.md)
 
-### 23. Format Name Normalization (Phase 3)
+### 23. Format Name Normalization
 
 - **Decision**: Change `FormatMarkdown` from "markdown" to "md"
 - **Rationale**:
@@ -1092,7 +1078,7 @@ $ snag https://example.com
   - Updated tests to use canonical "md" name
 - **Impact**: More consistent, predictable CLI interface
 
-### 24. Format Alias Support (Phase 3)
+### 24. Format Alias Support
 
 - **Decision**: Support case-insensitive format input with backward-compatible aliases
 - **Aliases Supported**:
@@ -1114,7 +1100,7 @@ $ snag https://example.com
   - **Future-proof**: Easy to add more aliases if needed
 - **Code Location**: validate.go:124-141 (normalizeFormat function)
 
-### 25. Screenshot → PNG Format Refactor (Phase 3)
+### 25. Screenshot → PNG Format Refactor
 
 - **Decision**: Remove `--screenshot` flag, make PNG a regular format via `--format png`
 - **Before**:
@@ -1150,7 +1136,7 @@ $ snag https://example.com
   - More maintainable codebase
   - Consistent user experience
 
-### 26. Binary Format Safety (Phase 3)
+### 26. Binary Format Safety
 
 - **Decision**: Auto-generate filenames for binary formats (PDF, PNG) when no output file specified
 - **Behavior**:
@@ -1175,177 +1161,6 @@ $ snag https://example.com
 - **Code Location**: handlers.go:116-133, 439-450
 
 **See Also**: For complete format specification, validation rules, and interaction matrix, see [arguments/format.md](arguments/format.md)
-
-## Implementation Notes
-
-### Phase 1 (MVP) - Implemented
-
-The Phase 1 design was successfully implemented with all 14 design decisions realized in the initial release.
-
-**Key Implementation Outcomes:**
-
-- Flat project structure (main.go, browser.go, fetch.go, convert.go, logger.go, errors.go, validate.go)
-- Custom logger with 4 levels and color/emoji support
-- Integration tests with real Chrome/Chromium browser
-- Multi-platform builds: darwin/arm64, darwin/amd64, linux/amd64, linux/arm64
-- Single binary distribution (~5MB)
-
-### Phase 2 (Tab Management) - Implemented
-
-Phase 2 implementation complete (2025-10-21) with 8 additional design decisions (15-22).
-
-**Implementation Status**: Complete (documentation phase remaining)
-
-**Key Implementation Outcomes:**
-
-- **Two new flags**: `--list-tabs` (alias `-l`) and `--tab` (alias `-t`)
-- **Flag reassignment**: `-t` moved from `--timeout` to `--tab` (breaking change)
-- **1-based tab indexing** for user-facing operations
-- **Progressive fallthrough pattern matching**: exact → contains → regex (order changed during implementation)
-- **Full regex support** with case-insensitive matching
-- **Pattern simplicity**: No regex detection needed, try all methods in order
-- **Performance optimization**: Single-pass page.Info() caching (3x improvement)
-- **New functions**: `ListTabs()`, `GetTabByIndex()`, `GetTabByPattern()`
-- **New struct**: `TabInfo` (index, URL, title, ID)
-- **New error sentinels**: `ErrTabIndexInvalid`, `ErrTabURLConflict`, `ErrNoTabMatch`
-
-**Critical Bug Fixed During Implementation:**
-
-- **Remote debugging port configuration** (browser.go:259-260)
-- **Problem**: Rod launcher wouldn't set `--remote-debugging-port` when using default port 9222, causing random port selection
-- **Impact**: Browsers launched in visible mode couldn't be reached by `--list-tabs`
-- **Fix**: Always explicitly set remote-debugging-port flag regardless of value
-- **Lesson**: Never rely on framework defaults for critical connection parameters
-
-**Design Changes During Implementation:**
-
-1. **Pattern matching order**: Changed from regex → exact → contains to exact → contains → regex
-
-   - Reason: Most common cases hit first for better performance
-   - Suggestion from user led to simpler, more intuitive behavior
-
-2. **Regex detection removed**: Originally planned `hasRegexChars()` detection function
-
-   - Reason: Unnecessary complexity, simpler to try all methods in order
-   - Cleaner code, more predictable behavior
-
-3. **Performance optimization added**: Single-pass page.Info() caching
-   - Reason: Identified during code review, 3x performance improvement
-   - Minimal code complexity for significant benefit
-
-**Test Coverage:**
-
-- 13 tab-related integration tests (all passing)
-- Full test suite: 163.7s runtime (all tests green)
-- Tests cover: listing tabs, index selection, pattern matching (exact/contains/regex), error cases
-- Minor test isolation issues noted (not functional bugs)
-
-**Documentation:**
-
-- ✅ AGENTS.md updated with comprehensive Phase 2 examples
-- ✅ README.md updated with tab management documentation (public-ready)
-- ✅ PROJECT.md updated with session summaries and progress tracking
-- ✅ docs/design-record.md (this document) updated with Phase 2 decisions
-
-**Implementation Details**: See PROJECT.md for detailed session summaries and implementation notes
-
-### Phase 3 (Format Refactoring) - Implemented
-
-Phase 3 implementation complete (2025-10-22) with 4 design decisions (23-26).
-
-**Implementation Status**: Code complete, tests and documentation in progress
-
-**Key Implementation Outcomes:**
-
-- **Format name normalization**: `markdown` → `md` for consistency
-- **Format alias support**: Case-insensitive input with backward-compatible aliases
-  - `normalizeFormat()` function handles lowercase conversion and alias mapping
-  - Aliases: `"markdown"` → `"md"`, `"txt"` → `"text"`
-  - Called in 3 locations: main.go, handleAllTabs, handleTabFetch
-- **Screenshot → PNG refactor**: Removed `--screenshot` flag entirely
-  - PNG is now a regular format via `--format png`
-  - Removed `Screenshot bool` from Config struct
-  - Removed `screenshot` parameter from `processPageContent()` and `generateOutputFilename()`
-  - Updated all 7 call sites in handlers.go
-  - 19 lines eliminated through refactoring
-- **Binary format safety**: Auto-generate filenames for PDF/PNG
-  - Prevents terminal corruption from binary output to stdout
-  - Auto-generates timestamp-based filenames in current directory
-  - Users can still override with `-o` or `-d` flags
-
-**Files Modified:**
-
-- `main.go`: Updated format constants, removed `--screenshot` flag, added `normalizeFormat()` call
-- `validate.go`: Added `normalizeFormat()` function, updated `validateFormat()` for PNG
-- `handlers.go`: Removed `Screenshot` from Config, updated 2 helper functions + 7 call sites
-- `formats.go`: Updated to use `FormatPNG` constant, updated comments
-- `output.go`: Updated to use `FormatPNG` constant
-- CLI description: Updated to mention all 5 formats
-
-**Breaking Changes (Pre-v1.0):**
-
-1. ❌ `snag --screenshot <url>` → ✅ `snag --format png <url>`
-2. ❌ `snag --format markdown <url>` → ✅ `snag --format md <url>` (but alias still works)
-
-**Backward Compatibility:**
-
-- ✅ `--format markdown` still works (via alias)
-- ✅ `--format MARKDOWN` works (case-insensitive)
-- ✅ `--format txt` works (alias for text)
-
-**Code Quality Improvements:**
-
-- Eliminated parameter interdependency code smell (screenshot + format)
-- Consistent treatment of all formats (no special cases)
-- Cleaner function signatures (fewer parameters)
-- More maintainable codebase (single source of truth)
-
-**Testing Status:**
-
-- Build: ✅ Successful
-- Unit tests: ⏳ Need updates for new format names
-- Integration tests: ⏳ Need updates for `--format png` (was `--screenshot`)
-- Format validation tests: ⏳ Need fixes (pdf/text now valid, markdown→md)
-
-**Documentation Status:**
-
-- ✅ CLI help text updated (--format description)
-- ✅ CLI description updated (mentions all formats)
-- ✅ docs/design-record.md (this document) updated
-- ⏳ README.md - needs update for format changes
-- ⏳ AGENTS.md - needs update for format changes
-
-**Next Steps:**
-
-1. Update test files to use canonical format names (`md` not `markdown`)
-2. Fix format validation tests (update valid/invalid format lists)
-3. Update all `--screenshot` references to `--format png` in tests
-4. Run full test suite
-5. Update README.md and AGENTS.md documentation
-6. Manual testing with all formats
-7. Git commit with comprehensive message
-
-**Implementation Details**: See PROJECT.md for step-by-step refactoring process
-
-### Future Enhancements Under Consideration
-
-**Phase 2.5+ (Tab Enhancements):**
-
-- `--tab-all <pattern>` - Fetch from all matching tabs (batch processing)
-- `--list-tabs --format json` - JSON output for scripting
-- Tab filtering and sorting options
-- Close tab after fetching (`--close-tab` with `--tab`)
-
-**Phase 4+ (Advanced Features):**
-
-- JavaScript control (`--no-js`)
-- Cookie management (`--cookies <file>`)
-- Advanced headers (`--header <key:value>`)
-- Redirect control (`--max-redirects <n>`)
-- Proxy support (`--proxy <url>`)
-- Custom Chrome profile (`--user-data-dir <path>`)
-- Batch processing from file list
-- JSON structured output mode
 
 ## References
 
