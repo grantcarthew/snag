@@ -118,7 +118,7 @@ func (pf *PageFetcher) detectAuth() error {
 			logger.Error("Authentication required (HTTP %d)", status)
 			logger.ErrorWithSuggestion(
 				"This page requires authentication",
-				"snag --force-visible "+pf.getURL(),
+				"snag --open-browser "+pf.getURL(),
 			)
 			return ErrAuthRequired
 		}
@@ -145,7 +145,7 @@ func (pf *PageFetcher) detectAuth() error {
 				logger.Warning("This appears to be a login page")
 				logger.ErrorWithSuggestion(
 					"Authentication may be required",
-					"snag --force-visible "+pf.getURL(),
+					"snag --open-browser "+pf.getURL(),
 				)
 				// Don't return error yet - might be a page that just happens to have a login form
 			}
