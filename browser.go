@@ -33,7 +33,6 @@ type BrowserManager struct {
 	launchedHeadless bool // True if we launched the browser in headless mode
 	userAgent        string
 	forceHeadless    bool
-	forceVisible     bool
 	openBrowser      bool
 	browserName      string // Detected browser name (Chrome, Chromium, Edge, Brave, etc.)
 }
@@ -42,7 +41,6 @@ type BrowserManager struct {
 type BrowserOptions struct {
 	Port          int
 	ForceHeadless bool
-	ForceVisible  bool
 	OpenBrowser   bool
 	UserAgent     string
 }
@@ -165,7 +163,6 @@ func NewBrowserManager(opts BrowserOptions) *BrowserManager {
 		port:          opts.Port,
 		userAgent:     opts.UserAgent,
 		forceHeadless: opts.ForceHeadless,
-		forceVisible:  opts.ForceVisible,
 		openBrowser:   opts.OpenBrowser,
 	}
 }
@@ -173,7 +170,7 @@ func NewBrowserManager(opts BrowserOptions) *BrowserManager {
 // Connect attempts to connect to an existing browser or launch a new one
 func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 	// Strategy 1: Try to connect to existing browser instance (unless forced)
-	if !bm.forceHeadless && !bm.forceVisible {
+	if !bm.forceHeadless && !bm.openBrowser {
 		logger.Verbose("Checking for existing browser instance on port %d...", bm.port)
 		if browser, err := bm.connectToExisting(); err == nil {
 			logger.Success("Connected to existing browser instance")
@@ -185,8 +182,8 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 	}
 
 	// Strategy 2: Launch new browser instance
-	// Priority: forceHeadless takes precedence over forceVisible and openBrowser
-	headless := bm.forceHeadless || (!bm.forceVisible && !bm.openBrowser)
+	// Priority: forceHeadless takes precedence over openBrowser
+	headless := bm.forceHeadless || !bm.openBrowser
 
 	if headless {
 		logger.Verbose("Launching browser in headless mode...")
