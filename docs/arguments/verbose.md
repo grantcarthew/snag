@@ -54,6 +54,11 @@ snag https://example.com --verbose
 - Simply controls stderr logging verbosity
 - No conflicts or special behaviors
 
+**Examples with Other Flags:**
+- `--verbose` + `--user-data-dir` - Works normally (verbose logs with custom profile)
+- `--verbose` + `--user-agent` - Works normally (verbose logs with custom UA)
+- `--verbose` + all browser/output/timing flags - Works normally
+
 #### Examples
 
 **Valid:**
