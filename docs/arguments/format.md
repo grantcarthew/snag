@@ -124,6 +124,7 @@ All work normally:
 | `--format` + `--timeout` | Works normally - timeout applies to page load |
 | `--format` + `--wait-for` | Works normally - wait before format conversion |
 | `--format` + `--user-agent` | Works normally - UA set for new pages |
+| `--format` + `--user-data-dir` | Works normally - use custom browser profile |
 | `--format` + `--port` | Works normally - use specified port |
 | `--format` + `--close-tab` | Works normally - close after fetching |
 

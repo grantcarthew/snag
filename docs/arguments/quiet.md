@@ -49,6 +49,11 @@ snag https://example.com --quiet
 - Simply controls stderr logging verbosity
 - No conflicts or special behaviors
 
+**Examples with Other Flags:**
+- `--quiet` + `--user-data-dir` - Works normally (quiet mode with custom profile)
+- `--quiet` + `--user-agent` - Works normally (quiet mode with custom UA)
+- `--quiet` + all browser/output/timing flags - Works normally
+
 #### Examples
 
 **Valid:**

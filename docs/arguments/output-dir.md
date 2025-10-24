@@ -115,6 +115,7 @@ All these flags work normally with `-d`:
 - ✅ `--force-headless` - Force headless browser mode
 - ✅ `--verbose` / `--quiet` / `--debug` - Logging levels
 - ✅ `--user-agent` - Custom user agent (applies to all new pages)
+- ✅ `--user-data-dir` - Custom browser profile
 - ✅ `--port` - Remote debugging port
 
 #### Examples

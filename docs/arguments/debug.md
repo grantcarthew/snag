@@ -50,6 +50,11 @@ snag https://example.com --debug
 - Simply controls stderr logging verbosity
 - No conflicts or special behaviors
 
+**Examples with Other Flags:**
+- `--debug` + `--user-data-dir` - Works normally (debug logs with custom profile)
+- `--debug` + `--user-agent` - Works normally (debug logs with custom UA)
+- `--debug` + all browser/output/timing flags - Works normally
+
 #### Examples
 
 **Valid:**

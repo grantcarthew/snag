@@ -153,6 +153,20 @@ snag --url-file empty.txt
 
 **Error message:** `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
 
+### Case 11: --user-data-dir with Existing Browser
+
+**Question:** What happens with `snag --tab 1 --user-data-dir ~/.snag/profile`?
+
+**Decision:** **Warn and ignore** - Cannot change profile of already-running browser
+
+**Rationale:**
+- Tab operations connect to existing browser instance
+- Browser profile is set at launch time, cannot be changed mid-session
+- Warn rather than error (flag has no effect but doesn't break operation)
+- Applies to `--tab`, `--all-tabs`, and `--list-tabs`
+
+**Warning message:** `"Warning: --user-data-dir ignored when connecting to existing browser"`
+
 ---
 
 ## Undefined Behaviors

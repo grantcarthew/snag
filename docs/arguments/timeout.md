@@ -100,6 +100,7 @@ All browser mode flags work normally with `--timeout`:
 | `--timeout` + `--force-headless` | Works normally |
 | `--timeout` + `--close-tab` | Works normally |
 | `--timeout` + `--port` | Works normally |
+| `--timeout` + `--user-data-dir` | Works normally |
 
 **Logging Flags:**
 

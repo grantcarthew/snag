@@ -62,6 +62,7 @@
 | `--close-tab` + `--timeout` | Works - apply timeout to fetch, then close tab |
 | `--close-tab` + `--port` | Works - connect to specific port, close tabs after fetch |
 | `--close-tab` + `--user-agent` | Works - set user agent for new tabs, close after fetch |
+| `--close-tab` + `--user-data-dir` | Works - use custom browser profile, close tabs after fetch |
 | `--close-tab` + `--verbose`/`--quiet`/`--debug` | Works - logging applies to close operations |
 
 #### Examples
