@@ -143,6 +143,16 @@ func normalizeFormat(format string) string {
 
 // validateFormat checks if format is valid (md, html, text, pdf, or png)
 func validateFormat(format string) error {
+	// Check for empty format
+	if format == "" {
+		logger.Error("Format cannot be empty")
+		logger.ErrorWithSuggestion(
+			"Format must be specified",
+			fmt.Sprintf("snag <url> --format %s", FormatMarkdown),
+		)
+		return fmt.Errorf("format cannot be empty")
+	}
+
 	// Define valid formats locally for better testability and self-containment
 	validFormats := map[string]bool{
 		FormatMarkdown: true,
@@ -153,15 +163,40 @@ func validateFormat(format string) error {
 	}
 
 	if !validFormats[format] {
-		logger.Error("Invalid format: %s", format)
+		logger.Error("Invalid format '%s'. Supported: md, html, text, pdf, png", format)
 		logger.ErrorWithSuggestion(
-			fmt.Sprintf("Format must be '%s', '%s', '%s', '%s', or '%s'", FormatMarkdown, FormatHTML, FormatText, FormatPDF, FormatPNG),
+			"Choose a valid format",
 			fmt.Sprintf("snag <url> --format %s", FormatMarkdown),
 		)
 		return fmt.Errorf("invalid format: %s", format)
 	}
 
 	return nil
+}
+
+// checkExtensionMismatch warns if output file extension doesn't match format
+// Returns true if there's a mismatch (for testing), but doesn't return an error
+func checkExtensionMismatch(outputFile string, format string) bool {
+	if outputFile == "" {
+		return false
+	}
+
+	ext := strings.ToLower(filepath.Ext(outputFile))
+	expectedExt := strings.ToLower(GetFileExtension(format))
+
+	// Check for mismatch
+	if ext != expectedExt {
+		// Special case: no extension at all
+		if ext == "" {
+			logger.Warning("Writing %s format to file with no extension: %s", format, outputFile)
+			return true
+		}
+		// Extension mismatch
+		logger.Warning("Writing %s format to file with %s extension: %s", format, ext, outputFile)
+		return true
+	}
+
+	return false
 }
 
 // validateDirectory checks if a directory exists and is writable

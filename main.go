@@ -250,6 +250,10 @@ func run(c *cli.Context) error {
 
 	// Handle --open-browser flag WITHOUT URLs (just open browser)
 	if c.Bool("open-browser") && len(urls) == 0 {
+		// Warn if --format was specified but will be ignored
+		if c.IsSet("format") {
+			logger.Warning("--format ignored with --open-browser (no content fetching)")
+		}
 		logger.Info("Opening browser...")
 		bm := NewBrowserManager(BrowserOptions{
 			Port:        c.Int("port"),
@@ -330,6 +334,8 @@ func run(c *cli.Context) error {
 			if err := validateOutputPath(config.OutputFile); err != nil {
 				return err
 			}
+			// Check for extension mismatch and warn (non-blocking)
+			checkExtensionMismatch(config.OutputFile, config.Format)
 		}
 
 		// Validate output directory if provided

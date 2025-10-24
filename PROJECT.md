@@ -24,8 +24,8 @@ For each argument documentation file:
    - ❌ Not Implemented: Argument not implemented or significantly incomplete
 4. **Implement/Fix**: Add missing functionality, validation, or corrections
 5. **Verify**: Test the implementation matches documentation
-6. **Tests**: Review the test files and update as needed
-7. **Mark Complete**: Check off task when fully implemented and verified
+6. **Tests**: Review the test files and update as needed, including adding to the test-interactive.csv file
+7. **Mark Complete**: Check off task when fully implemented and verified in the PROJECT.md document
 
 ## Tasks
 
@@ -33,7 +33,7 @@ For each argument documentation file:
 
 - [x] **url.md** - Primary URL argument(s) for fetching content (✅ 2025-10-24)
 - [x] **url-file.md** - Batch URL processing from file input (✅ 2025-10-24)
-- [ ] **format.md** - Output format selection (markdown/html/text/pdf/png)
+- [x] **format.md** - Output format selection (markdown/html/text/pdf/png) (✅ 2025-10-24)
 - [ ] **output.md** - Output file specification (-o flag)
 - [ ] **output-dir.md** - Output directory for batch operations (-d flag)
 
@@ -113,7 +113,7 @@ For each argument, verify:
 - **Started**: 2025-10-24
 - **Completed**: _In Progress_
 - **Total Arguments**: 22
-- **Reviewed**: 2
-- **Fully Implemented**: 2
+- **Reviewed**: 3
+- **Fully Implemented**: 3
 - **Partially Implemented**: 0
 - **Not Implemented**: 0
