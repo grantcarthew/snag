@@ -10,7 +10,7 @@
 
 **Browser Connection:**
 - Requires existing browser connection with remote debugging enabled
-- Connection failure → Standard browser error (no special handling)
+- Connection failure → Error: `"No browser instance running with remote debugging. Start Chrome with --remote-debugging-port=9222 or run: snag --open-browser"`
 - Zero tabs open → Error (browser cannot have zero tabs)
 
 **Output Requirements:**
@@ -19,7 +19,7 @@
 - Cannot use `-o` (single file output) with `--all-tabs` (multiple outputs)
 
 **Error Messages:**
-- No existing browser: Standard connection error from browser module
+- No existing browser: `"No browser instance running with remote debugging. Start Chrome with --remote-debugging-port=9222 or run: snag --open-browser"`
 - Zero tabs (if encountered): `"No tabs found in browser"`
 
 #### Behavior
@@ -87,7 +87,7 @@
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--all-tabs` + `--timeout` (no `--wait-for`) | Works with **warning** | `"Warning: --timeout has no effect without --wait-for when using --all-tabs"` |
+| `--all-tabs` + `--timeout` (no `--wait-for`) | Works with **warning** | `"Warning: --timeout is ignored without --wait-for when using --all-tabs"` |
 | `--all-tabs` + `--timeout` + `--wait-for` | Works normally | Timeout applies to selector wait for each tab (30s per tab, not total) |
 | `--all-tabs` + `--wait-for` | Works normally | Same selector applied to all tabs before fetching |
 
@@ -97,7 +97,7 @@
 |-------------|----------|-------|
 | `--all-tabs` + `--port` | Works normally | Connect to browser on specific port |
 | `--all-tabs` + `--close-tab` | Works normally | Close each tab after fetching; last tab closes browser |
-| `--all-tabs` + `--user-agent` | **Warning**, ignored | `"Warning: --user-agent has no effect with --all-tabs (cannot change existing tabs' user agents)"` |
+| `--all-tabs` + `--user-agent` | **Warning**, ignored | `"Warning: --user-agent is ignored with --all-tabs (cannot change existing tabs' user agents)"` |
 | `--all-tabs` + `--user-data-dir` | **Warning**, ignored | `"Warning: --user-data-dir ignored when connecting to existing browser"` |
 
 **Logging Flags (All Work Normally):**
@@ -152,8 +152,8 @@ snag --all-tabs --force-headless                # ERROR: Requires existing brows
 **With Warnings:**
 ```bash
 snag --all-tabs --open-browser                  # ⚠️  Warning: --all-tabs ignored (no content fetching)
-snag --all-tabs --timeout 30                    # ⚠️  Warning: timeout has no effect (no --wait-for)
-snag --all-tabs --user-agent "Bot/1.0"          # ⚠️  Warning: can't change existing tabs' user agents
+snag --all-tabs --timeout 30                    # ⚠️  Warning: --timeout is ignored without --wait-for when using --all-tabs
+snag --all-tabs --user-agent "Bot/1.0"          # ⚠️  Warning: --user-agent is ignored with --all-tabs (cannot change existing tabs' user agents)
 snag --all-tabs                                 # ⚠️  Skipping tab: chrome://settings (not fetchable)
 ```
 

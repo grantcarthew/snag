@@ -291,10 +291,9 @@ All logging flag conflicts resolved using "last flag wins" approach (Unix standa
 - [x] `--open-browser` + `--force-headless` → Should ERROR ✅
 - [x] Multiple logging flags → Last flag wins (Unix standard) ✅
 
-### Planned Validations 🚧
+### Additional Validations
 
 - [ ] Multiple URLs + `-o` → ERROR
-- [ ] Multiple URLs + `--close-tab` → ERROR
 - [ ] `--url-file` + `--tab` → ERROR
 - [ ] `--url-file` + `--all-tabs` → ERROR
 - [ ] `--url-file` file not found → ERROR

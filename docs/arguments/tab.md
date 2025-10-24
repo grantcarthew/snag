@@ -59,7 +59,7 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 - Consider using more specific pattern if multiple tabs match
 
 **No Browser Connection:**
-- Connection error with standard browser error messages
+- Error: `"No browser instance running with remote debugging. Start Chrome with --remote-debugging-port=9222 or run: snag --open-browser"`
 - No special error handling (same as other browser operations)
 
 #### Interaction Matrix
@@ -94,7 +94,7 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--tab` + `--timeout` (no `--wait-for`) | Works with **warning** | `"Warning: --timeout has no effect without --wait-for when using --tab"` |
+| `--tab` + `--timeout` (no `--wait-for`) | Works with **warning** | `"Warning: --timeout is ignored without --wait-for when using --tab"` |
 | `--tab` + `--timeout` + `--wait-for` | Works normally | Timeout applies to selector wait |
 | `--tab` + `--wait-for` | Works normally | Wait for selector in existing tab (automation use case) |
 
@@ -104,7 +104,7 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 |-------------|----------|-------|
 | `--tab` + `--port` | Works normally | Connect to browser on specific port |
 | `--tab` + `--close-tab` | Works normally | Close tab after fetching (covered in Task 9) |
-| `--tab` + `--user-agent` | **Warning**, ignored | `"Warning: --user-agent has no effect with --tab (cannot change existing tab's user agent)"` |
+| `--tab` + `--user-agent` | **Warning**, ignored | `"Warning: --user-agent is ignored with --tab (cannot change existing tab's user agent)"` |
 | `--tab` + `--user-data-dir` | **Warning**, ignored | `"Warning: --user-data-dir ignored when connecting to existing browser"` |
 
 **Logging Flags (All Work Normally):**
@@ -157,8 +157,8 @@ snag --tab 1 --force-headless                   # ERROR: Tab requires existing b
 **With Warnings:**
 ```bash
 snag --tab 1 --open-browser                     # ⚠️  Warning: --tab ignored (no content fetching)
-snag --tab 1 --timeout 30                       # ⚠️  Warning: timeout has no effect (no --wait-for)
-snag --tab 1 --user-agent "Bot/1.0"             # ⚠️  Warning: can't change existing tab's user agent
+snag --tab 1 --timeout 30                       # ⚠️  Warning: --timeout is ignored without --wait-for when using --tab
+snag --tab 1 --user-agent "Bot/1.0"             # ⚠️  Warning: --user-agent is ignored with --tab (cannot change existing tab's user agent)
 ```
 
 **Overridden (No Error):**

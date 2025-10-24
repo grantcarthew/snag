@@ -26,9 +26,8 @@ Set a custom user agent string for browser requests. This flag allows you to cus
 - No need for snag to impose artificial restrictions
 
 **Multiple `--user-agent` flags:**
-- Behavior: **Last wins** (standard CLI behavior)
+- Behavior: **Last wins** (standard CLI behavior, no error, no warning)
 - Example: `snag --user-agent "First" --user-agent "Second" https://example.com` → Uses "Second"
-- No warning issued - this is standard flag override behavior
 
 **Special characters and Unicode:**
 - Behavior: **Allow** (pass through as-is after trimming)
@@ -63,8 +62,8 @@ Set a custom user agent string for browser requests. This flag allows you to cus
 | `--user-agent` + `--list-tabs` | **Silently ignored** | List-tabs standalone mode ignores all other flags |
 
 **Warning messages for tabs:**
-- `--tab`: "Warning: --user-agent has no effect with --tab (cannot change existing tab's user agent)"
-- `--all-tabs`: "Warning: --user-agent has no effect with --all-tabs (cannot change existing tabs' user agents)"
+- `--tab`: "Warning: --user-agent is ignored with --tab (cannot change existing tab's user agent)"
+- `--all-tabs`: "Warning: --user-agent is ignored with --all-tabs (cannot change existing tabs' user agents)"
 
 **Rationale for tab behavior:**
 - Once a page/tab is loaded, its user agent cannot be changed
