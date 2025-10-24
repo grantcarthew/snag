@@ -5,6 +5,7 @@
 #### Validation Rules
 
 **Path Handling:**
+
 - Both relative and absolute paths supported
 - Paths with spaces supported (user must quote in shell: `-d "my output dir"`)
 - Path validation using Go's `os.Stat()` and `fileInfo.IsDir()`
@@ -12,14 +13,17 @@
 - Relative paths resolved relative to current directory
 
 **Directory Validation:**
+
 - Directory must exist → Error: `"Output directory does not exist: {path}"`
 - Path exists but is a file (not directory) → Error: `"Output directory path is a file, not a directory: {path}"`
 - Permission denied (no write access) → Error: `"Cannot write to output directory: permission denied"`
 
 **Multiple Directory Flags:**
+
 - Multiple `-d` flags → **Last wins** (standard CLI behavior, no error, no warning)
 
 **Error Messages:**
+
 - Directory doesn't exist: `"Output directory does not exist: {path}"`
 - Path is file: `"Output directory path is a file, not a directory: {path}"`
 - Permission denied: `"Cannot write to output directory: permission denied"`
@@ -28,33 +32,40 @@
 #### Behavior
 
 **Basic Usage:**
+
 ```bash
 snag https://example.com -d ./output
 ```
+
 - Fetches URL content
 - Generates filename automatically: `yyyy-mm-dd-hhmmss-{page-title}-{slug}.{ext}`
 - Writes to `./output/{generated-filename}`
 - Creates file if it doesn't exist
 
 **Filename Generation:**
+
 ```bash
 snag https://example.com -d ./docs
 # Creates: ./docs/2025-10-22-214530-example-domain.md
 ```
+
 - Format: `yyyy-mm-dd-hhmmss-{page-title}-{slug}.{ext}`
 - Extension matches `--format` flag
 - Page title used for slug (sanitized, lowercased, hyphens)
 
 **Collision Handling:**
+
 ```bash
 snag https://example.com -d ./output  # file.md
 snag https://example.com -d ./output  # file-1.md (if collision)
 snag https://example.com -d ./output  # file-2.md (if collision)
 ```
+
 - Append counter suffix: `-1`, `-2`, `-3`, etc.
 - Ensures no file overwriting
 
 **Empty String Behavior:**
+
 ```bash
 snag https://example.com -d ""
 # Uses current working directory (pwd)
@@ -64,43 +75,44 @@ snag https://example.com -d ""
 
 **Output Destination Conflicts:**
 
-| Combination | Behavior | Rationale |
-|-------------|----------|-----------|
-| `-d directory/` + `-o file.md` | **Error** | Mutually exclusive output destinations |
-| Multiple `-d` flags | **Last wins** | Standard CLI behavior (e.g., `-d dir1 -d dir2` uses `dir2`) |
+| Combination                    | Behavior      | Rationale                                                   |
+| ------------------------------ | ------------- | ----------------------------------------------------------- |
+| `-d directory/` + `-o file.md` | **Error**     | Mutually exclusive output destinations                      |
+| Multiple `-d` flags            | **Last wins** | Standard CLI behavior (e.g., `-d dir1 -d dir2` uses `dir2`) |
 
 **Error messages:**
+
 - `-d` + `-o`: `"Cannot use --output and --output-dir together"`
 
 **Content Source Interactions:**
 
-| Combination | Behavior | Notes |
-|-------------|----------|-------|
-| `-d ./dir` + single `<url>` | Works normally | Auto-generated filename in directory |
-| `-d ./dir` + multiple `<url>` | Works normally | Each URL gets separate auto-generated file |
-| `-d ./dir` + `--url-file` | Works normally | Each URL from file gets separate file |
+| Combination                    | Behavior       | Notes                                      |
+| ------------------------------ | -------------- | ------------------------------------------ |
+| `-d ./dir` + single `<url>`    | Works normally | Auto-generated filename in directory       |
+| `-d ./dir` + multiple `<url>`  | Works normally | Each URL gets separate auto-generated file |
+| `-d ./dir` + `--url-file`      | Works normally | Each URL from file gets separate file      |
 | `-d ./dir` + `--tab <pattern>` | Works normally | Tab content saved with auto-generated name |
-| `-d ./dir` + `--all-tabs` | Works normally | Each tab gets separate auto-generated file |
+| `-d ./dir` + `--all-tabs`      | Works normally | Each tab gets separate auto-generated file |
 
 **Special Operation Modes:**
 
-| Combination | Behavior | Notes |
-|-------------|----------|-------|
-| `-d ./dir` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
-| `-d ./dir` + `--open-browser` (no URL/url-file) | **Warning**, flag ignored | `"Warning: --output-dir ignored with --open-browser (no content fetching)"` |
-| `-d ./dir` + `--open-browser` + `<url>` | **Warning**, flag ignored | `"Warning: --output-dir ignored with --open-browser (no content fetching)"` - Opens browser, navigates to URL, exits snag |
+| Combination                                     | Behavior                  | Notes                                                                                                                     |
+| ----------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `-d ./dir` + `--list-tabs`                      | `--list-tabs` overrides   | `--list-tabs` overrides all other options                                                                                 |
+| `-d ./dir` + `--open-browser` (no URL/url-file) | **Warning**, flag ignored | `"Warning: --output-dir ignored with --open-browser (no content fetching)"`                                               |
+| `-d ./dir` + `--open-browser` + `<url>`         | **Warning**, flag ignored | `"Warning: --output-dir ignored with --open-browser (no content fetching)"` - Opens browser, navigates to URL, exits snag |
 
 **Format Combinations:**
 
 All format combinations work normally:
 
-| Scenario | Behavior | Output Extension |
-|----------|----------|------------------|
-| `-d ./dir --format md` | Auto-save as Markdown | `.md` |
-| `-d ./dir --format html` | Auto-save as HTML | `.html` |
-| `-d ./dir --format text` | Auto-save as plain text | `.txt` |
-| `-d ./dir --format pdf` | Auto-save as PDF | `.pdf` |
-| `-d ./dir --format png` | Auto-save as PNG | `.png` |
+| Scenario                 | Behavior                | Output Extension |
+| ------------------------ | ----------------------- | ---------------- |
+| `-d ./dir --format md`   | Auto-save as Markdown   | `.md`            |
+| `-d ./dir --format html` | Auto-save as HTML       | `.html`          |
+| `-d ./dir --format text` | Auto-save as plain text | `.txt`           |
+| `-d ./dir --format pdf`  | Auto-save as PDF        | `.pdf`           |
+| `-d ./dir --format png`  | Auto-save as PNG        | `.png`           |
 
 **Compatible Flags:**
 
@@ -119,6 +131,7 @@ All these flags work normally with `-d`:
 #### Examples
 
 **Valid:**
+
 ```bash
 snag https://example.com -d ./output                 # Basic usage
 snag https://example.com -d ./docs/pages             # Nested directory
@@ -137,6 +150,7 @@ snag https://example.com -d ./dir1 -d ./dir2         # Uses ./dir2 (last wins)
 ```
 
 **Invalid:**
+
 ```bash
 snag https://example.com -d /nonexistent/dir         # ERROR: Directory doesn't exist
 snag https://example.com -d ./existing-file.txt      # ERROR: Path is file, not directory
@@ -149,12 +163,14 @@ snag --open-browser -d ./output                      # OK but -d ignored (nothin
 #### Implementation Details
 
 **Location:**
+
 - Flag definition: `main.go:68-71`
 - Handler logic: Various handler functions
 - Path validation: `validate.go` functions
 - Filename generation: `output.go:generateOutputFilename()`
 
 **Processing Flow:**
+
 1. Validate output directory path (exists, is directory, writable)
 2. Check for conflicts (`-o`, multiple `-d`)
 3. Fetch content from source(s)
@@ -163,6 +179,7 @@ snag --open-browser -d ./output                      # OK but -d ignored (nothin
 6. Write to directory
 
 **Filename Generation:**
+
 - Function: `generateOutputFilename(pageTitle, format, outputDir string)`
 - Timestamp: Single timestamp for batch operations
 - Title slug: Sanitized, lowercase, hyphens for spaces
@@ -170,6 +187,7 @@ snag --open-browser -d ./output                      # OK but -d ignored (nothin
 - Collision resolution: Append `-1`, `-2`, etc.
 
 **Special Behaviors:**
+
 - Empty string for directory → Resolves to current working directory
 - Relative paths → Resolved relative to current directory
 - `--open-browser` without URL/url-file → Directory flag ignored (nothing to save)

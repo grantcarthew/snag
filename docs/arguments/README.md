@@ -44,8 +44,8 @@
 
 ### Positional Arguments
 
-| Argument | Type   | Description  |
-| -------- | ------ | ------------ |
+| Argument | Type   | Description                           |
+| -------- | ------ | ------------------------------------- |
 | `<url>`  | String | URL to fetch (supports multiple URLs) |
 
 ### Output Control Flags
@@ -78,8 +78,8 @@
 
 ### URL Input Flags
 
-| Flag         | Aliases | Type   | Default | Description                       |
-| ------------ | ------- | ------ | ------- | --------------------------------- |
+| Flag         | Aliases | Type   | Default | Description                        |
+| ------------ | ------- | ------ | ------- | ---------------------------------- |
 | `--url-file` | -       | String | -       | Read URLs from file (one per line) |
 
 ### Logging Flags
@@ -120,16 +120,16 @@ These determine the primary operation mode:
 
 ### Output Destination (Mutually Exclusive)
 
-| Combination                        | Behavior                                |
-| ---------------------------------- | --------------------------------------- |
-| No output flags                    | Content to stdout                       |
-| `-o file.md`                       | Content to specific file                |
-| `-d ./dir`                         | Content to auto-generated file in dir   |
-| `-o` + `-d`                        | ❌ ERROR: cannot use both               |
-| Multiple URLs + `-o`               | ❌ ERROR: use `-d` instead              |
-| Multiple URLs + `-d`               | ✅ Each URL gets auto-generated name    |
-| Multiple URLs, no output flags     | ✅ Auto-save to current dir             |
-| Binary format (PDF/PNG), no output | Auto-generates filename in current dir  |
+| Combination                        | Behavior                               |
+| ---------------------------------- | -------------------------------------- |
+| No output flags                    | Content to stdout                      |
+| `-o file.md`                       | Content to specific file               |
+| `-d ./dir`                         | Content to auto-generated file in dir  |
+| `-o` + `-d`                        | ❌ ERROR: cannot use both              |
+| Multiple URLs + `-o`               | ❌ ERROR: use `-d` instead             |
+| Multiple URLs + `-d`               | ✅ Each URL gets auto-generated name   |
+| Multiple URLs, no output flags     | ✅ Auto-save to current dir            |
+| Binary format (PDF/PNG), no output | Auto-generates filename in current dir |
 
 ### Browser Mode (Mutually Exclusive)
 
@@ -361,11 +361,11 @@ See [open-browser.md](./open-browser.md) for complete details.
 | ----------------------------- | -------------------------------------- | --------------------------- |
 | Single URL, no flags          | stdout                                 | Default behavior            |
 | Single URL, `-o file.md`      | `file.md`                              | Specified file              |
-| Single URL, `-d ./dir`        | `./dir/{auto-generated}.md`           | Auto-generated name         |
-| Single URL, PDF/PNG, no flags | `./{auto-generated}.pdf`              | Binary formats never stdout |
-| Multiple URLs, no flags       | `./{auto-generated}.md` (each)        | Batch auto-save             |
-| Multiple URLs, `-d ./dir`     | `./dir/{auto-generated}.md` (each)    | Custom directory            |
-| `--tab`, no flags             | stdout                                | Same as single URL          |
+| Single URL, `-d ./dir`        | `./dir/{auto-generated}.md`            | Auto-generated name         |
+| Single URL, PDF/PNG, no flags | `./{auto-generated}.pdf`               | Binary formats never stdout |
+| Multiple URLs, no flags       | `./{auto-generated}.md` (each)         | Batch auto-save             |
+| Multiple URLs, `-d ./dir`     | `./dir/{auto-generated}.md` (each)     | Custom directory            |
+| `--tab`, no flags             | stdout                                 | Same as single URL          |
 | `--tab`, `-o file.md`         | `file.md`                              | Specified file              |
 | `--all-tabs`                  | `-d` or `./{auto-generated}.md` (each) | Always files                |
 | `--list-tabs`                 | stdout (tab list only)                 | Informational output        |
