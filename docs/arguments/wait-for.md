@@ -8,7 +8,7 @@
 
 **Empty string:**
 - Behavior: **Warning + Ignored**
-- Warning message: "Warning: --wait-for selector is empty, ignoring"
+- Warning message: "Warning: --wait-for is empty, ignoring"
 - Rationale: User explicitly provided flag but with no value - likely a mistake worth warning about
 - Consistent with `--user-agent` and `--user-data-dir` empty string handling
 
@@ -126,8 +126,8 @@ snag --wait-for ".content" --wait-for ".other"              # ERROR: Multiple fl
 **With Warnings:**
 ```bash
 snag --open-browser https://example.com --wait-for ".content"  # ⚠️  No effect (no fetch)
-snag --wait-for ""                                             # ⚠️  Warning: selector empty
-snag --wait-for "   "                                          # ⚠️  Warning: selector empty (after trim)
+snag --wait-for ""                                             # ⚠️  Warning: empty
+snag --wait-for "   "                                          # ⚠️  Warning: empty (after trim)
 ```
 
 ## Implementation Details
@@ -141,7 +141,7 @@ snag --wait-for "   "                                          # ⚠️  Warning
 **How it works:**
 1. Takes CSS selector string value
 2. Trim whitespace using `strings.TrimSpace()`
-3. If empty string after trim, warn and skip: "Warning: --wait-for selector is empty, ignoring"
+3. If empty string after trim, warn and skip: "Warning: --wait-for is empty, ignoring"
 4. Wait for element to appear using `page.Element(selector)` with timeout
 5. Wait for element to be visible using `elem.WaitVisible()`
 6. Return error if selector never appears or never becomes visible

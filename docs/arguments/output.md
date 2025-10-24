@@ -74,8 +74,8 @@ snag https://example.com -o myfile --format markdown
 | Multiple `-o` flags | **Error** | Only one output destination allowed |
 
 **Error messages:**
-- Multiple URLs + `-o`: `"Cannot use --output with multiple URLs. Use --output-dir instead"`
-- `--url-file` + `-o`: `"Cannot use --output with --url-file. Use --output-dir instead"`
+- Multiple URLs + `-o`: `"Cannot use --output with multiple content sources. Use --output-dir instead"`
+- `--url-file` + `-o`: `"Cannot use --output with multiple content sources. Use --output-dir instead"`
 - Multiple `-o`: `"Only one --output option allowed"`
 
 **Output Destination Conflicts:**

@@ -59,7 +59,7 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 - Consider using more specific pattern if multiple tabs match
 
 **No Browser Connection:**
-- Error: `"No browser instance running with remote debugging. Start Chrome with --remote-debugging-port=9222 or run: snag --open-browser"`
+- Error: `"No browser found. Try running 'snag --open-browser' first"`
 - No special error handling (same as other browser operations)
 
 #### Interaction Matrix
