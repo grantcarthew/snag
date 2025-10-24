@@ -14,7 +14,7 @@
 
 **Empty string:**
 - Behavior: **Warning + Ignored**, use browser default profile
-- Warning message: "Warning: Empty --user-data-dir provided, using default profile"
+- Warning message: "Warning: --user-data-dir is empty, using default profile"
 
 **Whitespace-only string:**
 - Behavior: **Warning + Ignored** after trimming, use browser default profile
