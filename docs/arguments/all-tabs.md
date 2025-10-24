@@ -10,7 +10,7 @@
 
 **Browser Connection:**
 - Requires existing browser connection with remote debugging enabled
-- Connection failure → Error: `"No browser instance running with remote debugging. Start Chrome with --remote-debugging-port=9222 or run: snag --open-browser"`
+- Connection failure → Error: `"No browser found. Try running 'snag --open-browser' first"`
 - Zero tabs open → Error (browser cannot have zero tabs)
 
 **Output Requirements:**
@@ -19,7 +19,7 @@
 - Cannot use `-o` (single file output) with `--all-tabs` (multiple outputs)
 
 **Error Messages:**
-- No existing browser: `"No browser instance running with remote debugging. Start Chrome with --remote-debugging-port=9222 or run: snag --open-browser"`
+- No existing browser: `"No browser found. Try running 'snag --open-browser' first"`
 - Zero tabs (if encountered): `"No tabs found in browser"`
 
 #### Behavior
@@ -64,7 +64,7 @@
 | `--all-tabs` + `<url>` (single) | **Error** | `"Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)"` |
 | `--all-tabs` + `<url>` (multiple) | **Error** | `"Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)"` |
 | `--all-tabs` + `--url-file` | **Error** | `"Cannot use both --all-tabs and --url-file (mutually exclusive content sources)"` |
-| `--all-tabs` + `--tab` | **Error** | `"Cannot use both --all-tabs and --tab (mutually exclusive content sources)"` |
+| `--all-tabs` + `--tab` | **Error** | `"Cannot use both --tab and --all-tabs (mutually exclusive content sources)"` |
 | `--all-tabs` + `--list-tabs` | `--list-tabs` overrides | Lists all tabs, ignores `--all-tabs` (no error) |
 
 **Browser Mode Conflicts (All ERROR):**
@@ -80,7 +80,7 @@
 |-------------|----------|-------|
 | `--all-tabs` (no output flags) | Works normally | Auto-save to current directory (`.`) with auto-generated filenames |
 | `--all-tabs` + `--output-dir` | Works normally | Save all tabs to specified directory with auto-generated filenames |
-| `--all-tabs` + `--output` | **Error** | `"Cannot use --output with --all-tabs. Use --output-dir instead"` |
+| `--all-tabs` + `--output` | **Error** | `"Cannot use --output with multiple content sources. Use --output-dir instead"` |
 | `--all-tabs` + `--format` (all) | Works normally | All formats supported (md/html/text/pdf/png), applied to all tabs |
 
 **Timing & Selector:**
