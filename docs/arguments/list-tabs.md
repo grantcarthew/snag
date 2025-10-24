@@ -5,15 +5,18 @@
 #### Validation Rules
 
 **Boolean Flag:**
+
 - No value required (presence = enabled)
 - No validation errors possible
 
 **Multiple Flags:**
+
 - Multiple `--list-tabs` flags → **Silently ignored** (duplicate boolean)
 
 #### Behavior
 
 **Primary Purpose:**
+
 - List all open tabs in an existing browser connection
 - Acts like `--help` or `--version`: Overrides all other flags except those needed for its operation
 - Lists tabs and exits snag immediately
@@ -25,16 +28,19 @@ snag --list-tabs
 snag --list-tabs --port 9223
 snag --list-tabs --verbose
 ```
+
 - Connects to existing browser (or errors if none found)
 - Displays tab list to stdout
 - Exits snag immediately
 - Ignores all other flags except `--port` and logging flags
 
 **No Browser Connection:**
+
 - Error: Connection error with helpful hint
 - Message: `"No browser found. Try running 'snag --open-browser' first"`
 
 **Precedence Order:**
+
 1. `--help` (highest priority, overrides everything)
 2. `--version` (overrides everything below)
 3. `--list-tabs` (overrides everything below)
@@ -44,35 +50,36 @@ snag --list-tabs --verbose
 
 **Flags That Work WITH `--list-tabs`:**
 
-| Combination | Behavior | Notes |
-|-------------|----------|-------|
-| `--list-tabs` + `--port` | Works normally | Specify which browser instance to connect to |
-| `--list-tabs` + `--verbose` | Works normally | Verbose logging during tab listing |
-| `--list-tabs` + `--quiet` | Works normally | Quiet mode (minimal output) |
-| `--list-tabs` + `--debug` | Works normally | Debug/CDP logging during tab listing |
+| Combination                 | Behavior       | Notes                                        |
+| --------------------------- | -------------- | -------------------------------------------- |
+| `--list-tabs` + `--port`    | Works normally | Specify which browser instance to connect to |
+| `--list-tabs` + `--verbose` | Works normally | Verbose logging during tab listing           |
+| `--list-tabs` + `--quiet`   | Works normally | Quiet mode (minimal output)                  |
+| `--list-tabs` + `--debug`   | Works normally | Debug/CDP logging during tab listing         |
 
 **All Other Flags Are SILENTLY IGNORED:**
 
 `--list-tabs` acts like `--help` and overrides all other arguments:
 
-| Combination | Behavior | Notes |
-|-------------|----------|-------|
-| `--list-tabs` + `<url>` | URL ignored, tabs listed | Lists tabs, ignores URL |
-| `--list-tabs` + `--url-file` | Flag ignored, tabs listed | Lists tabs, ignores file |
-| `--list-tabs` + `--output` | Flag ignored, tabs listed | Lists tabs to stdout only |
-| `--list-tabs` + `--output-dir` | Flag ignored, tabs listed | Lists tabs to stdout only |
-| `--list-tabs` + `--format` | Flag ignored, tabs listed | Lists tabs in fixed format |
-| `--list-tabs` + `--timeout` | Flag ignored, tabs listed | Lists tabs (no navigation) |
-| `--list-tabs` + `--wait-for` | Flag ignored, tabs listed | Lists tabs (no content fetch) |
-| `--list-tabs` + `--close-tab` | Flag ignored, tabs listed | Lists tabs (no tab closing) |
-| `--list-tabs` + `--force-headless` | Flag ignored, tabs listed | Lists tabs from existing browser |
-| `--list-tabs` + `--open-browser` | Flag ignored, tabs listed | Lists tabs (no browser launch) |
-| `--list-tabs` + `--tab` | Flag ignored, tabs listed | Lists all tabs (no single tab fetch) |
-| `--list-tabs` + `--all-tabs` | Flag ignored, tabs listed | Lists tabs (no fetching) |
-| `--list-tabs` + `--user-agent` | Flag ignored, tabs listed | Lists tabs (no navigation) |
-| `--list-tabs` + `--user-data-dir` | Flag ignored, tabs listed | Connects to existing browser |
+| Combination                        | Behavior                  | Notes                                |
+| ---------------------------------- | ------------------------- | ------------------------------------ |
+| `--list-tabs` + `<url>`            | URL ignored, tabs listed  | Lists tabs, ignores URL              |
+| `--list-tabs` + `--url-file`       | Flag ignored, tabs listed | Lists tabs, ignores file             |
+| `--list-tabs` + `--output`         | Flag ignored, tabs listed | Lists tabs to stdout only            |
+| `--list-tabs` + `--output-dir`     | Flag ignored, tabs listed | Lists tabs to stdout only            |
+| `--list-tabs` + `--format`         | Flag ignored, tabs listed | Lists tabs in fixed format           |
+| `--list-tabs` + `--timeout`        | Flag ignored, tabs listed | Lists tabs (no navigation)           |
+| `--list-tabs` + `--wait-for`       | Flag ignored, tabs listed | Lists tabs (no content fetch)        |
+| `--list-tabs` + `--close-tab`      | Flag ignored, tabs listed | Lists tabs (no tab closing)          |
+| `--list-tabs` + `--force-headless` | Flag ignored, tabs listed | Lists tabs from existing browser     |
+| `--list-tabs` + `--open-browser`   | Flag ignored, tabs listed | Lists tabs (no browser launch)       |
+| `--list-tabs` + `--tab`            | Flag ignored, tabs listed | Lists all tabs (no single tab fetch) |
+| `--list-tabs` + `--all-tabs`       | Flag ignored, tabs listed | Lists tabs (no fetching)             |
+| `--list-tabs` + `--user-agent`     | Flag ignored, tabs listed | Lists tabs (no navigation)           |
+| `--list-tabs` + `--user-data-dir`  | Flag ignored, tabs listed | Connects to existing browser         |
 
 **Rationale:**
+
 - `--list-tabs` is a simple informational command like `--help` or `--version`
 - Users expect it to "just work" without complex argument validation
 - Simplifies UX: No need to remember which flags conflict with `--list-tabs`
@@ -81,6 +88,7 @@ snag --list-tabs --verbose
 #### Examples
 
 **Valid:**
+
 ```bash
 # Basic tab listing
 snag --list-tabs
@@ -99,6 +107,7 @@ snag --list-tabs --debug
 ```
 
 **Silently Ignores Other Flags:**
+
 ```bash
 # All other flags are ignored, tabs are listed
 snag --list-tabs https://example.com
@@ -109,6 +118,7 @@ snag --list-tabs --force-headless --user-agent "Bot/1.0"
 ```
 
 **Error Cases:**
+
 ```bash
 # No browser running
 snag --list-tabs
@@ -118,11 +128,13 @@ snag --list-tabs
 #### Implementation Details
 
 **Location:**
+
 - Flag definition: `main.go` (CLI flag definitions)
 - Handler: `main.go:345-383` (`handleListTabs()`)
 - Browser connection: `browser.go:404-434` (`ListTabs()`)
 
 **How it works:**
+
 1. Check if `--list-tabs` is set (should be checked early, like `--help` and `--version`)
 2. Extract `--port` and logging flags (`--verbose`, `--quiet`, `--debug`)
 3. Silently ignore all other flags (no warnings, no errors)
@@ -132,6 +144,7 @@ snag --list-tabs
 7. Exit snag immediately
 
 **Output Format:**
+
 ```
 Available tabs in Chrome (3 tabs):
   [1] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
@@ -140,10 +153,12 @@ Available tabs in Chrome (3 tabs):
 ```
 
 **Error Messages:**
+
 - No browser: `"No browser found. Try running 'snag --open-browser' first"`
 - Connection error: Standard browser connection error messages
 
 **Design Note:**
+
 - Output goes to stdout (not stderr) to enable piping: `snag --list-tabs | grep github`
 
 ---
