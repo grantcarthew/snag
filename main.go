@@ -234,8 +234,7 @@ func run(c *cli.Context) error {
 	if c.Bool("all-tabs") {
 		// Check for conflicting URL arguments
 		if len(urls) > 0 {
-			logger.Error("Cannot use --all-tabs with URL arguments")
-			logger.Info("Use --all-tabs alone to process all existing tabs")
+			logger.Error("Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)")
 			return fmt.Errorf("conflicting flags: --all-tabs and URL arguments")
 		}
 		return handleAllTabs(c)
@@ -245,8 +244,7 @@ func run(c *cli.Context) error {
 	if c.IsSet("tab") {
 		// Check for conflicting URL arguments
 		if len(urls) > 0 {
-			logger.Error("Cannot use --tab with URL arguments")
-			logger.Info("Use either --tab to fetch from existing tab OR provide URLs to fetch new pages")
+			logger.Error("Cannot use both --tab and URL arguments (mutually exclusive content sources)")
 			return ErrTabURLConflict
 		}
 		return handleTabFetch(c)
