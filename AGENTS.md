@@ -440,7 +440,6 @@ Third-party licenses in `LICENSES/` directory.
 
 - Argument trimming not yet implemented for all string arguments
 - Parallel processing strategy undefined for multiple URL/tab operations
-- `--force-visible` flag deprecated, pending removal from codebase
 
 ## Additional Resources
 

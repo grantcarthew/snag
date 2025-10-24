@@ -129,21 +129,29 @@ Review all 21 completed argument analysis tasks to ensure `--user-data-dir` flag
 
 **Priority:** Low
 **Effort:** Low
+**Status:** ✅ Completed (2025-10-24)
 
 Remove the deprecated `--force-visible` flag from the codebase.
 
 **Tasks:**
-- [ ] Remove flag definition from `main.go`
-- [ ] Remove all references and logic in `browser.go`
-- [ ] Remove validation logic and error messages
-- [ ] Update any tests that reference this flag
-- [ ] Ensure browser mode logic works correctly without this flag
-- [ ] Verify no documentation references remain
+- [x] Remove flag definition from `main.go`
+- [x] Remove all references and logic in `browser.go`
+- [x] Remove validation logic and error messages
+- [x] Update any tests that reference this flag
+- [x] Ensure browser mode logic works correctly without this flag
+- [x] Verify no documentation references remain
 
 **Background:**
 - This flag was mentioned in early design discussions
-- May have been replaced by `--open-browser` or removed entirely
-- Need to verify if it exists in code before removal
+- Was replaced by `--open-browser` flag
+- Successfully removed from codebase
+
+**Implementation Notes:**
+- Removed `ForceVisible` field from `Config` and `BrowserOptions` structs
+- Updated browser mode logic to use `!openBrowser` instead of `!forceVisible`
+- Updated error messages in `fetch.go` to suggest `--open-browser` instead
+- Renamed test `TestBrowser_ForceVisible` to `TestBrowser_OpenBrowserWithCloseTab`
+- All browser mode tests pass successfully
 
 ---
 

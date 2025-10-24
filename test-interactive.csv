@@ -47,7 +47,7 @@ Wait & Timeout,Wait for element (short flag),./snag -w h1 -o wait-short.md https
 Wait & Timeout,Wait for element (long flag),./snag --wait-for h1 -o wait-long.md https://example.com,file:wait-long.md
 Wait & Timeout,Custom timeout 60 seconds,./snag --timeout 60 -o timeout-test.md https://example.com,file:timeout-test.md
 Wait & Timeout,Combined wait and timeout,./snag -w body --timeout 30 -o combined.md https://example.com,file:combined.md
-Browser Control,Force visible browser,./snag --force-visible -o visible.md https://example.com,file:visible.md
+Browser Control,Open visible browser,./snag --open-browser -o visible.md https://example.com,file:visible.md
 Browser Control,Force headless browser,./snag --force-headless -o headless.md https://example.com,file:headless.md
 Browser Control,Custom port,./snag --port 9223 -o custom-port.md https://example.com,file:custom-port.md
 Browser Control,Close tab after fetching,./snag --close-tab -o closed.md https://example.com,file:closed.md
@@ -57,7 +57,6 @@ Logging Levels,Quiet output,./snag --quiet -o quiet.md https://example.com,file:
 Logging Levels,Quiet output (short flag),./snag -q -o quiet2.md https://example.com,file:quiet2.md
 Logging Levels,Debug output,./snag --debug -o debug.md https://example.com,file:debug.md
 Error Tests,Conflicting output flags (-o and -d),./snag -o test.md -d . https://example.com,error
-Error Tests,Conflicting browser flags,./snag --force-headless --force-visible https://example.com,error
 Error Tests,All-tabs with URL argument,./snag --all-tabs https://example.com,error
 Error Tests,Tab with URL argument,./snag -t 1 https://example.com,error
 Error Tests,Invalid format,./snag -f invalid https://example.com,error
