@@ -13,17 +13,19 @@ This document tracks outstanding implementation tasks identified during the argu
 
 **Priority:** Medium
 **Effort:** Low
+**Status:** ✅ Completed (2025-10-24)
 
 Apply `strings.TrimSpace()` to all string arguments after reading from CLI framework.
 
 **Affected Arguments:**
-- `--wait-for`
-- `--user-agent`
-- `--output`
-- `--output-dir`
-- `--tab`
-- `--url-file`
-- `--user-data-dir`
+- `--wait-for` ✅
+- `--user-agent` ✅
+- `--output` ✅
+- `--output-dir` ✅
+- `--tab` ✅
+- `--url-file` ✅
+- `<url>` positional arguments ✅
+- `--user-data-dir` (not yet implemented in code)
 
 **Rationale:**
 - Standard behavior in most CLI tools (git, docker, etc.)
@@ -31,9 +33,18 @@ Apply `strings.TrimSpace()` to all string arguments after reading from CLI frame
 - Prevents user confusion from invisible whitespace
 
 **Implementation Notes:**
-- Apply trimming immediately after reading flag value
-- Before any validation or processing
-- Documented in multiple argument files as expected behavior
+- Applied `strings.TrimSpace()` immediately after reading flag value
+- Trimming occurs before any validation or processing
+- Added to both `main.go` and `handlers.go`
+- URLs from files already trimmed in `loadURLsFromFile()` (validate.go:265)
+- Positional URL arguments now trimmed in loop (main.go:206-208)
+
+**Testing:**
+- ✅ Verified `--output` with leading/trailing spaces
+- ✅ Verified `--output-dir` with leading/trailing spaces
+- ✅ Verified `--url-file` path trimming
+- ✅ Verified URL arguments trimming
+- ✅ All tests pass
 
 ---
 

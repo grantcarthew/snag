@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -228,8 +229,8 @@ func handleAllTabs(c *cli.Context) error {
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
-	waitFor := c.String("wait-for")
-	outputDir := c.String("output-dir")
+	waitFor := strings.TrimSpace(c.String("wait-for"))
+	outputDir := strings.TrimSpace(c.String("output-dir"))
 	if outputDir == "" {
 		outputDir = "." // Default to current working directory
 	}
@@ -353,7 +354,7 @@ func handleListTabs(c *cli.Context) error {
 // handleTabFetch fetches content from an existing tab by index
 func handleTabFetch(c *cli.Context) error {
 	// Get the tab value
-	tabValue := c.String("tab")
+	tabValue := strings.TrimSpace(c.String("tab"))
 	if tabValue == "" {
 		return fmt.Errorf("--tab flag requires a value")
 	}
@@ -398,8 +399,8 @@ func handleTabFetch(c *cli.Context) error {
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
-	waitFor := c.String("wait-for")
-	outputFile := c.String("output")
+	waitFor := strings.TrimSpace(c.String("wait-for"))
+	outputFile := strings.TrimSpace(c.String("output"))
 
 	// Validate format
 	if err := validateFormat(format); err != nil {
@@ -461,7 +462,7 @@ func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
 		Port:          c.Int("port"),
 		OpenBrowser:   true,
 		ForceHeadless: false,
-		UserAgent:     c.String("user-agent"),
+		UserAgent:     strings.TrimSpace(c.String("user-agent")),
 	})
 
 	// Assign to global for signal handler access
@@ -516,7 +517,7 @@ func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
 // Follows the same pattern as handleAllTabs but for URL arguments
 func handleMultipleURLs(c *cli.Context, urls []string) error {
 	// Validate conflicting flags for multiple URLs
-	if c.String("output") != "" {
+	if strings.TrimSpace(c.String("output")) != "" {
 		logger.Error("Cannot use --output with multiple URLs")
 		logger.Info("Use --output-dir instead for auto-generated filenames")
 		return ErrOutputFlagConflict
@@ -531,8 +532,8 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
-	waitFor := c.String("wait-for")
-	outputDir := c.String("output-dir")
+	waitFor := strings.TrimSpace(c.String("wait-for"))
+	outputDir := strings.TrimSpace(c.String("output-dir"))
 	if outputDir == "" {
 		outputDir = "." // Default to current working directory
 	}
@@ -556,7 +557,7 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          c.Int("port"),
 		ForceHeadless: c.Bool("force-headless"),
-		UserAgent:     c.String("user-agent"),
+		UserAgent:     strings.TrimSpace(c.String("user-agent")),
 	})
 
 	// Assign to global for signal handler access
