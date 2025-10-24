@@ -34,7 +34,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ## Design Decisions Summary
 
-**26 major design decisions documented below:**
+**27 major design decisions documented below:**
 
 | #   | Decision                  | Choice                                                          |
 | --- | ------------------------- | --------------------------------------------------------------- |
@@ -64,6 +64,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 | 24  | Format Alias Support      | Case-insensitive formats with aliases (markdown→md, txt→text)   |
 | 25  | Screenshot → PNG Format   | Remove `--screenshot` flag, use `--format png` (consistency)    |
 | 26  | Binary Format Safety      | Auto-generate filenames for PDF/PNG (prevent stdout corruption) |
+| 27  | Tab Range Support         | Support range syntax `N-M` for fetching multiple tabs           |
 
 See detailed rationale in design decisions section below.
 
@@ -231,6 +232,7 @@ snag -t <pattern>                   # Match tab by regex/URL pattern
 1. **Flag Assignment**: Moved `-t` alias from `--timeout` to `--tab` (more frequently used)
 2. **Tab Indexing**: 1-based indexing (first tab is [1], not [0]) - more intuitive for users
 3. **Pattern Matching**: Progressive fallthrough with full regex support:
+   - Range (N-M) → Multiple consecutive tabs (e.g., `1-3` = tabs 1, 2, 3)
    - Integer → Tab index (1-based)
    - Exact URL match (case-insensitive)
    - Substring/contains match (case-insensitive)
@@ -247,6 +249,7 @@ snag -t <pattern>                   # Match tab by regex/URL pattern
 - Get content from already-open authenticated tab without creating new tabs
 - Work with existing browser sessions (preserves cookies, auth state)
 - Pattern-based tab selection (regex, exact match, or substring)
+- Range-based batch processing of consecutive tabs (e.g., `1-5`)
 - List all tabs to see what's available
 
 **Examples:**
@@ -262,6 +265,10 @@ snag --list-tabs
 # Fetch by index (1-based)
 snag -t 1                                # First tab
 snag -t 3                                # Third tab
+
+# Fetch by range (1-based)
+snag -t 1-3                              # First three tabs (auto-save)
+snag -t 4-6 -d ./output/                 # Tabs 4-6 to directory
 
 # Fetch by exact URL (case-insensitive)
 snag -t https://github.com/grantcarthew/snag
@@ -1161,6 +1168,43 @@ $ snag https://example.com
 - **Code Location**: handlers.go:116-133, 439-450
 
 **See Also**: For complete format specification, validation rules, and interaction matrix, see [arguments/format.md](arguments/format.md)
+
+### 27. Tab Range Support
+
+- **Decision**: Support range syntax `N-M` in `--tab` flag for fetching multiple consecutive tabs
+- **Syntax**: `--tab 1-3` fetches tabs 1, 2, and 3
+- **Rationale**:
+  - **Intuitive**: Range notation is common and expected in CLI tools
+  - **Complements existing features**: Works alongside single tab (`--tab 1`) and all tabs (`--all-tabs`)
+  - **Easy to implement**: Simple regex pattern detection (`^\d+-\d+$`) before other pattern matching
+  - **Useful for workflows**: Batch process specific subset of tabs without processing all
+  - **Consistent with 1-based indexing**: Ranges use same indexing as single tab selection
+- **Design Constraints**:
+  - **No reverse ranges**: `3-1` is invalid (error: "start must be <= end")
+  - **No non-contiguous ranges**: Only `N-M` syntax, not `1,3,5` (keeps implementation simple)
+  - **Fail fast**: Stops at first missing tab in range (e.g., `1-100` fails when tab doesn't exist)
+  - **Range detection first**: Checked before integer/string pattern matching in priority order
+- **Behavior**:
+  - Multiple tabs fetched → Behaves like `--all-tabs` (auto-save, no stdout)
+  - Cannot use `--output` flag with ranges (error)
+  - Can use `--output-dir` to specify save directory
+  - Without output flags: Auto-saves to current directory with generated filenames
+- **Validation Rules**:
+  - Both start and end must be >= 1
+  - Start must be <= end
+  - Both indices must exist in browser (fails at first missing tab)
+  - Empty range parts invalid: `1-`, `-3` → Error
+- **Examples**:
+  ```bash
+  snag --tab 1-3                  # Fetch tabs 1, 2, 3 (auto-save)
+  snag -t 4-6 -d ./output/        # Tabs 4-6 to directory
+  snag -t 1-5 --format pdf        # Tabs 1-5 as PDFs
+  snag -t 2-2                     # Single tab (equivalent to --tab 2)
+  ```
+- **Integration**: Fits naturally into existing progressive fallthrough pattern matching as highest priority check
+- **Code Location**: Handler in `main.go` (range detection before pattern matching)
+
+**See Also**: For complete tab range specification and examples, see [arguments/tab.md](arguments/tab.md)
 
 ## References
 

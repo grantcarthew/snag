@@ -6,6 +6,7 @@
 
 **Pattern Types:**
 - Integer: Tab index (1-based, e.g., "1" = first tab)
+- Range: Tab index range (1-based, e.g., "1-3" = first three tabs)
 - String: URL pattern for matching (exact/substring/regex)
 - Empty/whitespace: **Error + list tabs**
 
@@ -13,17 +14,28 @@
 - Multiple `--tab` flags → **Last wins** (standard CLI behavior, no error, no warning)
 
 **Pattern Matching Priority (Progressive Fallthrough):**
-1. **Integer** → Tab index (1-based)
-2. **Exact match** → Case-insensitive URL match (`strings.EqualFold`)
-3. **Contains match** → Case-insensitive substring (`strings.Contains`)
-4. **Regex match** → Case-insensitive regex (`(?i)` flag)
-5. **No match** → Error + list tabs
+1. **Range** → Tab index range (format: `N-M` where N and M are positive integers)
+2. **Integer** → Tab index (1-based)
+3. **Exact match** → Case-insensitive URL match (`strings.EqualFold`)
+4. **Contains match** → Case-insensitive substring (`strings.Contains`)
+5. **Regex match** → Case-insensitive regex (`(?i)` flag)
+6. **No match** → Error + list tabs
+
+**Range Validation:**
+- Range format: `N-M` where both N and M are positive integers >= 1
+- Start must be <= end
+- Both indices must exist in browser tabs
+- Reverse ranges (e.g., `3-1`) → **Error**
 
 **Error Messages:**
 - Empty/whitespace pattern: `"Tab pattern cannot be empty"` + list available tabs
 - No matching tabs: `"No tab matches pattern '{pattern}'"` + list available tabs
 - Index out of range: `"Tab index {n} out of range (only {count} tabs open)"` + list available tabs
 - Invalid regex: `"Invalid regex pattern: {error}"`
+- Invalid range format: `"Invalid range format: use N-M (e.g., 1-3)"`
+- Invalid range: start > end: `"Invalid range: start must be <= end (got {start}-{end})"`
+- Range start < 1: `"Tab range must start from 1"`
+- Range exceeds tabs: `"Tab index {n} out of range in range {start}-{end} (only {count} tabs open)"`
 
 #### Behavior
 
@@ -39,6 +51,11 @@
 snag --tab 1                                    # First tab
 snag -t 3                                       # Third tab
 
+# By range (1-based)
+snag --tab 1-3                                  # First three tabs (1, 2, 3)
+snag -t 4-6                                     # Tabs 4 through 6
+snag -t 1-1                                     # Single tab (same as --tab 1)
+
 # By exact URL (case-insensitive)
 snag -t "https://github.com/grantcarthew/snag"  # Exact match
 snag -t "EXAMPLE.COM"                           # Case-insensitive
@@ -52,6 +69,13 @@ snag -t "https://.*\.com"                       # Regex: https:// + anything + .
 snag -t ".*/dashboard"                          # Regex: any URL ending with /dashboard
 snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.com
 ```
+
+**Range Behavior:**
+- Ranges fetch multiple tabs (like `--all-tabs` but limited to range)
+- Auto-saves to current directory with generated filenames (never outputs to stdout)
+- Cannot use `-o` flag (use `-d` for custom directory)
+- Processes tabs sequentially in order (1→2→3)
+- Fails fast: stops at first tab that doesn't exist
 
 **Multiple Matches:**
 - First matching tab wins (no error)
@@ -80,14 +104,16 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 | `--tab` + `--force-headless` | **Error** | `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"` |
 | `--tab` + `--open-browser` | **Warning**, flag ignored | `"Warning: --tab ignored with --open-browser (no content fetching)"` |
 
-**Output Control (All Work Normally):**
+**Output Control:**
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--tab` + `--output` | Works normally | Fetch from tab, save to file |
-| `--tab` + `--output-dir` | Works normally | Fetch from tab, auto-generate filename |
+| `--tab N` (single) + `--output` | Works normally | Fetch from tab, save to file |
+| `--tab N-M` (range) + `--output` | **Error** | `"Cannot use --output with multiple tabs. Use --output-dir instead"` |
+| `--tab` + `--output-dir` | Works normally | Fetch from tab(s), auto-generate filename(s) |
 | `--tab` + `--format` (all) | Works normally | All formats supported (md/html/text/pdf/png) |
-| `--tab` + no output flag | Works normally | Output to stdout |
+| `--tab N` (single) + no output | Works normally | Output to stdout |
+| `--tab N-M` (range) + no output | Auto-save | Auto-generates filenames in current directory |
 
 **Timing & Selector:**
 
@@ -122,6 +148,12 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 snag --tab 1                                    # First tab
 snag -t 2 -o output.md                          # Second tab, save to file
 
+# Fetch from tab range
+snag --tab 1-3                                  # First three tabs (auto-save to current dir)
+snag -t 4-6 -d ./output/                        # Tabs 4-6, save to specific directory
+snag -t 1-5 --format pdf                        # Tabs 1-5 as PDFs (auto-save)
+snag -t 2-2                                     # Single tab using range syntax
+
 # Fetch by URL pattern
 snag -t "github.com" --format html              # Match substring
 snag -t "https://example.com" -o page.md        # Exact URL match
@@ -151,6 +183,14 @@ snag --tab 1 https://example.com                # ERROR: Mutually exclusive with
 snag --tab 1 --url-file urls.txt                # ERROR: Mutually exclusive with --url-file
 snag --tab 1 --all-tabs                         # ERROR: Mutually exclusive with --all-tabs
 snag --tab 1 --force-headless                   # ERROR: Tab requires existing browser
+
+# Range errors
+snag --tab 3-1                                  # ERROR: Invalid range (start > end)
+snag --tab 0-3                                  # ERROR: Tab range must start from 1
+snag --tab 1-100                                # ERROR: Tab index out of range (fails at first missing tab)
+snag --tab 1-                                   # ERROR: Invalid range format
+snag --tab -3                                   # ERROR: Invalid range format
+snag --tab 1-3 -o output.md                     # ERROR: Cannot use --output with multiple tabs
 ```
 
 **With Warnings:**
@@ -178,12 +218,15 @@ snag --list-tabs --tab 1                        # --list-tabs overrides, lists a
 2. Check for mutually exclusive flags (URL, --url-file, --all-tabs, --open-browser, --force-headless)
 3. Connect to existing browser (error if none found)
 4. Parse pattern:
+   - If range (N-M): Validate range, fetch tabs sequentially, handle like multiple tabs
    - If integer: Convert to tab index (1-based → 0-based)
    - If string: Try exact match → substring → regex
 5. If no match: Error and list available tabs
-6. Fetch content from selected tab
+6. Fetch content from selected tab(s)
 7. Apply output options (--format, --output, --output-dir)
-8. Close tab if `--close-tab` is set
+   - Single tab: Can use `-o` or stdout
+   - Range: Must auto-save (like `--all-tabs` behavior)
+8. Close tab(s) if `--close-tab` is set
 
 **Pattern Matching Algorithm:**
 ```go
