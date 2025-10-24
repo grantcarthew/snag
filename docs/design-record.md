@@ -79,6 +79,21 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 See detailed rationale in [Design Decisions Made](#design-decisions-made) section below.
 
+## Detailed Argument Specifications
+
+For complete argument validation rules, interaction matrices, error messages, and usage examples, see the [argument documentation](arguments/):
+
+- **General**: [Validation Rules](arguments/validation.md) | [README](arguments/README.md)
+- **Content Sources**: [URL](arguments/url.md) | [URL File](arguments/url-file.md) | [Tab](arguments/tab.md) | [All Tabs](arguments/all-tabs.md)
+- **Output**: [Output](arguments/output.md) | [Output Dir](arguments/output-dir.md) | [Format](arguments/format.md)
+- **Browser**: [Open Browser](arguments/open-browser.md) | [Force Headless](arguments/force-headless.md) | [List Tabs](arguments/list-tabs.md) | [Close Tab](arguments/close-tab.md)
+- **Page Control**: [Wait For](arguments/wait-for.md) | [Timeout](arguments/timeout.md) | [Port](arguments/port.md)
+- **Request**: [User Agent](arguments/user-agent.md) | [User Data Dir](arguments/user-data-dir.md)
+- **Logging**: [Verbose](arguments/verbose.md) | [Quiet](arguments/quiet.md) | [Debug](arguments/debug.md)
+- **Info**: [Help](arguments/help.md) | [Version](arguments/version.md)
+
+The design record documents **WHY** decisions were made; the argument specs document **HOW** they work.
+
 ## Technology Stack
 
 **Language: Go**
@@ -580,6 +595,8 @@ $ snag https://example.com
   - urfave/cli v2 doesn't natively support position-independent args
   - Avoiding additional parsing complexity was prioritized
 
+**See Also**: For complete validation order and cross-cutting rules, see [arguments/validation.md](arguments/validation.md)
+
 ### 4. Platform Support
 
 - **Decision**: MVP targets macOS and Linux only; Windows is future consideration
@@ -786,6 +803,8 @@ $ snag https://example.com
       }
   }
   ```
+
+**See Also**: For output file specifications and validation rules, see [arguments/output.md](arguments/output.md) and [arguments/output-dir.md](arguments/output-dir.md)
 
 ### 12. Error Handling & Exit Codes
 
@@ -1054,6 +1073,8 @@ $ snag https://example.com
   - Maintains exact same behavior, just faster
 - **Code Location**: browser.go:487-507 (GetTabByPattern function)
 
+**See Also**: For complete tab selection specification and examples, see [arguments/tab.md](arguments/tab.md) and [arguments/list-tabs.md](arguments/list-tabs.md)
+
 ### 23. Format Name Normalization (Phase 3)
 
 - **Decision**: Change `FormatMarkdown` from "markdown" to "md"
@@ -1152,6 +1173,8 @@ $ snag https://example.com
   ```
 - **User Override**: Can still use `-o` or `-d` to specify custom location
 - **Code Location**: handlers.go:116-133, 439-450
+
+**See Also**: For complete format specification, validation rules, and interaction matrix, see [arguments/format.md](arguments/format.md)
 
 ## Implementation Notes
 
