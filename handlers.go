@@ -417,6 +417,8 @@ func handleTabFetch(c *cli.Context) error {
 		if err := validateOutputPath(outputFile); err != nil {
 			return err
 		}
+		// Check for extension mismatch and warn (non-blocking)
+		checkExtensionMismatch(outputFile, format)
 	}
 
 	// Get current page info
