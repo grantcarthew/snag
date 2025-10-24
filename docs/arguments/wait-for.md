@@ -28,8 +28,7 @@
 - This is normal/expected behavior tested in test suite
 
 **Multiple `--wait-for` flags:**
-- Behavior: **Error**
-- Error message: "Only one --wait-for option allowed"
+- Behavior: **Last wins** (standard CLI behavior, no error, no warning)
 
 **Extremely complex selector:**
 - Behavior: **Allow** if valid CSS syntax
@@ -87,7 +86,7 @@ All output flags work normally with `--wait-for`:
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--wait-for` + `--timeout` | Works normally | `--timeout` applies to navigation; `--wait-for` has separate timeout logic |
+| `--wait-for` + `--timeout` | Works normally | `--timeout` applies to both navigation and selector wait |
 | `--wait-for` + `--timeout` + `--tab` | Works normally | `--timeout` applies to `--wait-for` selector wait (warns if no --wait-for) |
 
 **Current implementation:**
@@ -116,11 +115,7 @@ snag --url-file urls.txt --wait-for ".content"              # URL file
 snag --tab 1 --wait-for ".content" -o output.md             # Existing tab (automation)
 snag --all-tabs --wait-for ".content" -d ./output           # All tabs
 snag https://example.com --wait-for ".content" --format pdf # With PDF output
-```
-
-**Invalid:**
-```bash
-snag --wait-for ".content" --wait-for ".other"              # ERROR: Multiple flags
+snag --wait-for ".content" --wait-for ".other"              # Uses ".other" (last wins)
 ```
 
 **With Warnings:**

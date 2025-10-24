@@ -13,7 +13,7 @@
 - Typos/close matches → Error (no fuzzy matching)
 
 **Multiple Format Flags:**
-- Multiple `--format` flags → Error: `"Only one --format option allowed"`
+- Multiple `--format` flags → **Last wins** (standard CLI behavior, no error, no warning)
 
 **Format Without Value:**
 - `--format` with no value → Parse error from CLI framework
@@ -21,7 +21,6 @@
 **Error Messages:**
 - Invalid format: `"Invalid format '{format}'. Supported: md, html, text, pdf, png"`
 - Empty format: `"Format cannot be empty"`
-- Multiple flags: `"Only one --format option allowed"`
 
 #### Behavior
 
@@ -152,6 +151,7 @@ snag url1 url2 --format pdf -d ./docs               # Batch PDF generation
 snag --url-file urls.txt --format text              # Text format for all
 snag --tab 1 --format html                          # HTML from tab
 snag --all-tabs --format pdf -d ./tabs              # All tabs as PDFs
+snag https://example.com --format html --format pdf # Uses pdf (last wins)
 ```
 
 **Invalid:**
@@ -159,7 +159,6 @@ snag --all-tabs --format pdf -d ./tabs              # All tabs as PDFs
 snag https://example.com --format invalid           # ERROR: Invalid format
 snag https://example.com --format ""                # ERROR: Empty format
 snag https://example.com --format                   # ERROR: Missing value
-snag https://example.com --format html --format pdf # ERROR: Multiple flags
 snag https://example.com --format markdwon          # ERROR: Typo (no fuzzy match)
 ```
 
@@ -193,7 +192,7 @@ snag https://example.com --format text -o file      # ⚠️ No extension
 - PDF/PNG use Chrome's native rendering capabilities
 - Never sent to stdout (would corrupt terminal)
 - Auto-generate filename if no output destination specified
-- Filename pattern: `yyyy-mm-dd-hhmmss-{title-slug}.{ext}`
+- Filename pattern: `yyyy-mm-dd-hhmmss-{page-title}-{slug}.{ext}`
 
 **Extension Mismatch Detection:**
 - Check output file extension against format
