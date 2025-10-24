@@ -5,15 +5,18 @@
 #### Validation Rules
 
 **Boolean Flag:**
+
 - No value required (presence = enabled)
 - No validation errors possible
 
 **Multiple Flags:**
+
 - Multiple `--open-browser` flags → **Silently ignored** (duplicate boolean)
 
 #### Behavior
 
 **Primary Purpose:**
+
 - Launch a persistent visible browser and exit snag (browser stays open)
 - Useful for setting up authenticated sessions or manual browsing
 - **Does not fetch content** - purely a "launch and exit" mode
@@ -21,9 +24,11 @@
 **Core Modes:**
 
 1. **Standalone (no URLs):**
+
    ```bash
    snag --open-browser
    ```
+
    - Opens visible browser
    - Exits snag immediately
    - Browser remains open for user interaction
@@ -40,60 +45,63 @@
    - Browser and tabs remain open for user interaction
 
 **Key Distinction:**
+
 - "Launch and exit" means **exit snag**, not the browser
 - Browser stays open after snag exits
 - No content is fetched or output
 
 **Browser Mode Conflicts:**
+
 - With `--force-headless`: **Error** - `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
 
 #### Interaction Matrix
 
 **Content Source Interactions:**
 
-| Combination | Behavior | Notes |
-|-------------|----------|-------|
-| `--open-browser` (no URLs) | Open browser, exit snag | Browser stays open |
-| `--open-browser` + single `<url>` | Open browser, navigate to URL, exit snag | No fetch, browser stays open |
-| `--open-browser` + multiple `<url>` | Open browser with multiple tabs, exit snag | One tab per URL, no fetch |
-| `--open-browser` + `--url-file` | Open browser with multiple tabs from file, exit snag | One tab per URL, no fetch |
-| `--open-browser` + `--tab` | **Warning** | `"Warning: --tab ignored with --open-browser (no content fetching)"` - Opens browser and exits |
-| `--open-browser` + `--all-tabs` | **Warning** | `"Warning: --all-tabs ignored with --open-browser (no content fetching)"` - Opens browser and exits |
-| `--open-browser` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
+| Combination                         | Behavior                                             | Notes                                                                                               |
+| ----------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `--open-browser` (no URLs)          | Open browser, exit snag                              | Browser stays open                                                                                  |
+| `--open-browser` + single `<url>`   | Open browser, navigate to URL, exit snag             | No fetch, browser stays open                                                                        |
+| `--open-browser` + multiple `<url>` | Open browser with multiple tabs, exit snag           | One tab per URL, no fetch                                                                           |
+| `--open-browser` + `--url-file`     | Open browser with multiple tabs from file, exit snag | One tab per URL, no fetch                                                                           |
+| `--open-browser` + `--tab`          | **Warning**                                          | `"Warning: --tab ignored with --open-browser (no content fetching)"` - Opens browser and exits      |
+| `--open-browser` + `--all-tabs`     | **Warning**                                          | `"Warning: --all-tabs ignored with --open-browser (no content fetching)"` - Opens browser and exits |
+| `--open-browser` + `--list-tabs`    | `--list-tabs` overrides                              | `--list-tabs` overrides all other options                                                           |
 
 **Rationale:**
+
 - `--open-browser` is purely for launching browser, not fetching content
 - Tab operations (`--tab`, `--all-tabs`) imply fetching, which conflicts with open-browser's purpose
-
 
 **Output Control Interactions:**
 
 All output/format flags are **warned and ignored** because `--open-browser` doesn't fetch content:
 
-| Combination | Behavior | Warning Message |
-|-------------|----------|-----------------|
-| `--open-browser` + `--output` | **Warning**, flag ignored | `"Warning: --output ignored with --open-browser (no content fetching)"` |
+| Combination                       | Behavior                  | Warning Message                                                             |
+| --------------------------------- | ------------------------- | --------------------------------------------------------------------------- |
+| `--open-browser` + `--output`     | **Warning**, flag ignored | `"Warning: --output ignored with --open-browser (no content fetching)"`     |
 | `--open-browser` + `--output-dir` | **Warning**, flag ignored | `"Warning: --output-dir ignored with --open-browser (no content fetching)"` |
-| `--open-browser` + `--format` | **Warning**, flag ignored | `"Warning: --format ignored with --open-browser (no content fetching)"` |
+| `--open-browser` + `--format`     | **Warning**, flag ignored | `"Warning: --format ignored with --open-browser (no content fetching)"`     |
 
 **Timing Interactions:**
 
-| Combination | Behavior | Warning Message |
-|-------------|----------|-----------------|
-| `--open-browser` + `--timeout` | **Warning**, flag ignored | `"Warning: --timeout ignored with --open-browser (no content fetching)"` |
+| Combination                     | Behavior                  | Warning Message                                                           |
+| ------------------------------- | ------------------------- | ------------------------------------------------------------------------- |
+| `--open-browser` + `--timeout`  | **Warning**, flag ignored | `"Warning: --timeout ignored with --open-browser (no content fetching)"`  |
 | `--open-browser` + `--wait-for` | **Warning**, flag ignored | `"Warning: --wait-for ignored with --open-browser (no content fetching)"` |
 
 **Browser Configuration Interactions:**
 
-| Combination | Behavior | Notes |
-|-------------|----------|-------|
-| `--open-browser` + `--port` | Works normally | Launch visible browser on custom port |
-| `--open-browser` + `--close-tab` | **Warning**, flag ignored | `"Warning: --close-tab ignored with --open-browser (no content fetching)"` |
-| `--open-browser` + `--user-agent` (no URLs) | **Warning**, flag ignored | `"Warning: --user-agent ignored with --open-browser (no navigation)"` |
-| `--open-browser` + `--user-agent` + URLs | Works normally | User agent applied during navigation to URLs |
-| `--open-browser` + `--user-data-dir` | Works normally | Launch visible browser with custom profile |
+| Combination                                 | Behavior                  | Notes                                                                      |
+| ------------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
+| `--open-browser` + `--port`                 | Works normally            | Launch visible browser on custom port                                      |
+| `--open-browser` + `--close-tab`            | **Warning**, flag ignored | `"Warning: --close-tab ignored with --open-browser (no content fetching)"` |
+| `--open-browser` + `--user-agent` (no URLs) | **Warning**, flag ignored | `"Warning: --user-agent ignored with --open-browser (no navigation)"`      |
+| `--open-browser` + `--user-agent` + URLs    | Works normally            | User agent applied during navigation to URLs                               |
+| `--open-browser` + `--user-data-dir`        | Works normally            | Launch visible browser with custom profile                                 |
 
 **User Agent Special Case:**
+
 - Without URLs: No navigation occurs, so user agent has no effect → Warn
 - With URLs: User agent is applied when navigating to URLs → Works normally
 
@@ -101,15 +109,16 @@ All output/format flags are **warned and ignored** because `--open-browser` does
 
 All logging flags work normally:
 
-| Combination | Behavior |
-|-------------|----------|
-| `--open-browser` + `--verbose` | Works normally (show verbose logs during browser launch) |
-| `--open-browser` + `--quiet` | Works normally (suppress logs during browser launch) |
-| `--open-browser` + `--debug` | Works normally (show debug/CDP logs during browser launch) |
+| Combination                    | Behavior                                                   |
+| ------------------------------ | ---------------------------------------------------------- |
+| `--open-browser` + `--verbose` | Works normally (show verbose logs during browser launch)   |
+| `--open-browser` + `--quiet`   | Works normally (suppress logs during browser launch)       |
+| `--open-browser` + `--debug`   | Works normally (show debug/CDP logs during browser launch) |
 
 #### Examples
 
 **Valid:**
+
 ```bash
 # Launch browser only
 snag --open-browser
@@ -137,6 +146,7 @@ snag --open-browser --verbose https://example.com
 ```
 
 **Invalid (Errors):**
+
 ```bash
 # ERROR: Conflicting modes
 snag --open-browser --force-headless
@@ -146,6 +156,7 @@ snag --open-browser --list-tabs
 ```
 
 **With Warnings (Flags Ignored):**
+
 ```bash
 # ⚠️ Output flags ignored (no fetching)
 snag --open-browser https://example.com --output file.md
@@ -170,11 +181,13 @@ snag --open-browser https://example.com --close-tab
 #### Implementation Details
 
 **Location:**
+
 - Flag definition: `main.go` (in CLI flag definitions)
 - Browser launch logic: `browser.go` (browser mode detection and launch)
 - Handler: `main.go` (open-browser mode handler)
 
 **How it works:**
+
 1. Check if `--open-browser` is set
 2. Validate conflicts with `--force-headless` → Error if present
 3. Warn about ignored flags (output, format, timing, tab operations, etc.)
@@ -183,10 +196,11 @@ snag --open-browser https://example.com --close-tab
 6. Exit snag immediately (browser stays open)
 
 **Error Messages:**
+
 - Mode conflict: `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
 
-
 **Warning Messages:**
+
 - Output flags: `"Warning: --output ignored with --open-browser (no content fetching)"`
 - Format: `"Warning: --format ignored with --open-browser (no content fetching)"`
 - Timeout: `"Warning: --timeout ignored with --open-browser (no content fetching)"`
