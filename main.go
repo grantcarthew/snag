@@ -194,7 +194,7 @@ func run(c *cli.Context) error {
 	var urls []string
 
 	// Load URLs from file if --url-file is provided
-	if urlFile := c.String("url-file"); urlFile != "" {
+	if urlFile := strings.TrimSpace(c.String("url-file")); urlFile != "" {
 		fileURLs, err := loadURLsFromFile(urlFile)
 		if err != nil {
 			return err
@@ -202,8 +202,10 @@ func run(c *cli.Context) error {
 		urls = append(urls, fileURLs...)
 	}
 
-	// Add command-line URL arguments
-	urls = append(urls, c.Args().Slice()...)
+	// Add command-line URL arguments (trim whitespace)
+	for _, arg := range c.Args().Slice() {
+		urls = append(urls, strings.TrimSpace(arg))
+	}
 
 	// Validate that no flags are mixed with URLs (common user error)
 	for _, arg := range urls {
@@ -291,16 +293,16 @@ func run(c *cli.Context) error {
 		// Extract configuration from flags
 		config := &Config{
 			URL:           validatedURL,
-			OutputFile:    c.String("output"),
-			OutputDir:     c.String("output-dir"),
+			OutputFile:    strings.TrimSpace(c.String("output")),
+			OutputDir:     strings.TrimSpace(c.String("output-dir")),
 			Format:        format,
 			Timeout:       c.Int("timeout"),
-			WaitFor:       c.String("wait-for"),
+			WaitFor:       strings.TrimSpace(c.String("wait-for")),
 			Port:          c.Int("port"),
 			CloseTab:      c.Bool("close-tab"),
 			ForceHeadless: c.Bool("force-headless"),
 			OpenBrowser:   c.Bool("open-browser"),
-			UserAgent:     c.String("user-agent"),
+			UserAgent:     strings.TrimSpace(c.String("user-agent")),
 		}
 
 		logger.Debug("Config: format=%s, timeout=%d, port=%d", config.Format, config.Timeout, config.Port)
