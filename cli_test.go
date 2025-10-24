@@ -650,8 +650,8 @@ func TestBrowser_ForceHeadless(t *testing.T) {
 	_ = output // May or may not contain mode indication
 }
 
-// TestBrowser_ForceVisible tests --force-visible flag
-func TestBrowser_ForceVisible(t *testing.T) {
+// TestBrowser_OpenBrowserWithCloseTab tests --open-browser with --close-tab
+func TestBrowser_OpenBrowserWithCloseTab(t *testing.T) {
 	if !isBrowserAvailable() {
 		t.Skip("Browser not available, skipping browser integration test")
 	}
@@ -661,7 +661,7 @@ func TestBrowser_ForceVisible(t *testing.T) {
 
 	// Note: This will actually open a visible browser window
 	// In CI environments, this requires a display server
-	stdout, stderr, err := runSnag("--force-visible", "--close-tab", url)
+	stdout, stderr, err := runSnag("--open-browser", "--close-tab", url)
 
 	assertNoError(t, err)
 	assertExitCode(t, err, 0)
@@ -683,7 +683,7 @@ func TestBrowser_OpenBrowser(t *testing.T) {
 	server := startTestServer(t)
 	url := server.URL + "/simple.html"
 
-	stdout, stderr, err := runSnag("--open-browser", "--force-visible", url)
+	stdout, stderr, err := runSnag("--open-browser", "--open-browser", url)
 
 	assertNoError(t, err)
 	assertExitCode(t, err, 0)
@@ -727,14 +727,14 @@ func TestBrowser_ConnectExisting(t *testing.T) {
 	}
 
 	// This test verifies that snag can connect to an already-running Chrome instance
-	// First, launch Chrome with --force-visible to create a persistent instance
+	// First, launch Chrome with --open-browser to create a persistent instance
 	// Then run snag without force flags to connect to it
 
 	server := startTestServer(t)
 	url := server.URL + "/simple.html"
 
 	// First run: Launch visible browser to create persistent instance
-	stdout1, stderr1, err1 := runSnag("--force-visible", "--close-tab", url)
+	stdout1, stderr1, err1 := runSnag("--open-browser", "--close-tab", url)
 
 	assertNoError(t, err1)
 	assertExitCode(t, err1, 0)
@@ -1155,7 +1155,7 @@ func TestBrowser_ListTabs(t *testing.T) {
 	cleanupOrphanedBrowsers()
 
 	// First, open a browser with a visible tab
-	stdout1, stderr1, err1 := runSnag("--force-visible", "https://example.com")
+	stdout1, stderr1, err1 := runSnag("--open-browser", "https://example.com")
 	assertNoError(t, err1)
 	assertExitCode(t, err1, 0)
 
@@ -1221,7 +1221,7 @@ func TestCLI_TabInvalidIndex(t *testing.T) {
 	cleanupOrphanedBrowsers()
 
 	// First, open a browser
-	_, _, err1 := runSnag("--force-visible", "https://example.com")
+	_, _, err1 := runSnag("--open-browser", "https://example.com")
 	assertNoError(t, err1)
 
 	// Try to use --tab with non-numeric value (now treated as pattern in Phase 2.3)
@@ -1246,7 +1246,7 @@ func TestBrowser_TabByIndex(t *testing.T) {
 	cleanupOrphanedBrowsers()
 
 	// First, open a browser with example.com
-	stdout1, stderr1, err1 := runSnag("--force-visible", "https://example.com")
+	stdout1, stderr1, err1 := runSnag("--open-browser", "https://example.com")
 	assertNoError(t, err1)
 	assertExitCode(t, err1, 0)
 	assertContains(t, stdout1, "Example Domain")
@@ -1275,7 +1275,7 @@ func TestBrowser_TabOutOfRange(t *testing.T) {
 	cleanupOrphanedBrowsers()
 
 	// First, open a browser
-	_, _, err1 := runSnag("--force-visible", "https://example.com")
+	_, _, err1 := runSnag("--open-browser", "https://example.com")
 	assertNoError(t, err1)
 
 	// Try to fetch from tab index 999 (out of range)
@@ -1299,7 +1299,7 @@ func TestBrowser_TabWithFormat(t *testing.T) {
 	cleanupOrphanedBrowsers()
 
 	// First, open a browser
-	stdout1, _, err1 := runSnag("--force-visible", "https://example.com")
+	stdout1, _, err1 := runSnag("--open-browser", "https://example.com")
 	assertNoError(t, err1)
 	assertContains(t, stdout1, "Example Domain")
 
@@ -1325,7 +1325,7 @@ func TestBrowser_TabByExactMatch(t *testing.T) {
 	cleanupOrphanedBrowsers()
 
 	// First, open a browser with example.com
-	stdout1, _, err1 := runSnag("--force-visible", "https://example.com/")
+	stdout1, _, err1 := runSnag("--open-browser", "https://example.com/")
 	assertNoError(t, err1)
 	assertContains(t, stdout1, "Example Domain")
 
@@ -1353,7 +1353,7 @@ func TestBrowser_TabBySubstring(t *testing.T) {
 	cleanupOrphanedBrowsers()
 
 	// First, open a browser with example.com
-	stdout1, _, err1 := runSnag("--force-visible", "https://example.com")
+	stdout1, _, err1 := runSnag("--open-browser", "https://example.com")
 	assertNoError(t, err1)
 	assertContains(t, stdout1, "Example Domain")
 
@@ -1381,7 +1381,7 @@ func TestBrowser_TabByRegex(t *testing.T) {
 	cleanupOrphanedBrowsers()
 
 	// First, open a browser with example.com
-	stdout1, _, err1 := runSnag("--force-visible", "https://example.com")
+	stdout1, _, err1 := runSnag("--open-browser", "https://example.com")
 	assertNoError(t, err1)
 	assertContains(t, stdout1, "Example Domain")
 
@@ -1409,7 +1409,7 @@ func TestBrowser_TabNoMatch(t *testing.T) {
 	cleanupOrphanedBrowsers()
 
 	// First, open a browser
-	_, _, err1 := runSnag("--force-visible", "https://example.com")
+	_, _, err1 := runSnag("--open-browser", "https://example.com")
 	assertNoError(t, err1)
 
 	// Try to fetch from tab with non-matching pattern

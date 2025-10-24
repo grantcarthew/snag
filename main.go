@@ -127,10 +127,6 @@ func main() {
 				Usage: "Force headless mode even if Chrome is running",
 			},
 			&cli.BoolFlag{
-				Name:  "force-visible",
-				Usage: "Force visible mode for authentication",
-			},
-			&cli.BoolFlag{
 				Name:    "open-browser",
 				Aliases: []string{"b"},
 				Usage:   "Open Chrome browser in visible state (no URL required)",
@@ -258,9 +254,8 @@ func run(c *cli.Context) error {
 	if c.Bool("open-browser") && len(urls) == 0 {
 		logger.Info("Opening browser...")
 		bm := NewBrowserManager(BrowserOptions{
-			Port:         c.Int("port"),
-			OpenBrowser:  true,
-			ForceVisible: true,
+			Port:        c.Int("port"),
+			OpenBrowser: true,
 		})
 		return bm.OpenBrowserOnly()
 	}
@@ -290,12 +285,6 @@ func run(c *cli.Context) error {
 
 		logger.Verbose("Target URL: %s", validatedURL)
 
-		// Validate conflicting flags
-		if c.Bool("force-headless") && c.Bool("force-visible") {
-			logger.Error("Conflicting flags: --force-headless and --force-visible cannot be used together")
-			return fmt.Errorf("conflicting flags: --force-headless and --force-visible")
-		}
-
 		// Normalize format (handles case-insensitive input and aliases)
 		format := normalizeFormat(c.String("format"))
 
@@ -310,7 +299,6 @@ func run(c *cli.Context) error {
 			Port:          c.Int("port"),
 			CloseTab:      c.Bool("close-tab"),
 			ForceHeadless: c.Bool("force-headless"),
-			ForceVisible:  c.Bool("force-visible"),
 			OpenBrowser:   c.Bool("open-browser"),
 			UserAgent:     c.String("user-agent"),
 		}

@@ -30,7 +30,6 @@ type Config struct {
 	Port          int
 	CloseTab      bool
 	ForceHeadless bool
-	ForceVisible  bool
 	OpenBrowser   bool
 	UserAgent     string
 }
@@ -41,7 +40,6 @@ func snag(config *Config) error {
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          config.Port,
 		ForceHeadless: config.ForceHeadless,
-		ForceVisible:  config.ForceVisible,
 		OpenBrowser:   config.OpenBrowser,
 		UserAgent:     config.UserAgent,
 	})
@@ -461,7 +459,6 @@ func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
 	// Create browser manager in visible mode
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          c.Int("port"),
-		ForceVisible:  true,
 		OpenBrowser:   true,
 		ForceHeadless: false,
 		UserAgent:     c.String("user-agent"),
@@ -559,7 +556,6 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          c.Int("port"),
 		ForceHeadless: c.Bool("force-headless"),
-		ForceVisible:  c.Bool("force-visible"),
 		UserAgent:     c.String("user-agent"),
 	})
 
