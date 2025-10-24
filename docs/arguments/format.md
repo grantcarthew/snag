@@ -103,7 +103,7 @@ snag https://example.com --format html -o page.md
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `--format` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
+| `--format` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 | `--format` + `--open-browser` (no URL) | **Warning**, flag ignored | `"Warning: --format ignored with --open-browser (no content fetching)"` |
 
 **Browser Mode Interactions:**

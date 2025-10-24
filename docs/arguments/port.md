@@ -17,7 +17,7 @@
 |-------|----------|---------------|
 | Negative (e.g., `-1`) | Error immediately | "Port must be between 1024 and 65535" |
 | Zero | Error immediately | "Port must be between 1024 and 65535" |
-| Below 1024 (e.g., `80`, `443`) | Error immediately | "Port must be between 1024 and 65535 (privileged ports not allowed)" |
+| Below 1024 (e.g., `80`, `443`) | Error immediately | "Port must be between 1024 and 65535" |
 | Above 65535 (e.g., `70000`) | Error immediately | "Port must be between 1024 and 65535" |
 | Non-integer (e.g., `9222.5`) | Error immediately | "Invalid port value: must be an integer" |
 | Non-numeric (e.g., `abc`) | Error immediately | "Invalid port value: {value}" |
@@ -56,7 +56,7 @@ snag --port 9223 https://example.com
 | `--port 9223` + browser on 9222 | No cross-detection | 9222 browser not detected, try 9223 |
 | `--port` + `--force-headless` | Launch headless on port | Works normally |
 | `--port` + `--open-browser` | Open browser on port | Works normally |
-| `--port` + `--list-tabs` | List tabs from port | Works normally |
+| `--port` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 | `--port` + `--tab` | Fetch tab from port | Works normally |
 | `--port` + `--all-tabs` | Fetch all tabs from port | Works normally |
 

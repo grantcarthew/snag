@@ -89,7 +89,7 @@ snag --url-file urls.txt https://example.com https://go.dev
 | `--url-file` + another `--url-file` | **Error** | Only one --url-file flag allowed, user must merge files |
 | `--url-file` + `--tab` | **Error** | Mutually exclusive content sources |
 | `--url-file` + `--all-tabs` | **Error** | Mutually exclusive content sources |
-| `--url-file` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` acts like `--help`, overrides other args |
+| `--url-file` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 
 **Output Control:**
 

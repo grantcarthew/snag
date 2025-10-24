@@ -39,7 +39,7 @@
 | `--force-headless` + `--url-file` | **Silently ignore** flag | Headless is default, not needed |
 | `--force-headless` + `--tab` | **Error** | `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"` |
 | `--force-headless` + `--all-tabs` | **Error** | `"Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)"` |
-| `--force-headless` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
+| `--force-headless` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 
 **Rationale for Tab Errors:**
 - `--force-headless` implies launching a new browser

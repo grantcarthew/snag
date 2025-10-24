@@ -53,7 +53,7 @@
 |-------------|----------|-------|
 | `--wait-for` + `--tab` | **Works** | Supports automation with persistent browser - wait for selector in existing tab |
 | `--wait-for` + `--all-tabs` | **Works** | Same selector applied to all tabs before fetching |
-| `--wait-for` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` acts like `--help`, overrides other args |
+| `--wait-for` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 
 **Use case for tabs + wait-for:**
 - Persistent visible browser with authenticated sessions

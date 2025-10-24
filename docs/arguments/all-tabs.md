@@ -65,7 +65,7 @@
 | `--all-tabs` + `<url>` (multiple) | **Error** | `"Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)"` |
 | `--all-tabs` + `--url-file` | **Error** | `"Cannot use both --all-tabs and --url-file (mutually exclusive content sources)"` |
 | `--all-tabs` + `--tab` | **Error** | `"Cannot use both --tab and --all-tabs (mutually exclusive content sources)"` |
-| `--all-tabs` + `--list-tabs` | `--list-tabs` overrides | Lists all tabs, ignores `--all-tabs` (no error) |
+| `--all-tabs` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options (no error) |
 
 **Browser Mode Conflicts (All ERROR):**
 

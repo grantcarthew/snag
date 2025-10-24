@@ -59,7 +59,7 @@
 | `--open-browser` + `--url-file` | Open browser with multiple tabs from file, exit snag | One tab per URL, no fetch |
 | `--open-browser` + `--tab` | **Warning** | `"Warning: --tab ignored with --open-browser (no content fetching)"` - Opens browser and exits |
 | `--open-browser` + `--all-tabs` | **Warning** | `"Warning: --all-tabs ignored with --open-browser (no content fetching)"` - Opens browser and exits |
-| `--open-browser` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
+| `--open-browser` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 
 **Rationale:**
 - `--open-browser` is purely for launching browser, not fetching content
