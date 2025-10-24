@@ -47,7 +47,7 @@
 - Always saves to files (never stdout)
 - No `-d` flag → Auto-generated filenames in current directory (`.`)
 - With `-d ./dir` → Auto-generated filenames in specified directory
-- Filename format: `yyyy-mm-dd-hhmmss-{title-slug}.{ext}`
+- Filename format: `yyyy-mm-dd-hhmmss-{page-title}-{slug}.{ext}`
 - Filename conflicts: Append `-1`, `-2`, etc. (existing conflict resolution)
 
 **Close-Tab Behavior:**
@@ -217,7 +217,7 @@ func isNonFetchableURL(url string) bool {
 ```
 
 **Filename Generation:**
-- Format: `yyyy-mm-dd-hhmmss-{title-slug}.{ext}`
+- Format: `yyyy-mm-dd-hhmmss-{page-title}-{slug}.{ext}`
 - Extension based on `--format` flag
 - Title slug: Lowercase, alphanumeric + hyphens, max length
 - Conflict resolution: Append `-1`, `-2`, etc. if file exists

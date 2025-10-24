@@ -33,7 +33,7 @@
 - Valid schemes: `http`, `https`, `file` (same as `<url>` argument)
 
 **Multiple Files:**
-- Multiple `--url-file` flags → Error: `"Only one --url-file option allowed"`
+- Multiple `--url-file` flags → **Last wins** (standard CLI behavior, no error, no warning)
 - User must manually merge files if needed
 
 **Error Messages:**
@@ -41,7 +41,6 @@
 - No valid URLs: `"no valid URLs found"`
 - Invalid URL in file: `"Line {N}: Invalid URL - skipping: {url}"`
 - Space without comment: `"Line {N}: URL contains space without comment marker - skipping: {line}"`
-- Multiple url-file flags: `"Only one --url-file option allowed"`
 
 #### Behavior
 
@@ -86,7 +85,7 @@ snag --url-file urls.txt https://example.com https://go.dev
 | Combination | Behavior | Rationale |
 |-------------|----------|-----------|
 | `--url-file` + `<url>` arguments | **Merge** both sources | Allows combining file with additional URLs |
-| `--url-file` + another `--url-file` | **Error** | Only one --url-file flag allowed, user must merge files |
+| `--url-file` + another `--url-file` | **Last wins** | Standard CLI behavior (e.g., `--url-file f1.txt --url-file f2.txt` uses `f2.txt`) |
 | `--url-file` + `--tab` | **Error** | Mutually exclusive content sources |
 | `--url-file` + `--all-tabs` | **Error** | Mutually exclusive content sources |
 | `--url-file` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
@@ -142,6 +141,7 @@ snag --url-file urls.txt -d ./out --format pdf     # PDF batch to directory
 snag --url-file urls.txt --timeout 60              # 60s timeout per URL
 snag --url-file urls.txt --wait-for ".content"     # Wait on every page
 snag --url-file urls.txt --open-browser            # Open in tabs, no fetch
+snag --url-file f1.txt --url-file f2.txt           # Uses f2.txt (last wins)
 ```
 
 **Invalid:**
@@ -153,7 +153,6 @@ snag --url-file urls.txt --tab 1                   # ERROR: Conflicting sources
 snag --url-file urls.txt --all-tabs                # ERROR: Conflicting sources
 snag --url-file urls.txt --list-tabs               # --url-file ignored, lists tabs from existing browser
 snag --url-file urls.txt --close-tab               # Close each tab after fetching
-snag --url-file f1.txt --url-file f2.txt           # ERROR: Only one --url-file allowed
 ```
 
 **File Format Examples:**

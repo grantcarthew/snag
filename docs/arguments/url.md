@@ -18,6 +18,8 @@
 **Error Messages:**
 - Invalid URL format: `"Invalid URL format: {url}"`
 - Invalid scheme: `"Invalid URL scheme '{scheme}'. Supported: http, https, file"`
+- URL + `--tab`: `"Cannot use both --tab and URL arguments (mutually exclusive content sources)"`
+- URL + `--all-tabs`: `"Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)"`
 
 ## Multiple URLs Behavior
 
@@ -27,7 +29,7 @@ snag https://example.com https://google.com
 ```
 - Behavior: Auto-generate filenames in current directory
 - Browser mode: Headless if no browser open
-- Each URL gets separate file: `{timestamp}-{slug}.{ext}`
+- Each URL gets separate file: `yyyy-mm-dd-hhmmss-{page-title}-{slug}.{ext}`
 
 **With `--output FILE`:**
 ```bash
@@ -35,6 +37,9 @@ snag -o output.md https://example.com https://google.com
 ```
 - Behavior: **Error** - Cannot combine multiple sources into single output file
 - Error message: `"Cannot use --output with multiple content sources. Use --output-dir instead"`
+
+**Error Messages:**
+- Multiple URLs + `-o`: `"Cannot use --output with multiple content sources. Use --output-dir instead"`
 
 **With `--output-dir DIR`:**
 ```bash

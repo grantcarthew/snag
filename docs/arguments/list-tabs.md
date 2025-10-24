@@ -9,7 +9,7 @@
 - No validation errors possible
 
 **Multiple Flags:**
-- Multiple `--list-tabs` flags → **Silently ignore** (duplicate boolean values)
+- Multiple `--list-tabs` flags → **Silently ignored** (duplicate boolean)
 
 #### Behavior
 
