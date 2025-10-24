@@ -36,7 +36,7 @@
 
 ### Advanced Topics
 
-- [**Validation Rules**](./validation.md) - Validation order, patterns, and checklist
+- [**Validation Rules**](./validation.md) - Validation order and cross-cutting rules
 
 ---
 
