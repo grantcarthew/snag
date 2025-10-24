@@ -7,9 +7,10 @@
 **Invalid Values:**
 
 **Empty string:**
-- Behavior: **Ignored** (silently skipped, no error or warning)
-- Rationale: Empty string is effectively "don't use wait-for", which is default behavior
-- Many CLI tools silently ignore empty string values for optional flags
+- Behavior: **Warning + Ignored**
+- Warning message: "Warning: --wait-for selector is empty, ignoring"
+- Rationale: User explicitly provided flag but with no value - likely a mistake worth warning about
+- Consistent with `--user-agent` and `--user-data-dir` empty string handling
 
 **Whitespace-only string:**
 - Behavior: **Ignored** after trimming
@@ -125,8 +126,8 @@ snag --wait-for ".content" --wait-for ".other"              # ERROR: Multiple fl
 **With Warnings:**
 ```bash
 snag --open-browser https://example.com --wait-for ".content"  # ⚠️  No effect (no fetch)
-snag --wait-for "   "                                          # Ignored after trim
-snag --wait-for ""                                             # Ignored (empty)
+snag --wait-for ""                                             # ⚠️  Warning: selector empty
+snag --wait-for "   "                                          # ⚠️  Warning: selector empty (after trim)
 ```
 
 ## Implementation Details
@@ -139,11 +140,12 @@ snag --wait-for ""                                             # Ignored (empty)
 
 **How it works:**
 1. Takes CSS selector string value
-2. If empty string after trim, silently skip (no validation error)
-3. Wait for element to appear using `page.Element(selector)` with timeout
-4. Wait for element to be visible using `elem.WaitVisible()`
-5. Return error if selector never appears or never becomes visible
-6. Timeout errors include helpful suggestion to increase `--timeout`
+2. Trim whitespace using `strings.TrimSpace()`
+3. If empty string after trim, warn and skip: "Warning: --wait-for selector is empty, ignoring"
+4. Wait for element to appear using `page.Element(selector)` with timeout
+5. Wait for element to be visible using `elem.WaitVisible()`
+6. Return error if selector never appears or never becomes visible
+7. Timeout errors include helpful suggestion to increase `--timeout`
 
 **Validation:**
 - No upfront CSS syntax validation
