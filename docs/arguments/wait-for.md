@@ -76,7 +76,7 @@ All output flags work normally with `--wait-for`:
 | `--wait-for` + `--open-browser` + URL | **Warning** | Flag ignored, `--open-browser` doesn't fetch content |
 
 **Warning message:**
-- "Warning: --wait-for has no effect with --open-browser (no content fetching)"
+- "Warning: --wait-for ignored with --open-browser (no content fetching)"
 
 ## Timing Interactions
 

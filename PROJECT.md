@@ -442,14 +442,22 @@ All 7 critical contradictions resolved:
 
 **Result:** Warning messages now use consistent "cannot change" phrasing across user-agent.md, tab.md, and all-tabs.md.
 
-#### Phase 2: Warning Message Standardization (7 issues) 🚧 IN PROGRESS
+#### Phase 2: Warning Message Standardization (7 issues) ✅ COMPLETE (2025-10-24)
 - [x] Issue #8: `--user-agent` + `--tab` wording - 2025-10-24
 - [x] Issue #9: `--user-agent` + `--all-tabs` wording - 2025-10-24
-- [ ] Issue #10: `--close-tab` + `--open-browser` wording
-- [ ] Issue #11: `--format` + `--open-browser` missing warning
-- [ ] Issue #12: `--timeout` + `--open-browser` missing warning
-- [ ] Issue #13: `--output-dir` + `--open-browser` missing warning
-- [ ] Issue #14: `--wait-for` + `--open-browser` phrasing
+- [x] Issue #10: `--close-tab` + `--open-browser` wording - 2025-10-24
+- [x] Issue #11: `--format` + `--open-browser` missing warning - 2025-10-24
+- [x] Issue #12: `--timeout` + `--open-browser` missing warning - 2025-10-24
+- [x] Issue #13: `--output-dir` + `--open-browser` missing warning - 2025-10-24
+- [x] Issue #14: `--wait-for` + `--open-browser` phrasing - 2025-10-24
+
+**Files Modified:**
+- `docs/arguments/user-agent.md` (Issues #8, #9)
+- `docs/arguments/close-tab.md` (Issue #10)
+- `docs/arguments/format.md` (Issue #11)
+- `docs/arguments/timeout.md` (Issue #12)
+- `docs/arguments/output-dir.md` (Issue #13)
+- `docs/arguments/wait-for.md` (Issue #14)
 
 #### Phase 3: Verification
 - [ ] Re-run cross-review to verify all contradictions resolved
@@ -463,4 +471,5 @@ All 7 critical contradictions resolved:
 **Implementation Started:** 2025-10-24 09:30 AEST
 **Phase 1 Completed:** 2025-10-24 09:50 AEST
 **Phase 2 Started:** 2025-10-24 10:00 AEST
-**Status:** Phase 2 in progress - 2 of 7 warning message standardizations complete (Issues #8, #9). Files modified: user-agent.md
+**Phase 2 Completed:** 2025-10-24 10:30 AEST
+**Status:** Phase 2 complete - All 7 warning message standardizations done (Issues #8-14). Ready for Phase 3 verification.
