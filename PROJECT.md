@@ -34,8 +34,8 @@ For each argument documentation file:
 - [x] **url.md** - Primary URL argument(s) for fetching content (✅ 2025-10-24)
 - [x] **url-file.md** - Batch URL processing from file input (✅ 2025-10-24)
 - [x] **format.md** - Output format selection (markdown/html/text/pdf/png) (✅ 2025-10-24)
-- [ ] **output.md** - Output file specification (-o flag)
-- [ ] **output-dir.md** - Output directory for batch operations (-d flag)
+- [x] **output.md** - Output file specification (-o flag) (✅ 2025-10-25)
+- [x] **output-dir.md** - Output directory for batch operations (-d flag) (✅ 2025-10-25)
 
 ### Tab Management Arguments
 
@@ -113,7 +113,7 @@ For each argument, verify:
 - **Started**: 2025-10-24
 - **Completed**: _In Progress_
 - **Total Arguments**: 22
-- **Reviewed**: 3
-- **Fully Implemented**: 3
+- **Reviewed**: 5
+- **Fully Implemented**: 5
 - **Partially Implemented**: 0
 - **Not Implemented**: 0

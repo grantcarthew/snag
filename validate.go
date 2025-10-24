@@ -92,6 +92,39 @@ func validatePort(port int) error {
 
 // validateOutputPath checks if the output file path is writable
 func validateOutputPath(path string) error {
+	// Check for empty string
+	if path == "" {
+		logger.Error("Output file path cannot be empty")
+		logger.ErrorWithSuggestion(
+			"Provide a valid file path",
+			"snag <url> -o /path/to/output.md",
+		)
+		return fmt.Errorf("output file path cannot be empty")
+	}
+
+	// Check if path is a directory
+	if info, err := os.Stat(path); err == nil && info.IsDir() {
+		logger.Error("Output path is a directory, not a file: %s", path)
+		logger.ErrorWithSuggestion(
+			"Specify a file path, not a directory",
+			"snag <url> -o /path/to/file.md",
+		)
+		return fmt.Errorf("output path is a directory, not a file: %s", path)
+	}
+
+	// Check if existing file is read-only
+	if info, err := os.Stat(path); err == nil {
+		// File exists, check if it's writable
+		if info.Mode().Perm()&0200 == 0 {
+			logger.Error("Cannot write to read-only file: %s", path)
+			logger.ErrorWithSuggestion(
+				"Make file writable or choose different path",
+				"chmod u+w "+path,
+			)
+			return fmt.Errorf("cannot write to read-only file: %s", path)
+		}
+	}
+
 	// Get the directory path
 	dir := filepath.Dir(path)
 

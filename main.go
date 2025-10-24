@@ -330,12 +330,17 @@ func run(c *cli.Context) error {
 		}
 
 		// Validate output file path if provided
-		if config.OutputFile != "" {
+		if c.IsSet("output") || config.OutputFile != "" {
 			if err := validateOutputPath(config.OutputFile); err != nil {
 				return err
 			}
 			// Check for extension mismatch and warn (non-blocking)
 			checkExtensionMismatch(config.OutputFile, config.Format)
+		}
+
+		// Handle --output-dir empty string: default to current directory
+		if c.IsSet("output-dir") && config.OutputDir == "" {
+			config.OutputDir = "."
 		}
 
 		// Validate output directory if provided
