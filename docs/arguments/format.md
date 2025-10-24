@@ -13,7 +13,7 @@
 - Typos/close matches → Error (no fuzzy matching)
 
 **Multiple Format Flags:**
-- Multiple `--format` flags → Error: `"Only one --format flag allowed"`
+- Multiple `--format` flags → Error: `"Only one --format option allowed"`
 
 **Format Without Value:**
 - `--format` with no value → Parse error from CLI framework
@@ -21,7 +21,7 @@
 **Error Messages:**
 - Invalid format: `"Invalid format '{format}'. Supported: md, html, text, pdf, png"`
 - Empty format: `"Format cannot be empty"`
-- Multiple flags: `"Only one --format flag allowed"`
+- Multiple flags: `"Only one --format option allowed"`
 
 #### Behavior
 

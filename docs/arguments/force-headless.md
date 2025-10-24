@@ -9,7 +9,7 @@
 - No validation errors possible
 
 **Multiple Flags:**
-- Multiple `--force-headless` flags → **Error**: `"Only one --force-headless flag allowed"`
+- Multiple `--force-headless` flags → **Silently ignore** (duplicate boolean values)
 
 #### Behavior
 
@@ -26,7 +26,6 @@
 - Custom port via `--port`: Works normally (launches new headless browser on custom port, ignoring existing browser)
 
 **Browser Mode Conflicts:**
-- Multiple `--force-headless`: **Error** - `"Only one --force-headless flag allowed"`
 - With `--open-browser`: **Error** - `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
 
 #### Interaction Matrix
@@ -94,9 +93,6 @@ snag --force-headless --open-browser
 snag --force-headless --tab 1
 snag --force-headless --all-tabs
 snag --force-headless --list-tabs                    # --force-headless ignored, lists tabs from existing browser
-
-# ERROR: Multiple flags
-snag --force-headless --force-headless https://example.com
 ```
 
 **With Warnings:**
@@ -111,6 +107,9 @@ snag --force-headless --close-tab https://example.com
 snag --force-headless https://example.com          # Flag ignored (no browser)
 snag --force-headless url1 url2                    # Flag ignored (no browser)
 snag --force-headless --url-file urls.txt          # Flag ignored (no browser)
+
+# Multiple flags (duplicate boolean)
+snag --force-headless --force-headless https://example.com
 ```
 
 #### Implementation Details
@@ -129,7 +128,6 @@ snag --force-headless --url-file urls.txt          # Flag ignored (no browser)
 
 **Error Messages:**
 - Tab operation conflicts: `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"`
-- Multiple flags: `"Only one --force-headless flag allowed"`
 
 **Warning Messages:**
 - With `--close-tab`: `"Warning: --close-tab has no effect in headless mode (tabs close automatically)"`

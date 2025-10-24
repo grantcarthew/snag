@@ -161,7 +161,7 @@ These combinations need clarification and implementation decisions:
 
 | Combination                       | Current        | Recommendation                                |
 | --------------------------------- | -------------- | --------------------------------------------- |
-| `--all-tabs -o file.md`           | ⚠️ Undefined   | ❌ ERROR: "Use --output-dir"                  |
+| `--all-tabs -o file.md`           | ⚠️ Undefined   | ❌ ERROR: "Use --output-dir instead"          |
 | `--tab <pattern> --all-tabs`      | ⚠️ Undefined   | ❌ ERROR: Mutually exclusive                  |
 | `--list-tabs --tab 1`             | --tab ignored  | Lists tabs from existing browser (no error)   |
 | `--list-tabs --all-tabs`          | Ignored        | Lists tabs from existing browser (no error)   |

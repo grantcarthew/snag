@@ -33,7 +33,7 @@
 - Valid schemes: `http`, `https`, `file` (same as `<url>` argument)
 
 **Multiple Files:**
-- Multiple `--url-file` flags → Error: `"Only one --url-file allowed"`
+- Multiple `--url-file` flags → Error: `"Only one --url-file option allowed"`
 - User must manually merge files if needed
 
 **Error Messages:**
@@ -41,7 +41,7 @@
 - No valid URLs: `"no valid URLs found"`
 - Invalid URL in file: `"Line {N}: Invalid URL - skipping: {url}"`
 - Space without comment: `"Line {N}: URL contains space without comment marker - skipping: {line}"`
-- Multiple url-file flags: `"Only one --url-file allowed"`
+- Multiple url-file flags: `"Only one --url-file option allowed"`
 
 #### Behavior
 

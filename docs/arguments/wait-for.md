@@ -26,7 +26,7 @@
 
 **Multiple `--wait-for` flags:**
 - Behavior: **Error**
-- Error message: "Only one --wait-for flag allowed"
+- Error message: "Only one --wait-for option allowed"
 
 **Extremely complex selector:**
 - Behavior: **Allow** if valid CSS syntax

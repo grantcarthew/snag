@@ -14,13 +14,13 @@
 - Extremely large values (e.g., 999999999) → **Allowed** (user responsibility)
 
 **Multiple Timeout Flags:**
-- Multiple `--timeout` flags → Error: `"Only one --timeout flag allowed"`
+- Multiple `--timeout` flags → Error: `"Only one --timeout option allowed"`
 
 **Error Messages:**
 - Negative/zero: `"Timeout must be positive"`
 - Non-integer: `"Timeout must be an integer"`
 - Non-numeric: `"Invalid timeout value: {value}"`
-- Multiple flags: `"Only one --timeout flag allowed"`
+- Multiple flags: `"Only one --timeout option allowed"`
 
 #### Behavior
 
