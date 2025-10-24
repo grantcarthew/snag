@@ -173,10 +173,10 @@ These combinations need clarification and implementation decisions:
 
 | Combination                     | Current      | Recommendation                  |
 | ------------------------------- | ------------ | ------------------------------- |
-| `--tab 1 --close-tab`           | ⚠️ Undefined | ✅ Allow: Close the tab         |
-| `--tab 1 --user-agent "Custom"` | ⚠️ Undefined | ⚠️ Warn + Ignore: Tab already open |
-| `--all-tabs --close-tab`        | ⚠️ Undefined | ❌ ERROR: Ambiguous             |
-| `--all-tabs --user-agent`       | ⚠️ Undefined | ⚠️ Warn + Ignore: Tabs already open |
+| `--tab 1 --close-tab`           | ✅ Defined   | ✅ Allow: Close the tab         |
+| `--tab 1 --user-agent "Custom"` | ✅ Defined   | ⚠️ Warn + Ignore: Tab already open |
+| `--all-tabs --close-tab`        | ✅ Defined   | ✅ Allow: Close each tab after fetch |
+| `--all-tabs --user-agent`       | ✅ Defined   | ⚠️ Warn + Ignore: Tabs already open |
 
 ### Priority 3: Edge Cases
 

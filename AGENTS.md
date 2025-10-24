@@ -431,12 +431,18 @@ Third-party licenses in `LICENSES/` directory.
 - ✅ PNG format support (full-page screenshots)
 - ✅ Output directory support with auto-generated filenames
 - ✅ Format refactoring (md/html/text/pdf/png)
+- ✅ Argument documentation cross-review - All 3 phases complete (2025-10-24)
+  - Resolved 7 critical contradictions across 21 argument files
+  - Standardized 7 warning message inconsistencies
+  - Updated validation.md and README.md compatibility matrices
 
-**In Progress:**
+**Next Priorities:**
 
-- 🚧 Argument handling analysis (see PROJECT.md and docs/arguments/*)
-- 🚧 URL file input (`--url-file FILE`)
-- 🚧 All-tabs fetching (`--all-tabs`)
+- 🔜 URL file input (`--url-file FILE`) - Read URLs from file for batch processing
+- 🔜 All-tabs fetching (`--all-tabs`) - Fetch content from all open browser tabs
+- 🔜 Argument trimming - Apply `strings.TrimSpace()` to all string arguments
+- 🔜 Parallel processing strategy - Define approach for multiple URL/tab operations
+- 🔜 Remove `--force-visible` flag - Deprecated, should be removed from codebase
 
 **Planned:**
 

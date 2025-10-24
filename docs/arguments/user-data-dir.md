@@ -74,7 +74,7 @@ Specify a custom user data directory (profile) for the browser instance, enablin
 | `--user-data-dir` + `--port` + existing browser | **Warning**, ignore flag | Connection to existing browser ignores profile |
 
 **Warning message:**
-- "Warning: Ignoring --user-data-dir (connecting to existing browser on port {port})"
+- "Warning: --user-data-dir ignored when connecting to existing browser"
 
 **Multiple instances with same profile:**
 - Behavior: **Let browser error**
@@ -99,7 +99,7 @@ Specify a custom user data directory (profile) for the browser instance, enablin
 | `--user-data-dir` + `--list-tabs` | List-tabs wins | Standalone mode like `--help`, flag ignored |
 
 **Warning message for tab operations:**
-- "Warning: Ignoring --user-data-dir (connecting to existing browser for tab operations)"
+- "Warning: --user-data-dir ignored when connecting to existing browser"
 
 ## Output Control Interactions
 
