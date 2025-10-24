@@ -248,6 +248,7 @@ These determine the primary operation mode:
 - ✅ `--format` - Applied to all URLs
 - ✅ `--timeout` - Applied to each URL
 - ✅ `--wait-for` - Applied to each page
+- ✅ `--close-tab` - Close each tab after fetching
 - ✅ `--port` - Remote debugging port
 - ✅ `--force-headless` - Browser mode
 - ✅ `--open-browser` - 🚧 Opens all URLs in tabs, NO fetch
@@ -257,9 +258,10 @@ These determine the primary operation mode:
 **Incompatible Flags:**
 
 - ❌ `-o` - Ambiguous for multiple outputs
-- ❌ `--close-tab` - Ambiguous for batch
 - ❌ `--tab` - Conflicts with URLs
 - ❌ `--all-tabs` - Conflicts with URLs
+
+**Note:** `--close-tab` has been moved to Compatible Flags - it works normally with `--url-file`
 
 **Output Behavior:**
 
@@ -294,8 +296,8 @@ See [tab.md](./tab.md) for complete details.
 
 - ❌ `<url>` - Conflicts with tab (mutually exclusive content sources)
 - ❌ `--all-tabs` - Use one or the other (mutually exclusive)
-- ❌ `--open-browser` - Conflicting purposes
 - ❌ `--force-headless` - Error (tab requires existing browser)
+- ⚠️ `--open-browser` - Warning, flag ignored (no content fetching)
 
 ### Mode 4: Fetch All Tabs
 
@@ -317,8 +319,8 @@ See [tab.md](./tab.md) for complete details.
 - ❌ `<url>` - Conflicts with all-tabs (mutually exclusive content sources)
 - ❌ `-o` - Multiple outputs (use `-d`)
 - ❌ `--tab` - Use one or the other (mutually exclusive)
-- ❌ `--open-browser` - Conflicting purposes
 - ❌ `--force-headless` - Error (tabs require existing browser)
+- ⚠️ `--open-browser` - Warning, flag ignored (no content fetching)
 - ⚠️ `--user-agent` - Warning, ignored (tabs already open with their own user agents)
 
 ### Mode 5: List Tabs
