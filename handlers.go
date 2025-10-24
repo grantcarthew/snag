@@ -518,8 +518,7 @@ func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
 func handleMultipleURLs(c *cli.Context, urls []string) error {
 	// Validate conflicting flags for multiple URLs
 	if strings.TrimSpace(c.String("output")) != "" {
-		logger.Error("Cannot use --output with multiple URLs")
-		logger.Info("Use --output-dir instead for auto-generated filenames")
+		logger.Error("Cannot use --output with multiple content sources. Use --output-dir instead")
 		return ErrOutputFlagConflict
 	}
 

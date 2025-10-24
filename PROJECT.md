@@ -30,7 +30,7 @@ For each argument documentation file:
 
 ### Core Arguments
 
-- [ ] **url.md** - Primary URL argument(s) for fetching content
+- [x] **url.md** - Primary URL argument(s) for fetching content (✅ 2025-10-24)
 - [ ] **url-file.md** - Batch URL processing from file input
 - [ ] **format.md** - Output format selection (markdown/html/text/pdf/png)
 - [ ] **output.md** - Output file specification (-o flag)
@@ -112,7 +112,7 @@ For each argument, verify:
 - **Started**: 2025-10-24
 - **Completed**: _In Progress_
 - **Total Arguments**: 22
-- **Reviewed**: 0
-- **Fully Implemented**: 0
+- **Reviewed**: 1
+- **Fully Implemented**: 1
 - **Partially Implemented**: 0
 - **Not Implemented**: 0
