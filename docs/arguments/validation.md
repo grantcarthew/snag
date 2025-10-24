@@ -37,13 +37,6 @@ All string arguments are trimmed using `strings.TrimSpace()` after reading from 
 13. Validate output directory (if `-d`)
 14. Execute fetch operation
 
-**Planned validation additions 🚧:**
-
-- Check `--url-file` + URLs (allowed)
-- Check multiple URLs + `-o` (error)
-- Check multiple URLs + `--close-tab` (error)
-- Check `--open-browser` + `--force-headless` (error)
-
 ---
 
 ## Special Cases and Edge Cases
@@ -60,24 +53,21 @@ snag https://example.com --format pdf
 
 **Implementation:** `handlers.go:118-133`
 
-### Case 2: --open-browser Behavior Change (Planned 🚧)
+### Case 2: --open-browser Does Not Fetch Content
 
-**Current:**
-
-```bash
-snag --open-browser https://example.com
-# Opens browser AND outputs content to stdout
-```
-
-**Planned 🚧:**
+**Behavior:**
 
 ```bash
 snag --open-browser https://example.com
-# ONLY opens URL in browser tab, NO content output
-# To fetch: snag --tab 1
+# Opens URL in browser tab, NO content fetching
+# Exits snag immediately, browser stays open
+# To fetch content: snag --tab 1
 ```
 
-**Rationale:** Consistency with multiple URL behavior
+**Rationale:**
+- `--open-browser` is for launching and navigating browser only
+- Consistent with "open and exit" behavior
+- Content fetching requires separate operation
 
 ### Case 3: Tab Features Require Running Browser
 
@@ -148,14 +138,14 @@ snag --all-tabs         # Connects to existing browser
 
 ### Case 9: Zero URLs with --url-file
 
-**Question:** What if URL file has no valid URLs?
-
-**Planned Behavior 🚧:**
+**Behavior:** Error if no valid URLs found
 
 ```bash
 snag --url-file empty.txt
 # ERROR: "No valid URLs found in file"
 ```
+
+**Implementation:** Validation in `validate.go:loadURLsFromFile()`
 
 ### Case 10: --open-browser + --force-headless
 
@@ -181,53 +171,13 @@ snag --url-file empty.txt
 
 ---
 
-## Undefined Behaviors
-
-These combinations need clarification and implementation decisions:
-
-### Priority 1: Should Error
-
-| Combination                       | Current        | Recommendation                                |
-| --------------------------------- | -------------- | --------------------------------------------- |
-| `--all-tabs -o file.md`           | ✅ Defined     | ❌ ERROR: "Use --output-dir instead"          |
-| `--tab <pattern> --all-tabs`      | ✅ Defined     | ❌ ERROR: Mutually exclusive                  |
-| `--list-tabs --tab 1`             | ✅ Defined     | Lists tabs from existing browser (no error)   |
-| `--list-tabs --all-tabs`          | ✅ Defined     | Lists tabs from existing browser (no error)   |
-| `--open-browser --force-headless` | ✅ Defined     | ❌ ERROR: Conflicting modes                   |
-| `--tab --force-headless`          | ✅ Defined     | ❌ ERROR: Tabs require existing browser       |
-| `--all-tabs --force-headless`     | ✅ Defined     | ❌ ERROR: Tabs require existing browser       |
-
-### Priority 2: Should Be Defined
-
-| Combination                     | Current      | Recommendation                  |
-| ------------------------------- | ------------ | ------------------------------- |
-| `--tab 1 --close-tab`           | ✅ Defined   | ✅ Allow: Close the tab         |
-| `--tab 1 --user-agent "Custom"` | ✅ Defined   | ⚠️ Warn + Ignore: Tab already open |
-| `--all-tabs --close-tab`        | ✅ Defined   | ✅ Allow: Close each tab after fetch |
-| `--all-tabs --user-agent`       | ✅ Defined   | ⚠️ Warn + Ignore: Tabs already open |
-
-### Priority 3: Edge Cases
-
-| Combination                                | Current      | Recommendation           |
-| ------------------------------------------ | ------------ | ------------------------ |
-| `--url-file` pointing to non-existent file | 🚧 N/A       | ❌ ERROR: File not found |
-| `--url-file` with all invalid URLs         | 🚧 N/A       | ❌ ERROR: No valid URLs  |
-| Multiple URLs with all failures            | 🚧 N/A       | Exit 1, summary shown    |
-| `<url>` that redirects                     | ✅ Works     | ✅ Follow redirects      |
-| `file:///path` URL                         | ✅ Supported | ✅ Load local file       |
-
----
-
 ## Compatibility Table: Complete Flag Matrix
 
 **Legend:**
 
 - ✅ Compatible
 - ❌ Error (mutually exclusive)
-- ⚠️ Undefined (needs specification)
-- 🚧 Planned
 - `-` Not applicable
-- `?` Unknown behavior
 
 ### Output Flags
 
@@ -258,18 +208,18 @@ These combinations need clarification and implementation decisions:
 
 ### Arguments with Tab Features
 
-|                 | \<url\> | Multiple URLs 🚧 | --url-file 🚧 |
-| --------------- | ------- | ---------------- | ------------- |
-| **--list-tabs** | Ignores | Ignores          | Ignores       |
-| **--tab**       | ❌      | 🚧 ❌            | 🚧 ❌         |
-| **--all-tabs**  | ❌      | 🚧 ❌            | 🚧 ❌         |
+|                 | \<url\> | Multiple URLs | --url-file |
+| --------------- | ------- | ------------- | ---------- |
+| **--list-tabs** | Ignores | Ignores       | Ignores    |
+| **--tab**       | ❌      | ❌            | ❌         |
+| **--all-tabs**  | ❌      | ❌            | ❌         |
 
 ### Arguments with Output Flags
 
-|        | \<url\> | Multiple URLs 🚧 |
-| ------ | ------- | ---------------- |
-| **-o** | ✅      | 🚧 ❌            |
-| **-d** | ✅      | 🚧 ✅            |
+|        | \<url\> | Multiple URLs |
+| ------ | ------- | ------------- |
+| **-o** | ✅      | ❌            |
+| **-d** | ✅      | ✅            |
 
 ### Logging Flags ✅
 

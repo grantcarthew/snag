@@ -436,17 +436,11 @@ Third-party licenses in `LICENSES/` directory.
   - Standardized 7 warning message inconsistencies
   - Updated validation.md and README.md compatibility matrices
 
-**Next Priorities:**
+**Known Limitations:**
 
-- 🔜 URL file input (`--url-file FILE`) - Read URLs from file for batch processing
-- 🔜 All-tabs fetching (`--all-tabs`) - Fetch content from all open browser tabs
-- 🔜 Argument trimming - Apply `strings.TrimSpace()` to all string arguments
-- 🔜 Parallel processing strategy - Define approach for multiple URL/tab operations
-- 🔜 Remove `--force-visible` flag - Deprecated, should be removed from codebase
-
-**Planned:**
-
-- Future enhancements tracked in GitHub issues
+- Argument trimming not yet implemented for all string arguments
+- Parallel processing strategy undefined for multiple URL/tab operations
+- `--force-visible` flag deprecated, pending removal from codebase
 
 ## Additional Resources
 
