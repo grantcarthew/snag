@@ -34,7 +34,7 @@ snag https://example.com https://google.com
 snag -o output.md https://example.com https://google.com
 ```
 - Behavior: **Error** - Cannot combine multiple sources into single output file
-- Error message: `"Cannot use --output with multiple URLs. Use --output-dir instead"`
+- Error message: `"Cannot use --output with multiple content sources. Use --output-dir instead"`
 
 **With `--output-dir DIR`:**
 ```bash
@@ -53,7 +53,7 @@ snag -d output/ https://example.com https://google.com
 | `<url>` + `--url-file` | **Merge** both sources | Allow combining CLI URLs with file URLs |
 | `<url>` + `--tab` | **Error** | Mutually exclusive content sources |
 | `<url>` + `--all-tabs` | **Error** | Mutually exclusive content sources |
-| `<url>` + `--list-tabs` | URL **ignored**, tabs listed | `--list-tabs` acts like `--help`, overrides other args |
+| `<url>` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 
 **Browser Mode:**
 

@@ -59,7 +59,7 @@ Set a custom user agent string for browser requests. This flag allows you to cus
 |-------------|----------|-------|
 | `--user-agent` + `--tab` | **Warning + Ignored** | Tab already open with its own UA; can't change it |
 | `--user-agent` + `--all-tabs` | **Warning + Ignored** | Tabs already open with their own UAs |
-| `--user-agent` + `--list-tabs` | **Silently ignored** | List-tabs standalone mode ignores all other flags |
+| `--user-agent` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 
 **Warning messages for tabs:**
 - `--tab`: "Warning: --user-agent is ignored with --tab (cannot change existing tab's user agent)"

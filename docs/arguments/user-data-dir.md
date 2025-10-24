@@ -96,7 +96,7 @@
 | `--user-data-dir` + `--url-file` | Works normally | Fetch all URLs from file using custom profile |
 | `--user-data-dir` + `--tab` | **Warning**, ignore flag | Connecting to existing browser |
 | `--user-data-dir` + `--all-tabs` | **Warning**, ignore flag | Connecting to existing browser |
-| `--user-data-dir` + `--list-tabs` | List-tabs wins | Standalone mode like `--help`, flag ignored |
+| `--user-data-dir` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 
 **Warning message for tab operations:**
 - "Warning: --user-data-dir ignored when connecting to existing browser"
