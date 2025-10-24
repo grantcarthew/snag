@@ -2,7 +2,9 @@
 
 **Status:** Complete (2025-10-23)
 
-## Invalid Values
+#### Validation Rules
+
+**Invalid Values:**
 
 **Empty string:**
 - Behavior: **Ignored** (silently skipped, no error or warning)
@@ -32,7 +34,9 @@
 - Behavior: **Allow** if valid CSS syntax
 - User's responsibility to provide working selectors
 
-## Content Source Interactions
+#### Interaction Matrix
+
+**Content Source Interactions:**
 
 **With URL arguments:**
 
@@ -57,7 +61,7 @@
 - `--wait-for` ensures script waits for content before extracting
 - Example: `snag --tab "dashboard" --wait-for ".data-loaded" -o daily-report.md`
 
-## Output Control Interactions
+**Output Control Interactions:**
 
 All output flags work normally with `--wait-for`:
 
@@ -67,7 +71,7 @@ All output flags work normally with `--wait-for`:
 | `--wait-for` + `--output-dir` | Works normally - wait before auto-saving |
 | `--wait-for` + `--format` (all) | Works normally - wait before format conversion |
 
-## Browser Mode Interactions
+**Browser Mode Interactions:**
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
@@ -78,7 +82,7 @@ All output flags work normally with `--wait-for`:
 **Warning message:**
 - "Warning: --wait-for ignored with --open-browser (no content fetching)"
 
-## Timing Interactions
+**Timing Interactions:**
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
@@ -90,7 +94,7 @@ All output flags work normally with `--wait-for`:
 - Selector wait timeout: Uses same `--timeout` duration
 - Both use rod's timeout mechanism via `page.Timeout(duration)`
 
-## Other Flag Interactions
+**Other Flag Interactions:**
 
 **Compatible flags (work normally):**
 - `--port` - Remote debugging port
@@ -98,7 +102,7 @@ All output flags work normally with `--wait-for`:
 - `--verbose` / `--quiet` / `--debug` - Logging levels
 - `--user-agent` - Set user agent for new pages (ignored for existing tabs)
 
-## Examples
+#### Examples
 
 **Valid:**
 ```bash
