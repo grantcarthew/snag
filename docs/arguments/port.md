@@ -20,7 +20,7 @@
 | Non-integer (e.g., `9222.5`) | Error immediately | "Invalid port value: must be an integer" |
 | Non-numeric (e.g., `abc`) | Error immediately | "Invalid port value: {value}" |
 | Empty string | Fall back to default (9222) | No error |
-| Multiple `--port` flags | Error immediately | "Only one --port flag allowed" |
+| Multiple `--port` flags | Error immediately | "Only one --port option allowed" |
 | Port in use (by non-Chrome process) | Error at connection time | "Failed to connect to port {port}: {error}" |
 
 **Default behavior:**
@@ -65,7 +65,7 @@ snag --port 9223 https://example.com
 | `--port 9222` + `--user-data-dir ~/.snag/profile1` | Launch/connect with profile1 on port 9222 | Works normally |
 | Same profile, different ports | Attempt launch, Chrome will error | Chrome locks user data directories - **documented limitation** |
 | Same port, different profiles | Port in use error | Cannot run multiple browsers on same port |
-| Connecting to existing + different `--user-data-dir` | **Warn**, continue connecting | "Warning: Ignoring --user-data-dir (browser already running on port X)" |
+| Connecting to existing + different `--user-data-dir` | **Warn**, continue connecting | "Warning: --user-data-dir ignored when connecting to existing browser" |
 | Neither specified | Port 9222 + default profile | Current behavior preserved |
 
 **Multi-instance support:**
@@ -147,7 +147,7 @@ snag --port 9222 --port 9223 https://example.com  # ERROR: Multiple flags
 ```bash
 # Browser on 9222 using profile1, connect with different profile
 snag --port 9222 --user-data-dir ~/.snag/profile2 <url>
-# ⚠️ Warning: Ignoring --user-data-dir (browser already running on port 9222)
+# ⚠️ Warning: --user-data-dir ignored when connecting to existing browser
 ```
 
 **Documented Limitations:**

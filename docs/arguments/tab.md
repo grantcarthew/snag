@@ -10,7 +10,7 @@
 - Empty/whitespace: **Error + list tabs**
 
 **Multiple Flags:**
-- Multiple `--tab` flags → **Error**: `"Only one --tab flag allowed"`
+- Multiple `--tab` flags → **Error**: `"Only one --tab option allowed"`
 
 **Pattern Matching Priority (Progressive Fallthrough):**
 1. **Integer** → Tab index (1-based)
@@ -24,7 +24,7 @@
 - No matching tabs: `"No tab matches pattern '{pattern}'"` + list available tabs
 - Index out of range: `"Tab index {n} out of range (only {count} tabs open)"` + list available tabs
 - Invalid regex: `"Invalid regex pattern: {error}"`
-- Multiple flags: `"Only one --tab flag allowed"`
+- Multiple flags: `"Only one --tab option allowed"`
 
 #### Behavior
 

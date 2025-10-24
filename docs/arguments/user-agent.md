@@ -79,7 +79,7 @@ Set a custom user agent string for browser requests. This flag allows you to cus
 | `--user-agent` + `--user-data-dir` | Works normally | UA for this session; profile for persistent data |
 
 **Warning message for open-browser without URL:**
-- "Warning: --user-agent has no effect with --open-browser (no navigation)"
+- "Warning: --user-agent ignored with --open-browser (no navigation)"
 
 ## Output Control Interactions
 

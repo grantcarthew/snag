@@ -61,8 +61,8 @@
 
 | Combination | Behavior | Error Message |
 |-------------|----------|---------------|
-| `--all-tabs` + `<url>` (single) | **Error** | `"Cannot use --all-tabs with URL argument. Use --all-tabs alone to process all existing tabs"` |
-| `--all-tabs` + `<url>` (multiple) | **Error** | `"Cannot use --all-tabs with URL argument. Use --all-tabs alone to process all existing tabs"` |
+| `--all-tabs` + `<url>` (single) | **Error** | `"Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)"` |
+| `--all-tabs` + `<url>` (multiple) | **Error** | `"Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)"` |
 | `--all-tabs` + `--url-file` | **Error** | `"Cannot use both --all-tabs and --url-file (mutually exclusive content sources)"` |
 | `--all-tabs` + `--tab` | **Error** | `"Cannot use both --all-tabs and --tab (mutually exclusive content sources)"` |
 | `--all-tabs` + `--list-tabs` | `--list-tabs` overrides | Lists all tabs, ignores `--all-tabs` (no error) |
@@ -80,7 +80,7 @@
 |-------------|----------|-------|
 | `--all-tabs` (no output flags) | Works normally | Auto-save to current directory (`.`) with auto-generated filenames |
 | `--all-tabs` + `--output-dir` | Works normally | Save all tabs to specified directory with auto-generated filenames |
-| `--all-tabs` + `--output` | **Error** | `"Cannot use --output with --all-tabs (multiple outputs require --output-dir)"` |
+| `--all-tabs` + `--output` | **Error** | `"Cannot use --output with --all-tabs. Use --output-dir instead"` |
 | `--all-tabs` + `--format` (all) | Works normally | All formats supported (md/html/text/pdf/png), applied to all tabs |
 
 **Timing & Selector:**

@@ -17,14 +17,14 @@
 - Permission denied (no write access) → Error: `"Cannot write to output directory: permission denied"`
 
 **Multiple Directory Conflicts:**
-- Multiple `-d` flags → Error: `"Only one --output-dir flag allowed"`
+- Multiple `-d` flags → Error: `"Only one --output-dir option allowed"`
 
 **Error Messages:**
 - Directory doesn't exist: `"Output directory does not exist: {path}"`
 - Path is file: `"Output directory path is a file, not a directory: {path}"`
 - Permission denied: `"Cannot write to output directory: permission denied"`
 - Empty after trim: Uses current directory (no error)
-- Multiple flags: `"Only one --output-dir flag allowed"`
+- Multiple flags: `"Only one --output-dir option allowed"`
 
 #### Behavior
 
@@ -72,7 +72,7 @@ snag https://example.com -d ""
 
 **Error messages:**
 - `-d` + `-o`: `"Cannot use --output and --output-dir together"`
-- Multiple `-d`: `"Only one --output-dir flag allowed"`
+- Multiple `-d`: `"Only one --output-dir option allowed"`
 
 **Content Source Interactions:**
 
