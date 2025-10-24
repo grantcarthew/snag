@@ -72,7 +72,7 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 | `--tab` + `<url>` (multiple) | **Error** | `"Cannot use both --tab and URL arguments (mutually exclusive content sources)"` |
 | `--tab` + `--url-file` | **Error** | `"Cannot use both --tab and --url-file (mutually exclusive content sources)"` |
 | `--tab` + `--all-tabs` | **Error** | `"Cannot use both --tab and --all-tabs (mutually exclusive content sources)"` |
-| `--tab` + `--list-tabs` | `--list-tabs` overrides | Lists all tabs, ignores `--tab` (no error) |
+| `--tab` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options (no error) |
 
 **Browser Mode Conflicts (All ERROR):**
 

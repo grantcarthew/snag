@@ -36,7 +36,7 @@
 | `--close-tab` + `--url-file` | Works normally | Close each tab after fetching |
 | `--close-tab` + `--tab` | Works normally | Fetch from existing tab, then close it; if last tab, close browser |
 | `--close-tab` + `--all-tabs` | Works normally | Fetch from all tabs, close all tabs, close browser |
-| `--close-tab` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
+| `--close-tab` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 | `--close-tab` + `--open-browser` (no URL) | **Warning** | `"Warning: --close-tab ignored with --open-browser (no content fetching)"`, browser stays open |
 | `--close-tab` + `--open-browser` + URL | **Warning**, flag ignored | `"Warning: --close-tab ignored with --open-browser (no content fetching)"` - Opens browser, navigates to URL, exits snag |
 

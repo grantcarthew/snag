@@ -91,7 +91,7 @@ snag https://example.com -o myfile --format markdown
 
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
-| `-o file.txt` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
+| `-o file.txt` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
 | `-o file.md` + `--open-browser` (no URL) | **Warning**, flag ignored | No content fetching |
 | `-o file.md` + `--tab <pattern>` | Works normally | Fetch from tab, save to file |
 | `-o file.md` + `--tab <pattern>` (no browser) | **Error** | Tab requires running browser |

@@ -6,6 +6,18 @@ This document describes validation order, special cases, edge cases, and the imp
 
 ---
 
+## General Validation Rules
+
+**String Argument Trimming:**
+
+All string arguments are trimmed using `strings.TrimSpace()` after reading from CLI framework:
+- Removes leading and trailing whitespace (spaces, tabs, newlines)
+- Applied to: `--output`, `--output-dir`, `--format`, `--wait-for`, `--user-agent`, `--user-data-dir`, `--tab`, `--url-file`
+- Empty strings after trimming are handled per-argument (usually warning + ignored or error)
+- Standard behavior in most CLI tools (git, docker, etc.)
+
+---
+
 ## Validation Order
 
 **Current implementation order (main.go:178-316):**
