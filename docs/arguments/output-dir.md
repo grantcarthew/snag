@@ -90,7 +90,7 @@ snag https://example.com -d ""
 |-------------|----------|-------|
 | `-d ./dir` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
 | `-d ./dir` + `--open-browser` (no URL/url-file) | **Warning**, flag ignored | `"Warning: --output-dir ignored with --open-browser (no content fetching)"` |
-| `-d ./dir` + `--open-browser` + `<url>` | Works normally | Opens browser, fetches URL, saves to directory |
+| `-d ./dir` + `--open-browser` + `<url>` | **Warning**, flag ignored | `"Warning: --output-dir ignored with --open-browser (no content fetching)"` - Opens browser, navigates to URL, exits snag |
 
 **Format Combinations:**
 
