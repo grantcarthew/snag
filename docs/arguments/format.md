@@ -104,7 +104,7 @@ snag https://example.com --format html -o page.md
 | Combination | Behavior | Notes |
 |-------------|----------|-------|
 | `--format` + `--list-tabs` | Flag **ignored**, tabs listed | `--list-tabs` overrides all other args |
-| `--format` + `--open-browser` (no URL) | Format **ignored** | Open-browser only opens browser, no content |
+| `--format` + `--open-browser` (no URL) | **Warning**, flag ignored | `"Warning: --format ignored with --open-browser (no content fetching)"` |
 
 **Browser Mode Interactions:**
 
