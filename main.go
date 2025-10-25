@@ -240,10 +240,24 @@ func run(c *cli.Context) error {
 
 	// Handle --tab flag (fetch from existing tab)
 	if c.IsSet("tab") {
-		// Check for conflicting URL arguments
+		// Check for conflicting URL arguments (includes --url-file)
 		if len(urls) > 0 {
-			logger.Error("Cannot use both --tab and URL arguments (mutually exclusive content sources)")
+			logger.Error("Cannot use --tab with URL argument (mutually exclusive content sources)")
 			return ErrTabURLConflict
+		}
+		// Check for conflicting --all-tabs flag
+		if c.Bool("all-tabs") {
+			logger.Error("Cannot use both --tab and --all-tabs (mutually exclusive content sources)")
+			return fmt.Errorf("conflicting flags: --tab and --all-tabs")
+		}
+		// Check for conflicting --force-headless flag
+		if c.Bool("force-headless") {
+			logger.Error("Cannot use --force-headless with --tab (--tab requires existing browser connection)")
+			return fmt.Errorf("conflicting flags: --force-headless and --tab")
+		}
+		// Warn if --open-browser is set (--tab will be ignored in open-browser mode)
+		if c.Bool("open-browser") {
+			logger.Warning("--tab ignored with --open-browser (no content fetching)")
 		}
 		return handleTabFetch(c)
 	}
