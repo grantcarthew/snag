@@ -280,10 +280,10 @@ snag --list-tabs
 
 # Example output:
 #   Available tabs in browser (4 tabs, sorted by URL):
-#     [1] New Tab (about:blank)
-#     [2] Dashboard (app.example.com/dashboard)
-#     [3] My Private Repo (github.com/myorg/private-repo)
-#     [4] Internal Documentation (internal.company.com/docs)
+#     [1] about:blank (New Tab)
+#     [2] https://app.example.com/dashboard (Dashboard)
+#     [3] https://github.com/myorg/private-repo (My Private Repo)
+#     [4] https://internal.company.com/docs (Internal Documentation)
 
 # Step 3: Fetch from authenticated tabs without re-logging in
 snag -t 2 -o private-repo.md
@@ -444,9 +444,9 @@ snag -l
 
 # Example output:
 #   Available tabs in browser (3 tabs, sorted by URL):
-#     [1] Dashboard (authenticated) (app.example.com/dashboard)
-#     [2] 3.13.1 Documentation (docs.python.org/3/)
-#     [3] grantcarthew/snag: Intelligent web content fetcher (github.com/grantcarthew/snag)
+#     [1] https://app.example.com/dashboard (Dashboard (authenticated))
+#     [2] https://docs.python.org/3/ (3.13.1 Documentation)
+#     [3] https://github.com/grantcarthew/snag (grantcarthew/snag: Intelligent web content fetcher)
 ```
 
 **Fetch from specific tab by index:**
@@ -651,8 +651,8 @@ Solutions:
 
 - Use `--list-tabs` to see exact URLs of open tabs
 - Be more specific with your pattern: use full URL instead of substring
-- Remember: first matching tab wins if multiple tabs match
-- Use index if you know the exact tab position: `snag -t 3`
+- Remember: multiple matching tabs will all be processed and auto-saved (not just first match)
+- For single specific tab: use exact URL pattern or tab index: `snag -t 3`
 
 ### Timeout Issues
 

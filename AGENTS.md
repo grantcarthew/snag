@@ -284,13 +284,13 @@ Phase 2 adds efficient tab management capabilities to work with existing browser
 # List all open tabs
 $ snag --list-tabs
 Available tabs in browser (7 tabs, sorted by URL):
-  [1] New Tab (chrome://newtab)
-  [2] Example Domain (example.com)
-  [3] Order in browser.pages() · Issue #7452 (github.com/puppeteer/puppeteer/issues/7452)
-  [4] Contact us | Australian Taxation Office (ato.gov.au/about-ato/contact-us)
-  [5] BIG W | How good's that (bigw.com.au)
-  [6] youtube - Google Search (google.com/search)
-  [7] X. It's what's happening / X (x.com)
+  [1] chrome://newtab (New Tab)
+  [2] https://developer.mozilla.org/ (MDN Web Docs)
+  [3] https://docs.python.org/3/ (Python 3 Documentation)
+  [4] https://example.com (Example Domain)
+  [5] https://github.com/puppeteer/puppeteer/issues/7452 (Order in browser.pages() · Issue #7452)
+  [6] https://google.com/search (youtube - Google Search)
+  [7] https://x.com (X. It's what's happening / X)
 
 # Fetch from tab by index (1-based)
 snag --tab 1        # First tab

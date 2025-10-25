@@ -261,9 +261,9 @@ snag -t <pattern>                   # Match tab by regex/URL pattern
 # List tabs (1-based indexing)
 snag --list-tabs
 # Output:
-#   [1] https://github.com/grantcarthew/snag - snag repo
-#   [2] https://go.dev/doc/ - Go docs
-#   [3] https://app.internal.com/dashboard - Dashboard
+#   [1] https://app.internal.com/dashboard (Dashboard)
+#   [2] https://github.com/grantcarthew/snag (snag repo)
+#   [3] https://go.dev/doc/ (Go docs)
 
 # Fetch by index (1-based)
 snag -t 1                                # First tab
@@ -1040,14 +1040,14 @@ $ snag https://example.com
 
 ### 21. Multiple Matches
 
-- **Decision**: First match wins when multiple tabs match pattern
-- **Rationale**:
+- **Decision**: ~~First match wins when multiple tabs match pattern~~ **UPDATED:** All matching tabs are processed (see Design Decision #30)
+- **Original Rationale** (before implementation):
   - Simple and predictable behavior
   - Consistent with other tools (grep, find, etc.)
   - Users can use `--list-tabs` to see tab order
   - Can add `--tab-all` flag in future for multiple matches
-- **Documentation**: Clearly document that first match is returned
-- **Verbose Mode**: Show which tab matched and why
+- **New Behavior**: See Design Decision #30 "Pattern Multi-Match Behavior" for updated implementation
+- **Implementation Status**: Updated to process all matches (2025-10-25)
 
 ### 22. Performance Optimization
 
@@ -1266,47 +1266,51 @@ $ snag https://example.com
 
 ### 29. Tab List Display Format
 
-- **Decision**: Format tab listings as `[N] Title (domain/path)` with query param stripping and 120-char truncation
-- **Format Pattern**: `[N] Title (domain/path)`
+- **Decision**: Format tab listings as `[N] URL (Title)` with query param stripping and 120-char truncation
+- **Format Pattern**: `[N] URL (Title)`
 - **Display Rules**:
-  - Title first (more distinctive than URL)
-  - Clean URLs in parentheses (strip `?...` query params and `#...` hash fragments)
-  - Empty titles omitted entirely (no double spaces)
+  - URL first (more distinctive and scannable than title)
+  - Title in parentheses (descriptive context)
+  - Clean URLs (strip `?...` query params and `#...` hash fragments)
+  - Empty titles omitted entirely (no empty parentheses)
   - 120-character total line limit
-  - URL maximum 80 chars (including parentheses)
+  - URL maximum 80 chars
   - Title gets remainder space (typically 30-70 chars)
 - **Rationale**:
   - **Readability**: Current format with full query params is cluttered and hard to scan
-  - **Title priority**: Titles are more distinctive and memorable than URLs
+  - **URL priority**: URLs are unique identifiers, more distinctive than titles for finding specific sites
+  - **Domain visibility**: Easy to spot which site (github.com, google.com, etc.) at a glance
+  - **Aligns with sort**: Tabs sorted by URL, seeing URL first makes sense
   - **Clean URLs**: Query parameters add noise without value for tab identification
   - **Scannable**: Short, predictable format makes finding tabs quick
   - **Terminal-friendly**: 120 chars fits most terminal widths
   - **Opinionated UX**: One clean format by default (no configuration needed)
+  - **Format Evolution**: Initially designed as Title (URL), changed to URL (Title) after live testing showed better scannability
 - **Verbose Mode**: `--list-tabs --verbose` shows full URLs with query params (no truncation)
   - Provides escape hatch for cases where full URL is needed
   - Explicit opt-in for verbose output
 - **Examples**:
   ```
   Normal:
-    [1] New Tab (chrome://newtab)
-    [2] Example Domain (example.com)
-    [3] Contact us | Australian Taxation Office (ato.gov.au/about-ato/contact-us)
+    [1] chrome://newtab (New Tab)
+    [2] https://example.com (Example Domain)
+    [3] https://ato.gov.au/about-ato/contact-us (Contact us | Australian Taxation Office)
 
   Verbose:
     [1] https://www.ato.gov.au/about-ato/contact-us?gclsrc=aw.ds&gad_source=1&... - Contact us | Australian Taxation Office
   ```
 - **Truncation Strategy**:
-  - Layout breakdown: `  [NNN] ` (8 chars) + Title + ` (` + URL + `)`
+  - Layout breakdown: `  [NNN] ` (8 chars) + URL + ` (` + Title + `)`
   - URL prioritized up to 80 chars (keeps most clean URLs complete)
   - Title gets remaining space after URL
   - Truncation indicator: `...` appended to truncated content
 - **Edge Cases**:
-  - Empty/missing titles: Show `[N] (domain/path)` (omit title, no double spaces)
+  - Empty/missing titles: Show `[N] URL` (omit title, no empty parentheses)
   - Very long URLs: Truncate at 80 chars with `...`
   - Very long titles: Truncate after URL takes its space
   - Chrome internal URLs: Typically short (e.g., `chrome://newtab`), no truncation needed
 - **Pattern Matching Compatibility**: Pattern matching still uses full URLs (not truncated display)
-- **Code Location**: handlers.go (displayTabList, displayTabListOnError functions)
+- **Code Location**: handlers.go (stripURLParams, formatTabLine, displayTabList, displayTabListOnError functions)
 
 **See Also**: For complete tab list format specification, see [arguments/list-tabs.md](arguments/list-tabs.md)
 

@@ -202,8 +202,75 @@ func connectToExistingBrowser(port int) (*BrowserManager, error) {
 	return bm, nil
 }
 
+// stripURLParams removes query parameters and hash fragments from a URL
+// Returns clean URL with only scheme, domain, and path
+func stripURLParams(url string) string {
+	// Find position of query params
+	if idx := strings.Index(url, "?"); idx != -1 {
+		url = url[:idx]
+	}
+
+	// Find position of hash fragment
+	if idx := strings.Index(url, "#"); idx != -1 {
+		url = url[:idx]
+	}
+
+	return url
+}
+
+// formatTabLine formats a single tab line for display with optional truncation
+// Normal mode: "  [N] URL (Title)" with 120 char limit
+// Verbose mode: "  [N] full-url - Title" with no truncation
+func formatTabLine(index int, title, url string, maxLength int, verbose bool) string {
+	if verbose {
+		// Verbose mode: show full URL and title, no truncation
+		if title == "" {
+			return fmt.Sprintf("  [%d] %s", index, url)
+		}
+		return fmt.Sprintf("  [%d] %s - %s", index, url, title)
+	}
+
+	// Normal mode: clean URL and apply truncation
+	cleanURL := stripURLParams(url)
+
+	// Calculate available space for URL and title
+	// Format: "  [NNN] URL (Title)"
+	// Prefix is approximately: "  " + "[" + index + "] " = ~8 chars for index < 1000
+	prefix := fmt.Sprintf("  [%d] ", index)
+	prefixLen := len(prefix)
+
+	// Maximum URL length: 80 chars
+	const maxURLLen = 80
+	displayURL := cleanURL
+	if len(displayURL) > maxURLLen {
+		// Truncate URL if too long
+		displayURL = cleanURL[:maxURLLen-3] + "..."
+	}
+
+	// Calculate space available for title (in parentheses)
+	// Total budget: maxLength, minus prefix, minus URL, minus space, minus parentheses
+	titleBudget := maxLength - prefixLen - len(displayURL)
+	if title != "" {
+		titleBudget -= 3 // Account for space and parentheses: " (" and ")"
+	}
+
+	// Format the line
+	if title == "" {
+		// No title: just show URL
+		return fmt.Sprintf("%s%s", prefix, displayURL)
+	}
+
+	// Truncate title if needed
+	if len(title) > titleBudget && titleBudget > 3 {
+		title = title[:titleBudget-3] + "..."
+	}
+
+	return fmt.Sprintf("%s%s (%s)", prefix, displayURL, title)
+}
+
 // displayTabList formats and displays a list of tabs to the specified writer
-func displayTabList(tabs []TabInfo, w io.Writer) {
+// verbose controls whether to show full URLs with query params (true) or clean, truncated display (false)
+func displayTabList(tabs []TabInfo, w io.Writer, verbose bool) {
 	if len(tabs) == 0 {
 		fmt.Fprintf(w, "No tabs open in browser\n")
 		return
@@ -211,15 +278,17 @@ func displayTabList(tabs []TabInfo, w io.Writer) {
 
 	fmt.Fprintf(w, "Available tabs in browser (%d tabs, sorted by URL):\n", len(tabs))
 	for _, tab := range tabs {
-		fmt.Fprintf(w, "  [%d] %s - %s\n", tab.Index, tab.URL, tab.Title)
+		line := formatTabLine(tab.Index, tab.Title, tab.URL, 120, verbose)
+		fmt.Fprintf(w, "%s\n", line)
 	}
 }
 
 // displayTabListOnError displays available tabs to stderr as helpful error context
+// Always uses non-verbose mode (clean, truncated display)
 func displayTabListOnError(bm *BrowserManager) {
 	if tabs, listErr := bm.ListTabs(); listErr == nil {
 		fmt.Fprintln(os.Stderr, "")
-		displayTabList(tabs, os.Stderr)
+		displayTabList(tabs, os.Stderr, false) // Always non-verbose for error context
 		fmt.Fprintln(os.Stderr, "")
 	}
 }
@@ -345,8 +414,11 @@ func handleListTabs(c *cli.Context) error {
 		return err
 	}
 
+	// Check verbose flag for full URL display
+	verbose := c.Bool("verbose")
+
 	// Display tabs to stdout
-	displayTabList(tabs, os.Stdout)
+	displayTabList(tabs, os.Stdout, verbose)
 
 	return nil
 }
@@ -453,6 +525,97 @@ func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
 	return nil
 }
 
+// handleTabPatternBatch processes multiple tabs matching a pattern with auto-generated filenames
+func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) error {
+	// Extract configuration from flags
+	format := normalizeFormat(c.String("format"))
+	timeout := c.Int("timeout")
+	waitFor := strings.TrimSpace(c.String("wait-for"))
+	outputDir := strings.TrimSpace(c.String("output-dir"))
+	if outputDir == "" {
+		outputDir = "." // Default to current working directory
+	}
+
+	// Validate format
+	if err := validateFormat(format); err != nil {
+		return err
+	}
+
+	// Validate timeout
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	// Validate output directory
+	if err := validateDirectory(outputDir); err != nil {
+		return err
+	}
+
+	// Create single timestamp for entire batch
+	timestamp := time.Now()
+
+	logger.Info("Processing %d tabs matching pattern '%s'...", len(pages), pattern)
+
+	// Track success/failure counts
+	successCount := 0
+	failureCount := 0
+
+	// Process each matched tab
+	for i, page := range pages {
+		totalTabs := len(pages)
+		current := i + 1 // Current position (1-based)
+
+		// Get page info
+		info, err := page.Info()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to get tab info: %v", current, totalTabs, err)
+			failureCount++
+			continue
+		}
+
+		logger.Info("[%d/%d] Processing: %s", current, totalTabs, info.URL)
+
+		// Wait for selector if specified
+		if waitFor != "" {
+			err := waitForSelector(page, waitFor, time.Duration(timeout)*time.Second)
+			if err != nil {
+				logger.Error("[%d/%d] Wait failed: %v", current, totalTabs, err)
+				failureCount++
+				continue
+			}
+		}
+
+		// Generate output filename with conflict resolution
+		outputPath, err := generateOutputFilename(
+			info.Title, info.URL, format,
+			timestamp, outputDir,
+		)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to generate filename: %v", current, totalTabs, err)
+			failureCount++
+			continue
+		}
+
+		// Process page content and output in requested format
+		if err := processPageContent(page, format, outputPath); err != nil {
+			logger.Error("[%d/%d] Failed to process content: %v", current, totalTabs, err)
+			failureCount++
+			continue
+		}
+
+		successCount++
+	}
+
+	// Summary
+	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
+
+	if failureCount > 0 {
+		return fmt.Errorf("batch processing completed with %d failures", failureCount)
+	}
+
+	return nil
+}
+
 // handleTabFetch fetches content from an existing tab by index
 func handleTabFetch(c *cli.Context) error {
 	// Connect to existing browser first (needed for displaying tabs on error)
@@ -508,6 +671,9 @@ func handleTabFetch(c *cli.Context) error {
 
 	// Determine if tab value is an integer index or a pattern
 	var page *rod.Page
+	var multipleMatches bool
+	var matchedPages []*rod.Page
+
 	if tabIndex, err := strconv.Atoi(tabValue); err == nil {
 		// Integer - use as tab index
 		logger.Verbose("Fetching from tab index: %d", tabIndex)
@@ -524,7 +690,7 @@ func handleTabFetch(c *cli.Context) error {
 	} else {
 		// Not an integer - treat as pattern
 		logger.Verbose("Fetching from tab matching pattern: %s", tabValue)
-		page, err = bm.GetTabByPattern(tabValue)
+		matchedPages, err = bm.GetTabsByPattern(tabValue)
 		if err != nil {
 			if errors.Is(err, ErrNoTabMatch) {
 				logger.Error("No tab matches pattern '%s'", tabValue)
@@ -533,7 +699,27 @@ func handleTabFetch(c *cli.Context) error {
 			}
 			return err
 		}
-		logger.Success("Connected to tab matching pattern: %s", tabValue)
+
+		// Check if we have single or multiple matches
+		if len(matchedPages) == 1 {
+			// Single match - use current single-page flow
+			page = matchedPages[0]
+			logger.Success("Connected to tab matching pattern: %s", tabValue)
+		} else {
+			// Multiple matches - validate --output flag and use batch processing
+			multipleMatches = true
+			if c.IsSet("output") {
+				logger.Error("Cannot use --output with multiple tabs. Use --output-dir instead")
+				logger.Info("Pattern '%s' matched %d tabs", tabValue, len(matchedPages))
+				return ErrOutputFlagConflict
+			}
+			logger.Info("Pattern '%s' matched %d tabs", tabValue, len(matchedPages))
+		}
+	}
+
+	// If multiple matches, use batch processing
+	if multipleMatches {
+		return handleTabPatternBatch(c, matchedPages, tabValue)
 	}
 
 	// Extract configuration from flags

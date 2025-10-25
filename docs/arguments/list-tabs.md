@@ -147,30 +147,30 @@ snag --list-tabs
 
 **Normal mode (default):**
 
-Clean, scannable format with title first and clean URL in parentheses:
+Clean, scannable format with URL first and title in parentheses:
 
 ```
 Available tabs in browser (7 tabs, sorted by URL):
-  [1] New Tab (chrome://newtab)
-  [2] Example Domain (example.com)
-  [3] Order in browser.pages() · Issue #7452 (github.com/puppeteer/puppeteer/issues/7452)
-  [4] Contact us | Australian Taxation Office (ato.gov.au/about-ato/contact-us)
-  [5] BIG W | How good's that (bigw.com.au)
-  [6] youtube - Google Search (google.com/search)
-  [7] X. It's what's happening / X (x.com)
+  [1] chrome://newtab (New Tab)
+  [2] https://example.com (Example Domain)
+  [3] https://github.com/puppeteer/puppeteer/issues/7452 (Order in browser.pages() · Issue #7452)
+  [4] https://ato.gov.au/about-ato/contact-us (Contact us | Australian Taxation Office)
+  [5] https://bigw.com.au (BIG W | How good's that)
+  [6] https://google.com/search (youtube - Google Search)
+  [7] https://x.com (X. It's what's happening / X)
 ```
 
 **Format Rules:**
 
-- **Pattern**: `[N] Title (domain/path)`
-- **Title first**: More distinctive than URL for quick scanning
+- **Pattern**: `[N] URL (Title)`
+- **URL first**: More distinctive and scannable for finding specific sites
 - **Clean URLs**: Query parameters (`?...`) and hash fragments (`#...`) stripped from display
 - **Truncation**: Total line length limited to 120 characters
-  - Layout: `  [NNN] Title (domain/path)` = ~8 chars prefix + title + URL
-  - URL limit: Maximum 80 characters (including parentheses)
+  - Layout: `  [NNN] URL (Title)` = ~8 chars prefix + URL + title
+  - URL limit: Maximum 80 characters
   - Title space: Remainder (typically 30-70 chars depending on URL length)
   - Truncation indicator: `...` added when content is truncated
-- **Empty titles**: Omitted entirely (shows `[N] (domain/path)` without extra spaces)
+- **Empty titles**: Omitted entirely (shows `[N] URL` without empty parentheses)
 
 **Verbose mode:**
 

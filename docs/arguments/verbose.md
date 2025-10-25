@@ -41,6 +41,18 @@ snag https://example.com --verbose
   - "Converting HTML to Markdown..."
   - "Content written to stdout"
 
+**Tab Listing Behavior:**
+
+When used with `--list-tabs`, verbose mode changes the output format:
+
+```bash
+snag --list-tabs --verbose
+```
+
+- **Normal mode**: Shows clean URLs without query parameters: `[N] URL (Title)`
+- **Verbose mode**: Shows full URLs with all query parameters and hash fragments: `[N] full-url - Title`
+- No truncation in verbose mode (shows complete URLs and titles)
+
 #### Interaction Matrix
 
 **Logging Level Priority (Last Flag Wins):**

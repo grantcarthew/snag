@@ -66,11 +66,11 @@ Available tabs in browser (7 tabs, sorted by URL):
 
 ### Documentation Updates
 
-- [ ] **AGENTS.md**: Update tab listing examples to show new format
-- [ ] **README.md**: Update `--list-tabs` examples (2 locations)
-- [ ] **docs/arguments/list-tabs.md**: Update output format section
-- [ ] **docs/arguments/verbose.md**: Document that --verbose shows full URLs in --list-tabs
-- [ ] **docs/design-record.md**: Add design decision for display format (truncation rules, format choice)
+- [x] **AGENTS.md**: Update tab listing examples to show new format
+- [x] **README.md**: Update `--list-tabs` examples (2 locations)
+- [x] **docs/arguments/list-tabs.md**: Update output format section
+- [x] **docs/arguments/verbose.md**: Document that --verbose shows full URLs in --list-tabs
+- [x] **docs/design-record.md**: Add design decision for display format (truncation rules, format choice)
 
 ### Edge Cases to Handle
 
@@ -150,25 +150,26 @@ snag --tab "github" -o output.md
 
 ### Implementation Tasks
 
-- [ ] Modify `GetTabByPattern()` to return `[]*rod.Page` instead of single `*rod.Page`
-  - Or create new `GetTabsByPattern()` function
-  - Return all matching tabs, not just first
-- [ ] Update `handleTabFetch()` to detect single vs. multiple matches
+- [x] Modify `GetTabByPattern()` to return `[]*rod.Page` instead of single `*rod.Page`
+  - Created new `GetTabsByPattern()` function (browser.go:515-608)
+  - Returns all matching tabs, not just first
+  - Kept `GetTabByPattern()` as wrapper for backward compatibility (browser.go:499-513)
+- [x] Update `handleTabFetch()` to detect single vs. multiple matches
   - Single match: Current behavior (stdout or -o file)
-  - Multiple matches: Call batch processing like `handleTabRange()`
-- [ ] Add validation: Error if `--output` is set with multiple matches
-- [ ] Update success logging to indicate "pattern matched N tabs"
-- [ ] Ensure error messages list all matched tabs on errors
+  - Multiple matches: Calls batch processing via `handleTabPatternBatch()` (handlers.go:528-617)
+- [x] Add validation: Error if `--output` is set with multiple matches (handlers.go:620-625)
+- [x] Update success logging to indicate "pattern matched N tabs" (handlers.go:625)
+- [x] Ensure error messages list all matched tabs on errors
 
 ### Documentation Updates
 
-- [ ] **AGENTS.md**: Update pattern matching section to document multi-match behavior
-- [ ] **README.md**: Update `--tab <pattern>` examples to show multi-match scenarios
-- [ ] **docs/arguments/tab.md**:
+- [x] **AGENTS.md**: Update pattern matching section to document multi-match behavior (line 303)
+- [x] **README.md**: Update `--tab <pattern>` examples to show multi-match scenarios (lines 477-491, 654)
+- [x] **docs/arguments/tab.md**: (lines 87-94, 176-179, 249-308)
   - Update "Multiple Matches" section from "First match wins" to "All matches processed"
   - Add multi-match examples
   - Update output validation rules (cannot use -o with multi-match)
-- [ ] **docs/design-record.md**: Update Design Decision #21 "Multiple Matches" with new behavior and rationale
+- [x] **docs/design-record.md**: Update Design Decision #21 and #30 with new behavior and rationale
 
 ### Breaking Change Considerations
 
@@ -197,11 +198,11 @@ snag --tab "github" -o output.md
 
 ### Testing
 
-- [ ] Test pattern matching 1 tab (stdout behavior)
-- [ ] Test pattern matching multiple tabs (batch processing)
+- [x] Test pattern matching 1 tab (stdout behavior) - ✅ Works: `./snag -t "go.dev"`
+- [x] Test pattern matching multiple tabs (batch processing) - ✅ Works: `./snag -t "www"` matched 3 tabs
 - [ ] Test pattern matching 0 tabs (error)
-- [ ] Test with --output flag (error on multiple matches)
-- [ ] Test with --output-dir flag (saves all matches)
+- [x] Test with --output flag (error on multiple matches) - ✅ Works: Shows error message
+- [x] Test with --output-dir flag (saves all matches) - ✅ Works: Saved to /tmp/snag-test
 - [ ] Test with various formats (md, html, pdf, png)
 - [ ] Test with --wait-for selector (applies to all matches)
 
@@ -210,18 +211,18 @@ snag --tab "github" -o output.md
 ## Success Criteria
 
 ### Task 1 (Display Format)
-- [ ] Tab listings are readable and scannable
-- [ ] Query parameters stripped from display
-- [ ] Lines truncated to 120 characters max
-- [ ] `--verbose` shows full URLs and titles
-- [ ] All documentation updated consistently
+- [x] Tab listings are readable and scannable
+- [x] Query parameters stripped from display
+- [x] Lines truncated to 120 characters max
+- [x] `--verbose` shows full URLs and titles
+- [x] All documentation updated consistently
 
 ### Task 2 (Multi-match)
-- [ ] Single pattern match outputs to stdout (backward compatible)
-- [ ] Multiple pattern matches auto-save all tabs
-- [ ] Clear error messages for `--output` conflicts
-- [ ] All documentation updated with new behavior
-- [ ] Design decision documented with rationale
+- [x] Single pattern match outputs to stdout (backward compatible)
+- [x] Multiple pattern matches auto-save all tabs
+- [x] Clear error messages for `--output` conflicts
+- [x] All documentation updated with new behavior
+- [x] Design decision documented with rationale
 
 ## Notes
 
