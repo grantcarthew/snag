@@ -145,11 +145,45 @@ snag --list-tabs
 
 **Output Format:**
 
+**Normal mode (default):**
+
+Clean, scannable format with title first and clean URL in parentheses:
+
 ```
-Available tabs in browser (3 tabs, sorted by URL):
-  [1] https://example.com - Example Domain
-  [2] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
-  [3] https://go.dev/doc/ - Documentation - The Go Programming Language
+Available tabs in browser (7 tabs, sorted by URL):
+  [1] New Tab (chrome://newtab)
+  [2] Example Domain (example.com)
+  [3] Order in browser.pages() · Issue #7452 (github.com/puppeteer/puppeteer/issues/7452)
+  [4] Contact us | Australian Taxation Office (ato.gov.au/about-ato/contact-us)
+  [5] BIG W | How good's that (bigw.com.au)
+  [6] youtube - Google Search (google.com/search)
+  [7] X. It's what's happening / X (x.com)
+```
+
+**Format Rules:**
+
+- **Pattern**: `[N] Title (domain/path)`
+- **Title first**: More distinctive than URL for quick scanning
+- **Clean URLs**: Query parameters (`?...`) and hash fragments (`#...`) stripped from display
+- **Truncation**: Total line length limited to 120 characters
+  - Layout: `  [NNN] Title (domain/path)` = ~8 chars prefix + title + URL
+  - URL limit: Maximum 80 characters (including parentheses)
+  - Title space: Remainder (typically 30-70 chars depending on URL length)
+  - Truncation indicator: `...` added when content is truncated
+- **Empty titles**: Omitted entirely (shows `[N] (domain/path)` without extra spaces)
+
+**Verbose mode:**
+
+Full URLs with query parameters and hash fragments (no truncation):
+
+```bash
+snag --list-tabs --verbose
+```
+
+```
+Available tabs in browser (2 tabs, sorted by URL):
+  [1] https://www.ato.gov.au/about-ato/contact-us?gclsrc=aw.ds&gad_source=1&gad_campaignid=22717615122&gbraid=0AAAAAolERwRiHRb8KrrNHk7GbTWG6FA0E&gclid=EAIaIQobChMImPuotYK-kAMVJ6hmAh10QhjZEAAYASAAEgKG6_D_BwE - Contact us | Australian Taxation Office
+  [2] https://www.google.com/search?gs_ssp=eJzj4tTP1TewzEouKzZg9GKvzC8tKU1KBQA_-AaN&q=youtube&oq=tyou&gs_lcrp=EgZjaHJvbWUqDwgBEC4YChiDARixAxiABDIGCAAQRRg5Mg8IARAuGAoYgwEYsQMYgAQyDwgCEAAYChiDARixAxiABDIPCAMQABgKGIMBGLEDGIAEMhUIBBAuGAoYgwEYxwEYsQMY0QMYgAQyDwgFEAAYChiDARixAxiABDIMCAYQABgKGLEDGIAEMgYIBxAFGEDSAQgyMzYxajBqN6gCB7ACAfEF13V1Q3FsVZ4&sourceid=chrome&ie=UTF-8&sei=ow_8aIvBO4uMseMPmrudyAk - youtube - Google Search
 ```
 
 **Tab Ordering:**

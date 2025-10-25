@@ -280,10 +280,10 @@ snag --list-tabs
 
 # Example output:
 #   Available tabs in browser (4 tabs, sorted by URL):
-#     [1] about:blank - New Tab
-#     [2] https://app.example.com/dashboard - Dashboard
-#     [3] https://github.com/myorg/private-repo - My Private Repo
-#     [4] https://internal.company.com/docs - Internal Documentation
+#     [1] New Tab (about:blank)
+#     [2] Dashboard (app.example.com/dashboard)
+#     [3] My Private Repo (github.com/myorg/private-repo)
+#     [4] Internal Documentation (internal.company.com/docs)
 
 # Step 3: Fetch from authenticated tabs without re-logging in
 snag -t 2 -o private-repo.md
@@ -444,9 +444,9 @@ snag -l
 
 # Example output:
 #   Available tabs in browser (3 tabs, sorted by URL):
-#     [1] https://app.example.com/dashboard - Dashboard (authenticated)
-#     [2] https://docs.python.org/3/ - 3.13.1 Documentation
-#     [3] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
+#     [1] Dashboard (authenticated) (app.example.com/dashboard)
+#     [2] 3.13.1 Documentation (docs.python.org/3/)
+#     [3] grantcarthew/snag: Intelligent web content fetcher (github.com/grantcarthew/snag)
 ```
 
 **Fetch from specific tab by index:**
@@ -474,17 +474,21 @@ snag -t 1 --format png -o screenshot.png
 snag -t "https://docs.python.org/3/"
 snag -t "GITHUB.COM/grantcarthew/snag"
 
-# Contains/substring match
-snag -t "dashboard"
-snag -t "python"
+# Contains/substring match (processes ALL matching tabs if multiple)
+snag -t "dashboard"      # Outputs to stdout if 1 match, auto-saves all if multiple
+snag -t "python"         # Fetches all tabs containing "python"
+snag -t "github" -d ./   # Saves all github tabs to current directory
 
-# Regex pattern match
-snag -t "https://.*\.com"
-snag -t ".*/dashboard"
-snag -t "(github|gitlab)\.com"
+# Regex pattern match (processes ALL matching tabs if multiple)
+snag -t "https://.*\.com"        # All .com URLs
+snag -t ".*/dashboard"           # All dashboard URLs
+snag -t "(github|gitlab)\.com"   # All github or gitlab tabs
 ```
 
-Pattern matching tries in order: exact URL match → contains match → regex match. First matching tab wins.
+**Pattern matching behavior:**
+- Tries in order: exact URL match → contains match → regex match
+- **Single match**: Outputs to stdout (or to file with `-o`)
+- **Multiple matches**: Auto-saves all tabs with generated filenames (use `-d` for custom directory)
 
 **Why use tabs?**
 
