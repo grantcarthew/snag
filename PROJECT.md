@@ -40,7 +40,7 @@ For each argument documentation file:
 ### Tab Management Arguments
 
 - [x] **tab.md** - Tab selection by index or pattern (-t flag) (✅ 2025-10-25)
-- [ ] **list-tabs.md** - List all available browser tabs (-l flag)
+- [x] **list-tabs.md** - List all available browser tabs (-l flag) (✅ 2025-10-26)
 - [ ] **all-tabs.md** - Fetch content from all open tabs
 - [ ] **close-tab.md** - Close tab after fetching (headless default)
 
@@ -113,7 +113,7 @@ For each argument, verify:
 - **Started**: 2025-10-24
 - **Completed**: _In Progress_
 - **Total Arguments**: 22
-- **Reviewed**: 6
-- **Fully Implemented**: 6
+- **Reviewed**: 7
+- **Fully Implemented**: 7
 - **Partially Implemented**: 0
 - **Not Implemented**: 0

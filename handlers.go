@@ -187,12 +187,7 @@ func connectToExistingBrowser(port int) (*BrowserManager, error) {
 	browser, err := bm.connectToExisting()
 	if err != nil {
 		browserManager = nil // Clear global on error
-		logger.Error("No browser instance running with remote debugging")
-		logger.ErrorWithSuggestion(
-			"Start Chrome with remote debugging enabled",
-			fmt.Sprintf("chrome --remote-debugging-port=%d", port),
-		)
-		logger.Info("Or run: snag --open-browser")
+		logger.Error("No browser found. Try running 'snag --open-browser' first")
 		return nil, ErrNoBrowserRunning
 	}
 

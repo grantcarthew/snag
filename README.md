@@ -523,7 +523,7 @@ snag --port 9223 https://example.com
 
 ```
 <url>                      URL to fetch (required, unless using --list-tabs or --tab)
---version                  Display version information
+-v, --version              Display version information
 -h, --help                 Show help message and exit
 ```
 
@@ -548,7 +548,7 @@ snag --port 9223 https://example.com
 ```
 -o, --output <file>        Save output to file instead of stdout
 -d, --output-dir <dir>     Save files with auto-generated names to directory
---format <FORMAT>          Output format: md (default) | html | text | pdf | png
+-f, --format <FORMAT>      Output format: md (default) | html | text | pdf | png
                            Format aliases: markdown→md, txt→text
                            Case-insensitive: MD, MARKDOWN, Html, PDF, etc.
 ```
