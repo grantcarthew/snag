@@ -34,7 +34,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ## Design Decisions Summary
 
-**27 major design decisions documented below:**
+**28 major design decisions documented below:**
 
 | #   | Decision                  | Choice                                                          |
 | --- | ------------------------- | --------------------------------------------------------------- |
@@ -65,6 +65,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 | 25  | Screenshot → PNG Format   | Remove `--screenshot` flag, use `--format png` (consistency)    |
 | 26  | Binary Format Safety      | Auto-generate filenames for PDF/PNG (prevent stdout corruption) |
 | 27  | Tab Range Support         | Support range syntax `N-M` for fetching multiple tabs           |
+| 28  | Tab Ordering              | Sort tabs by URL→Title→ID (predictable, stable ordering)        |
 
 See detailed rationale in design decisions section below.
 
@@ -1205,6 +1206,61 @@ $ snag https://example.com
 - **Code Location**: Handler in `main.go` (range detection before pattern matching)
 
 **See Also**: For complete tab range specification and examples, see [arguments/tab.md](arguments/tab.md)
+
+### 28. Tab Ordering
+
+- **Decision**: Sort tabs by URL (primary), Title (secondary), ID (tertiary) for all tab operations
+- **Sort Order**: Alphabetical multi-level sort provides stable, predictable ordering
+- **Rationale**:
+  - **CDP Limitation**: Chrome DevTools Protocol returns tabs in unpredictable internal order (not visual left-to-right)
+  - **Predictability**: Same tab order every time, regardless of CDP's internal state
+  - **Reproducibility**: Automation workflows can rely on consistent tab indices
+  - **Multi-level stability**: URL→Title→ID ensures unique sort position even for identical URLs
+  - **User clarity**: Clear, documented ordering (alphabetical by URL) vs. unexplained random order
+- **Impact on All Tab Operations**:
+  - `--list-tabs`: Displays tabs in sorted order with "sorted by URL" message
+  - `--tab <index>`: Selects tab by sorted position (tab [1] = first alphabetically by URL)
+  - `--tab <range>`: Processes tabs in sorted order
+  - `--all-tabs`: Processes tabs in sorted order
+- **Performance**:
+  - Single `page.Info()` call per tab (efficient network usage)
+  - In-memory sorting after info fetch (no additional CDP calls)
+  - `getSortedPagesWithInfo()` caches info for reuse across operations
+- **Tradeoffs**:
+  - **Pro**: Predictable, stable, reproducible automation
+  - **Pro**: Same order across all tab operations (consistency)
+  - **Pro**: No configuration needed (opinionated design)
+  - **Con**: Tab indices don't match visual browser order
+  - **Accepted**: Visual order is unreliable anyway (CDP limitation), sorted order is better than random
+- **User Communication**:
+  - `--list-tabs` output shows "sorted by URL" in header
+  - Success messages mention "from sorted order (by URL)" for clarity
+  - Documentation clearly explains tab [1] ≠ first visual tab
+- **Examples**:
+  ```bash
+  # Visual browser order (left to right):
+  #   - example.com
+  #   - google.com/search
+  #   - github.com/repo
+
+  # snag --list-tabs output (sorted by URL):
+  #   [1] https://example.com
+  #   [2] https://github.com/repo
+  #   [3] https://google.com/search
+
+  snag --tab 1    # Fetches example.com (first alphabetically)
+  snag --tab 1-2  # Fetches example.com and github.com
+  ```
+- **Code Location**:
+  - Sort function: `browser.go:409-451` (`getSortedPagesWithInfo()`)
+  - Used by: `ListTabs()`, `GetTabByIndex()`, `GetTabsByRange()`
+- **Rejected Alternatives**:
+  - **No sorting (use CDP order)**: Rejected - unpredictable, not reproducible
+  - **Visual tab order**: Not possible via CDP
+  - **Configurable sort order**: Rejected - adds complexity, opinionated design is better
+  - **Sort by title only**: Less stable (multiple tabs can have same title)
+
+**See Also**: For tab ordering documentation, see [arguments/list-tabs.md](arguments/list-tabs.md)
 
 ## References
 
