@@ -1,0 +1,245 @@
+// Copyright (c) 2025 Grant Carthew
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package main
+
+import (
+	"strings"
+	"testing"
+)
+
+func TestStripURLParams(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "URL with query params",
+			input:    "https://example.com/path?query=123",
+			expected: "https://example.com/path",
+		},
+		{
+			name:     "URL with hash fragment",
+			input:    "https://example.com/path#section",
+			expected: "https://example.com/path",
+		},
+		{
+			name:     "URL with both query params and hash",
+			input:    "https://example.com/path?query=123#section",
+			expected: "https://example.com/path",
+		},
+		{
+			name:     "URL without params or hash",
+			input:    "https://example.com/path",
+			expected: "https://example.com/path",
+		},
+		{
+			name:     "URL without path",
+			input:    "https://example.com",
+			expected: "https://example.com",
+		},
+		{
+			name:     "Chrome internal URL",
+			input:    "chrome://newtab/",
+			expected: "chrome://newtab/",
+		},
+		{
+			name:     "Complex query params",
+			input:    "https://www.ato.gov.au/about-ato/contact-us?gclsrc=aw.ds&gad_source=1&gclid=EAIaIQobChMI",
+			expected: "https://www.ato.gov.au/about-ato/contact-us",
+		},
+		{
+			name:     "Empty string",
+			input:    "",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := stripURLParams(tt.input)
+			if result != tt.expected {
+				t.Errorf("stripURLParams(%q) = %q, expected %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFormatTabLine(t *testing.T) {
+	tests := []struct {
+		name      string
+		index     int
+		title     string
+		url       string
+		maxLength int
+		verbose   bool
+		expected  string
+	}{
+		{
+			name:      "Normal mode - short title and URL",
+			index:     1,
+			title:     "Example Domain",
+			url:       "https://example.com",
+			maxLength: 120,
+			verbose:   false,
+			expected:  "  [1] https://example.com (Example Domain)",
+		},
+		{
+			name:      "Normal mode - empty title",
+			index:     2,
+			title:     "",
+			url:       "https://example.com",
+			maxLength: 120,
+			verbose:   false,
+			expected:  "  [2] https://example.com",
+		},
+		{
+			name:      "Normal mode - strips query params",
+			index:     3,
+			title:     "Contact Us",
+			url:       "https://www.ato.gov.au/about-ato/contact-us?gclsrc=aw.ds&gad_source=1",
+			maxLength: 120,
+			verbose:   false,
+			expected:  "  [3] https://www.ato.gov.au/about-ato/contact-us (Contact Us)",
+		},
+		{
+			name:      "Normal mode - very long title gets truncated",
+			index:     4,
+			title:     "This is a very long title that should be truncated to fit within the 120 character limit when combined with the URL",
+			url:       "https://example.com",
+			maxLength: 120,
+			verbose:   false,
+			expected:  "  [4] https://example.com (This is a very long title that should be truncated to fit within the 120 character limit ...)",
+		},
+		{
+			name:      "Normal mode - very long URL gets truncated",
+			index:     5,
+			title:     "Short",
+			url:       "https://very-long-domain-name-that-exceeds-the-maximum-url-length-limit.com/path/to/resource",
+			maxLength: 120,
+			verbose:   false,
+			expected:  "  [5] https://very-long-domain-name-that-exceeds-the-maximum-url-length-limit.com/p... (Short)",
+		},
+		{
+			name:      "Verbose mode - shows full URL with query params",
+			index:     6,
+			title:     "YouTube Search",
+			url:       "https://www.google.com/search?q=youtube&oq=tyou&gs_lcrp=EgZjaHJvbWU",
+			maxLength: 120,
+			verbose:   true,
+			expected:  "  [6] https://www.google.com/search?q=youtube&oq=tyou&gs_lcrp=EgZjaHJvbWU - YouTube Search",
+		},
+		{
+			name:      "Verbose mode - empty title",
+			index:     7,
+			title:     "",
+			url:       "https://example.com",
+			maxLength: 120,
+			verbose:   true,
+			expected:  "  [7] https://example.com",
+		},
+		{
+			name:      "Chrome internal URL",
+			index:     8,
+			title:     "New Tab",
+			url:       "chrome://newtab/",
+			maxLength: 120,
+			verbose:   false,
+			expected:  "  [8] chrome://newtab/ (New Tab)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatTabLine(tt.index, tt.title, tt.url, tt.maxLength, tt.verbose)
+			if result != tt.expected {
+				t.Errorf("formatTabLine() =\n%q\nexpected:\n%q", result, tt.expected)
+			}
+			// In normal mode, verify line doesn't exceed maxLength
+			if !tt.verbose && len(result) > tt.maxLength {
+				t.Errorf("formatTabLine() result length %d exceeds maxLength %d", len(result), tt.maxLength)
+			}
+		})
+	}
+}
+
+func TestFormatTabLine_Length(t *testing.T) {
+	// Test that normal mode always respects the 120 character limit
+	testCases := []struct {
+		title string
+		url   string
+	}{
+		{
+			title: "Very long title " + strings.Repeat("a", 200),
+			url:   "https://example.com",
+		},
+		{
+			title: "Normal title",
+			url:   "https://" + strings.Repeat("a", 200) + ".com",
+		},
+		{
+			title: strings.Repeat("a", 100),
+			url:   "https://" + strings.Repeat("b", 100) + ".com",
+		},
+	}
+
+	for i, tc := range testCases {
+		result := formatTabLine(i+1, tc.title, tc.url, 120, false)
+		if len(result) > 120 {
+			t.Errorf("Line %d length %d exceeds 120 chars: %q", i+1, len(result), result)
+		}
+	}
+}
+
+func TestDisplayTabList(t *testing.T) {
+	// Create a simple string buffer to capture output
+	var buf strings.Builder
+
+	tabs := []TabInfo{
+		{Index: 1, URL: "https://example.com", Title: "Example Domain"},
+		{Index: 2, URL: "https://github.com/user/repo?tab=readme", Title: "GitHub Repo"},
+		{Index: 3, URL: "chrome://newtab/", Title: "New Tab"},
+	}
+
+	// Test normal mode (non-verbose)
+	buf.Reset()
+	displayTabList(tabs, &buf, false)
+	output := buf.String()
+
+	// Verify header
+	if !strings.Contains(output, "Available tabs in browser (3 tabs, sorted by URL)") {
+		t.Errorf("Missing or incorrect header in output")
+	}
+
+	// Verify clean URLs (no query params)
+	if strings.Contains(output, "?tab=readme") {
+		t.Errorf("Query params should be stripped in normal mode")
+	}
+
+	// Verify format: URL (Title)
+	if !strings.Contains(output, "https://example.com (Example Domain)") {
+		t.Errorf("Expected new format with URL (Title)")
+	}
+
+	// Test verbose mode
+	buf.Reset()
+	displayTabList(tabs, &buf, true)
+	verboseOutput := buf.String()
+
+	// Verify full URL with query params in verbose mode
+	if !strings.Contains(verboseOutput, "?tab=readme") {
+		t.Errorf("Query params should be shown in verbose mode")
+	}
+
+	// Test empty tabs
+	buf.Reset()
+	displayTabList([]TabInfo{}, &buf, false)
+	emptyOutput := buf.String()
+	if !strings.Contains(emptyOutput, "No tabs open in browser") {
+		t.Errorf("Expected 'No tabs' message for empty tab list")
+	}
+}
