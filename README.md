@@ -279,10 +279,10 @@ snag --open-browser
 snag --list-tabs
 
 # Example output:
-#   Available tabs in Chrome (4 tabs):
+#   Available tabs in browser (4 tabs, sorted by URL):
 #     [1] about:blank - New Tab
-#     [2] https://github.com/myorg/private-repo - My Private Repo
-#     [3] https://app.example.com/dashboard - Dashboard
+#     [2] https://app.example.com/dashboard - Dashboard
+#     [3] https://github.com/myorg/private-repo - My Private Repo
 #     [4] https://internal.company.com/docs - Internal Documentation
 
 # Step 3: Fetch from authenticated tabs without re-logging in
@@ -443,10 +443,10 @@ snag --list-tabs
 snag -l
 
 # Example output:
-#   Available tabs in Chrome (3 tabs):
-#     [1] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
+#   Available tabs in browser (3 tabs, sorted by URL):
+#     [1] https://app.example.com/dashboard - Dashboard (authenticated)
 #     [2] https://docs.python.org/3/ - 3.13.1 Documentation
-#     [3] https://app.example.com/dashboard - Dashboard (authenticated)
+#     [3] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
 ```
 
 **Fetch from specific tab by index:**
@@ -536,6 +536,8 @@ snag --port 9223 https://example.com
 -a, --all-tabs             Process all open browser tabs (saves with auto-generated filenames)
                            Requires --output-dir or saves to current directory
 ```
+
+**Note:** Tabs are sorted alphabetically by URL (primary), then Title (secondary), then ID (tertiary) for predictable ordering. Chrome DevTools Protocol doesn't guarantee visual left-to-right tab order, so snag sorts tabs to ensure consistent, reproducible results. Tab [1] = first tab alphabetically by URL, not the first visual tab in your browser.
 
 ### Output Control
 
@@ -633,6 +635,7 @@ Solutions:
 
 - Run `snag --list-tabs` to see available tabs and their indexes
 - Tab indexes are 1-based (first tab is 1, not 0)
+- **Tabs are sorted by URL**, not visual browser order - tab [1] is first alphabetically by URL
 - For patterns, try simpler matches: `snag -t "example"` instead of complex regex
 - Remember: pattern matching is case-insensitive
 

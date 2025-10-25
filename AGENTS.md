@@ -283,9 +283,9 @@ Phase 2 adds efficient tab management capabilities to work with existing browser
 ```bash
 # List all open tabs
 $ snag --list-tabs
-Available tabs in Chrome (3 tabs):
-  [1] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
-  [2] https://example.com - Example Domain
+Available tabs in browser (3 tabs, sorted by URL):
+  [1] https://example.com - Example Domain
+  [2] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
   [3] https://go.dev/doc/ - Documentation - The Go Programming Language
 
 # Fetch from tab by index (1-based)
@@ -329,6 +329,14 @@ First matching tab wins if multiple tabs match.
 - All pattern matching is case-insensitive
 - Performance optimized: Single-pass page.Info() caching (browser.go:487-507)
 - Tab listing output goes to stdout (enables piping)
+
+**Tab Ordering:**
+
+- **Tabs are sorted by URL (primary), Title (secondary), ID (tertiary)** for predictable, stable ordering
+- Chrome DevTools Protocol returns tabs in unpredictable internal order (not visual left-to-right)
+- Sorting ensures consistent tab indices across all operations (`--list-tabs`, `--tab`, `--tab <range>`, `--all-tabs`)
+- Tab [1] = first tab alphabetically by URL, not first visual tab in browser
+- This design choice provides reproducible automation workflows
 
 **Use Cases:**
 

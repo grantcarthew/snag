@@ -146,11 +146,19 @@ snag --list-tabs
 **Output Format:**
 
 ```
-Available tabs in Chrome (3 tabs):
-  [1] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
-  [2] https://example.com - Example Domain
+Available tabs in browser (3 tabs, sorted by URL):
+  [1] https://example.com - Example Domain
+  [2] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
   [3] https://go.dev/doc/ - Documentation - The Go Programming Language
 ```
+
+**Tab Ordering:**
+
+- **Tabs are sorted by URL (primary), Title (secondary), ID (tertiary)** for predictable, stable ordering
+- Chrome DevTools Protocol returns tabs in unpredictable internal order (not visual left-to-right browser order)
+- Sorting ensures consistent tab indices across all operations (`--list-tabs`, `--tab`, `--tab <range>`, `--all-tabs`)
+- Tab [1] = first tab alphabetically by URL, **not** first visual tab in browser window
+- This design provides reproducible automation workflows and predictable tab selection
 
 **Error Messages:**
 
