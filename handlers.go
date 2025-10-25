@@ -209,7 +209,7 @@ func displayTabList(tabs []TabInfo, w io.Writer) {
 		return
 	}
 
-	fmt.Fprintf(w, "Available tabs in browser (%d tabs):\n", len(tabs))
+	fmt.Fprintf(w, "Available tabs in browser (%d tabs, sorted by URL):\n", len(tabs))
 	for _, tab := range tabs {
 		fmt.Fprintf(w, "  [%d] %s - %s\n", tab.Index, tab.URL, tab.Title)
 	}
@@ -351,20 +351,160 @@ func handleListTabs(c *cli.Context) error {
 	return nil
 }
 
-// handleTabFetch fetches content from an existing tab by index
-func handleTabFetch(c *cli.Context) error {
-	// Get the tab value
-	tabValue := strings.TrimSpace(c.String("tab"))
-	if tabValue == "" {
-		return fmt.Errorf("--tab flag requires a value")
+// handleTabRange processes a range of tabs with auto-generated filenames
+func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
+	// Extract configuration from flags
+	format := normalizeFormat(c.String("format"))
+	timeout := c.Int("timeout")
+	waitFor := strings.TrimSpace(c.String("wait-for"))
+	outputDir := strings.TrimSpace(c.String("output-dir"))
+	if outputDir == "" {
+		outputDir = "." // Default to current working directory
 	}
 
-	// Connect to existing browser with remote debugging enabled
+	// Validate format
+	if err := validateFormat(format); err != nil {
+		return err
+	}
+
+	// Validate timeout
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	// Validate output directory
+	if err := validateDirectory(outputDir); err != nil {
+		return err
+	}
+
+	// Get tabs in range
+	pages, err := bm.GetTabsByRange(start, end)
+	if err != nil {
+		// Display available tabs on error
+		logger.Error("Failed to get tab range: %v", err)
+		logger.Info("Run 'snag --list-tabs' to see available tabs")
+		displayTabListOnError(bm)
+		return err
+	}
+
+	// Create single timestamp for entire batch
+	timestamp := time.Now()
+
+	logger.Info("Processing %d tabs from range [%d-%d]...", len(pages), start, end)
+
+	// Track success/failure counts
+	successCount := 0
+	failureCount := 0
+
+	// Process each tab in range
+	for i, page := range pages {
+		tabNum := start + i // Actual tab number (1-based)
+		totalTabs := len(pages)
+		current := i + 1 // Current position in range (1-based)
+
+		// Get page info
+		info, err := page.Info()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to get tab info for tab [%d]: %v", current, totalTabs, tabNum, err)
+			failureCount++
+			continue
+		}
+
+		logger.Info("[%d/%d] Processing tab [%d]: %s", current, totalTabs, tabNum, info.URL)
+
+		// Wait for selector if specified
+		if waitFor != "" {
+			err := waitForSelector(page, waitFor, time.Duration(timeout)*time.Second)
+			if err != nil {
+				logger.Error("[%d/%d] Wait failed for tab [%d]: %v", current, totalTabs, tabNum, err)
+				failureCount++
+				continue
+			}
+		}
+
+		// Generate output filename with conflict resolution
+		outputPath, err := generateOutputFilename(
+			info.Title, info.URL, format,
+			timestamp, outputDir,
+		)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to generate filename for tab [%d]: %v", current, totalTabs, tabNum, err)
+			failureCount++
+			continue
+		}
+
+		// Process page content and output in requested format
+		if err := processPageContent(page, format, outputPath); err != nil {
+			logger.Error("[%d/%d] Failed to process content for tab [%d]: %v", current, totalTabs, tabNum, err)
+			failureCount++
+			continue
+		}
+
+		successCount++
+	}
+
+	// Summary
+	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
+
+	if failureCount > 0 {
+		return fmt.Errorf("batch processing completed with %d failures", failureCount)
+	}
+
+	return nil
+}
+
+// handleTabFetch fetches content from an existing tab by index
+func handleTabFetch(c *cli.Context) error {
+	// Connect to existing browser first (needed for displaying tabs on error)
 	bm, err := connectToExistingBrowser(c.Int("port"))
 	if err != nil {
 		return err
 	}
 	defer func() { browserManager = nil }()
+
+	// Get the tab value
+	tabValue := strings.TrimSpace(c.String("tab"))
+	if tabValue == "" {
+		logger.Error("Tab pattern cannot be empty")
+		logger.Info("Run 'snag --list-tabs' to see available tabs")
+		displayTabListOnError(bm)
+		return fmt.Errorf("tab pattern cannot be empty")
+	}
+
+	// Warn about ignored flags
+	if c.IsSet("user-agent") {
+		logger.Warning("--user-agent is ignored with --tab (cannot change existing tab's user agent)")
+	}
+	if c.IsSet("user-data-dir") {
+		logger.Warning("--user-data-dir ignored when connecting to existing browser")
+	}
+	if c.IsSet("timeout") && !c.IsSet("wait-for") {
+		logger.Warning("--timeout is ignored without --wait-for when using --tab")
+	}
+
+	// Check if tab value is a range (N-M format)
+	// Only treat as range if both parts are valid positive integers
+	if strings.Contains(tabValue, "-") {
+		parts := strings.SplitN(tabValue, "-", 2)
+		if len(parts) == 2 {
+			start, err1 := strconv.Atoi(strings.TrimSpace(parts[0]))
+			end, err2 := strconv.Atoi(strings.TrimSpace(parts[1]))
+
+			// If both parts parse as positive integers, it's a valid range
+			if err1 == nil && err2 == nil && start > 0 && end > 0 {
+				// Valid range detected - validate --output flag
+				if c.IsSet("output") {
+					logger.Error("Cannot use --output with multiple tabs. Use --output-dir instead")
+					return ErrOutputFlagConflict
+				}
+
+				// Process as range
+				return handleTabRange(c, bm, start, end)
+			}
+			// If one or both parts don't parse as integers, treat as pattern (fall through)
+			// This allows patterns like "my-url-pattern" to work correctly
+		}
+	}
 
 	// Determine if tab value is an integer index or a pattern
 	var page *rod.Page
@@ -380,7 +520,7 @@ func handleTabFetch(c *cli.Context) error {
 			}
 			return err
 		}
-		logger.Success("Connected to tab [%d]", tabIndex)
+		logger.Success("Connected to tab [%d] from sorted order (by URL)", tabIndex)
 	} else {
 		// Not an integer - treat as pattern
 		logger.Verbose("Fetching from tab matching pattern: %s", tabValue)

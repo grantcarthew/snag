@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -397,9 +398,18 @@ func (bm *BrowserManager) WasLaunched() bool {
 	return bm.wasLaunched
 }
 
-// ListTabs returns information about all open tabs in the browser
-// This requires an existing browser connection and will not launch a new browser
-func (bm *BrowserManager) ListTabs() ([]TabInfo, error) {
+// pageWithInfo holds a page reference with its cached info for efficient sorting
+type pageWithInfo struct {
+	page  *rod.Page
+	url   string
+	title string
+	id    string
+}
+
+// getSortedPagesWithInfo returns all pages sorted by URL→Title→ID with info cached
+// This fetches page.Info() exactly once per page, then sorts in-memory
+// Sorting provides predictable, stable ordering (CDP's internal order is unpredictable)
+func (bm *BrowserManager) getSortedPagesWithInfo() ([]pageWithInfo, error) {
 	if bm.browser == nil {
 		return nil, ErrNoBrowserRunning
 	}
@@ -409,55 +419,81 @@ func (bm *BrowserManager) ListTabs() ([]TabInfo, error) {
 		return nil, fmt.Errorf("failed to get pages: %w", err)
 	}
 
-	var tabs []TabInfo
-	for i, page := range pages {
+	// Build list with cached info (single page.Info() call per page)
+	pagesWithInfo := make([]pageWithInfo, 0, len(pages))
+	for _, page := range pages {
 		info, err := page.Info()
 		if err != nil {
-			// Skip pages that we can't get info for, but log a warning
-			logger.Warning("Failed to get info for page %d: %v", i+1, err)
+			// Skip pages we can't get info for, but log a warning
+			logger.Warning("Failed to get info for page: %v", err)
 			continue
 		}
-
-		tabs = append(tabs, TabInfo{
-			Index: i + 1, // 1-based indexing for display
-			URL:   info.URL,
-			Title: info.Title,
-			ID:    string(page.TargetID),
+		pagesWithInfo = append(pagesWithInfo, pageWithInfo{
+			page:  page,
+			url:   info.URL,
+			title: info.Title,
+			id:    string(page.TargetID),
 		})
+	}
+
+	// Sort by URL (primary) → Title (secondary) → ID (tertiary)
+	sort.Slice(pagesWithInfo, func(i, j int) bool {
+		if pagesWithInfo[i].url != pagesWithInfo[j].url {
+			return pagesWithInfo[i].url < pagesWithInfo[j].url
+		}
+		if pagesWithInfo[i].title != pagesWithInfo[j].title {
+			return pagesWithInfo[i].title < pagesWithInfo[j].title
+		}
+		return pagesWithInfo[i].id < pagesWithInfo[j].id
+	})
+
+	return pagesWithInfo, nil
+}
+
+// ListTabs returns information about all open tabs in the browser
+// Tabs are sorted by URL (primary), Title (secondary), and ID (tertiary) for predictable ordering
+// This requires an existing browser connection and will not launch a new browser
+func (bm *BrowserManager) ListTabs() ([]TabInfo, error) {
+	pagesWithInfo, err := bm.getSortedPagesWithInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to TabInfo slice with 1-based indices
+	tabs := make([]TabInfo, len(pagesWithInfo))
+	for i, pwi := range pagesWithInfo {
+		tabs[i] = TabInfo{
+			Index: i + 1, // 1-based indexing for display
+			URL:   pwi.url,
+			Title: pwi.title,
+			ID:    pwi.id,
+		}
 	}
 
 	return tabs, nil
 }
 
-// GetTabByIndex returns a specific tab by its index (1-based)
-// Index 1 = first tab, Index 2 = second tab, etc.
+// GetTabByIndex returns a specific tab by its index (1-based) from the sorted tab list
+// Index 1 = first tab (by URL sort order), Index 2 = second tab, etc.
 // Returns ErrTabIndexInvalid if index is out of range
 func (bm *BrowserManager) GetTabByIndex(index int) (*rod.Page, error) {
-	if bm.browser == nil {
-		return nil, ErrNoBrowserRunning
-	}
-
-	pages, err := bm.browser.Pages()
+	pagesWithInfo, err := bm.getSortedPagesWithInfo()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pages: %w", err)
+		return nil, err
 	}
 
-	// Validate index (1-based, so valid range is 1 to len(pages))
-	if index < 1 || index > len(pages) {
-		return nil, fmt.Errorf("%w: tab index %d (valid range: 1-%d)", ErrTabIndexInvalid, index, len(pages))
+	// Validate index (1-based, so valid range is 1 to len(pagesWithInfo))
+	if index < 1 || index > len(pagesWithInfo) {
+		return nil, fmt.Errorf("%w: tab index %d (valid range: 1-%d)", ErrTabIndexInvalid, index, len(pagesWithInfo))
 	}
 
 	// Convert 1-based index to 0-based
 	arrayIndex := index - 1
 
-	// Log tab selection (safe error handling)
-	if info, err := pages[arrayIndex].Info(); err == nil {
-		logger.Verbose("Selected tab [%d]: %s", index, info.URL)
-	} else {
-		logger.Verbose("Selected tab [%d]", index)
-	}
+	// Log tab selection (info already cached, no extra network call)
+	logger.Verbose("Selected tab [%d] from sorted order: %s", index, pagesWithInfo[arrayIndex].url)
 
-	return pages[arrayIndex], nil
+	return pagesWithInfo[arrayIndex].page, nil
 }
 
 // GetTabByPattern returns the first tab matching the given pattern
@@ -541,4 +577,43 @@ func (bm *BrowserManager) GetTabByPattern(pattern string) (*rod.Page, error) {
 
 	// Step 4: No matches found
 	return nil, fmt.Errorf("%w: '%s'", ErrNoTabMatch, pattern)
+}
+
+// GetTabsByRange returns tabs within the specified 1-based index range (inclusive) from the sorted tab list
+// Range format: "N-M" where N and M are positive integers >= 1
+// Examples: "1-3" returns tabs 1, 2, and 3 (by URL sort order)
+// Returns error if range is invalid or indices are out of bounds
+func (bm *BrowserManager) GetTabsByRange(start, end int) ([]*rod.Page, error) {
+	pagesWithInfo, err := bm.getSortedPagesWithInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate range
+	if start < 1 {
+		return nil, fmt.Errorf("tab range must start from 1 (got %d)", start)
+	}
+	if start > end {
+		return nil, fmt.Errorf("invalid range: start must be <= end (got %d-%d)", start, end)
+	}
+
+	// Validate that both start and end indices exist
+	if start > len(pagesWithInfo) {
+		return nil, fmt.Errorf("tab index %d out of range in range %d-%d (only %d tabs open)", start, start, end, len(pagesWithInfo))
+	}
+	if end > len(pagesWithInfo) {
+		return nil, fmt.Errorf("tab index %d out of range in range %d-%d (only %d tabs open)", end, start, end, len(pagesWithInfo))
+	}
+
+	// Extract the range of pages (convert from 1-based to 0-based indexing)
+	rangeWithInfo := pagesWithInfo[start-1 : end]
+
+	// Extract just the pages from the range
+	rangeTabs := make([]*rod.Page, len(rangeWithInfo))
+	for i, pwi := range rangeWithInfo {
+		rangeTabs[i] = pwi.page
+	}
+
+	logger.Verbose("Selected %d tabs from sorted range [%d-%d]", len(rangeTabs), start, end)
+	return rangeTabs, nil
 }
