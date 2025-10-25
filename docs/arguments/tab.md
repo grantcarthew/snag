@@ -86,8 +86,11 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 
 **Multiple Matches:**
 
-- First matching tab wins (no error)
-- Consider using more specific pattern if multiple tabs match
+- **Single match**: Fetch and output to stdout (or to file with `-o`)
+- **Multiple matches**: Fetch all matching tabs, auto-save with generated filenames (like `--all-tabs`)
+  - No confirmation prompt - auto-proceed with good logging
+  - Process in same sort order as `--list-tabs` (alphabetically by URL)
+  - Cannot use `--output` flag (error), use `--output-dir` instead
 
 **No Browser Connection:**
 
@@ -115,14 +118,16 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 
 **Output Control:**
 
-| Combination                      | Behavior       | Notes                                                                |
-| -------------------------------- | -------------- | -------------------------------------------------------------------- |
-| `--tab N` (single) + `--output`  | Works normally | Fetch from tab, save to file                                         |
-| `--tab N-M` (range) + `--output` | **Error**      | `"Cannot use --output with multiple tabs. Use --output-dir instead"` |
-| `--tab` + `--output-dir`         | Works normally | Fetch from tab(s), auto-generate filename(s)                         |
-| `--tab` + `--format` (all)       | Works normally | All formats supported (md/html/text/pdf/png)                         |
-| `--tab N` (single) + no output   | Works normally | Output to stdout                                                     |
-| `--tab N-M` (range) + no output  | Auto-save      | Auto-generates filenames in current directory                        |
+| Combination                                 | Behavior       | Notes                                                                |
+| ------------------------------------------- | -------------- | -------------------------------------------------------------------- |
+| `--tab N` (single match) + `--output`       | Works normally | Fetch from tab, save to file                                         |
+| `--tab N-M` (range) + `--output`            | **Error**      | `"Cannot use --output with multiple tabs. Use --output-dir instead"` |
+| `--tab PATTERN` (multi-match) + `--output`  | **Error**      | `"Cannot use --output with multiple tabs. Use --output-dir instead"` |
+| `--tab` + `--output-dir`                    | Works normally | Fetch from tab(s), auto-generate filename(s)                         |
+| `--tab` + `--format` (all)                  | Works normally | All formats supported (md/html/text/pdf/png)                         |
+| `--tab N` (single match) + no output        | Works normally | Output to stdout                                                     |
+| `--tab N-M` (range) + no output             | Auto-save      | Auto-generates filenames in current directory                        |
+| `--tab PATTERN` (multi-match) + no output   | Auto-save      | Auto-generates filenames in current directory                        |
 
 **Timing & Selector:**
 
@@ -164,9 +169,14 @@ snag -t 4-6 -d ./output/                        # Tabs 4-6, save to specific dir
 snag -t 1-5 --format pdf                        # Tabs 1-5 as PDFs (auto-save)
 snag -t 2-2                                     # Single tab using range syntax
 
-# Fetch by URL pattern
-snag -t "github.com" --format html              # Match substring
-snag -t "https://example.com" -o page.md        # Exact URL match
+# Fetch by URL pattern (single match - outputs to stdout)
+snag -t "github.com" --format html              # Match substring (if only one github tab)
+snag -t "https://example.com" -o page.md        # Exact URL match (single tab)
+
+# Fetch by URL pattern (multiple matches - auto-saves all)
+snag -t "github"                                # Fetches all tabs containing "github"
+snag -t "github" -d ./repos/                    # Saves all github tabs to directory
+snag -t "https://.*\.com" --format pdf          # All .com tabs as PDFs
 
 # With selectors and timeouts (automation)
 snag -t "dashboard" --wait-for ".loaded"        # Wait for selector in existing tab
@@ -191,6 +201,7 @@ snag --tab "nonexistent"                        # ERROR: No match + list tabs
 snag --tab "([invalid"                          # ERROR: Invalid regex
 snag --tab 1 --tab 2                            # Uses tab 2 (last wins)
 snag --tab 1 https://example.com                # ERROR: Mutually exclusive with URL
+snag --tab "github" -o output.md                # ERROR: Cannot use --output with multiple matches (if multiple github tabs)
 snag --tab 1 --url-file urls.txt                # ERROR: Mutually exclusive with --url-file
 snag --tab 1 --all-tabs                         # ERROR: Mutually exclusive with --all-tabs
 snag --tab 1 --force-headless                   # ERROR: Tab requires existing browser
@@ -235,47 +246,61 @@ snag --list-tabs --tab 1                        # --list-tabs overrides, lists a
 4. Parse pattern:
    - If range (N-M): Validate range, fetch tabs sequentially, handle like multiple tabs
    - If integer: Convert to tab index (1-based → 0-based)
-   - If string: Try exact match → substring → regex
+   - If string: Try exact match → substring → regex (collect ALL matches)
 5. If no match: Error and list available tabs
-6. Fetch content from selected tab(s)
-7. Apply output options (--format, --output, --output-dir)
+6. Determine single vs. multiple matches:
+   - Single match: Fetch and output to stdout or file
+   - Multiple matches: Batch process all matches (auto-save with generated filenames)
+7. Fetch content from selected tab(s)
+8. Apply output options (--format, --output, --output-dir)
    - Single tab: Can use `-o` or stdout
-   - Range: Must auto-save (like `--all-tabs` behavior)
-8. Close tab(s) if `--close-tab` is set
+   - Multiple tabs (range/multi-match): Must auto-save, error if `-o` specified
+9. Close tab(s) if `--close-tab` is set
 
 **Pattern Matching Algorithm:**
 
 ```go
 // Pseudocode
-func GetTabByPattern(pattern string) (*Tab, error) {
+func GetTabsByPattern(pattern string) ([]*Tab, error) {
     // 1. Try integer (tab index)
     if isInteger(pattern) {
-        return GetTabByIndex(index)
+        tab := GetTabByIndex(index)
+        return []*Tab{tab}, nil
     }
 
     // 2. Cache page.Info() for all tabs (single pass, optimization)
     tabInfos := cacheAllTabInfo()
+    var matches []*Tab
 
-    // 3. Try exact match (case-insensitive)
+    // 3. Try exact match (case-insensitive) - collect ALL matches
     for tab, info := range tabInfos {
         if strings.EqualFold(info.URL, pattern) {
-            return tab
+            matches = append(matches, tab)
         }
     }
+    if len(matches) > 0 {
+        return matches, nil
+    }
 
-    // 4. Try substring/contains match (case-insensitive)
+    // 4. Try substring/contains match (case-insensitive) - collect ALL matches
     for tab, info := range tabInfos {
         if strings.Contains(strings.ToLower(info.URL), strings.ToLower(pattern)) {
-            return tab
+            matches = append(matches, tab)
         }
     }
+    if len(matches) > 0 {
+        return matches, nil
+    }
 
-    // 5. Try regex match (case-insensitive)
+    // 5. Try regex match (case-insensitive) - collect ALL matches
     regex := regexp.MustCompile("(?i)" + pattern)
     for tab, info := range tabInfos {
         if regex.MatchString(info.URL) {
-            return tab
+            matches = append(matches, tab)
         }
+    }
+    if len(matches) > 0 {
+        return matches, nil
     }
 
     // 6. No match found

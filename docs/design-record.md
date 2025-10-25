@@ -34,7 +34,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ## Design Decisions Summary
 
-**28 major design decisions documented below:**
+**30 major design decisions documented below:**
 
 | #   | Decision                  | Choice                                                          |
 | --- | ------------------------- | --------------------------------------------------------------- |
@@ -66,6 +66,8 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 | 26  | Binary Format Safety      | Auto-generate filenames for PDF/PNG (prevent stdout corruption) |
 | 27  | Tab Range Support         | Support range syntax `N-M` for fetching multiple tabs           |
 | 28  | Tab Ordering              | Sort tabs by URL→Title→ID (predictable, stable ordering)        |
+| 29  | Tab List Display Format   | `[N] Title (domain/path)` with 120-char truncation, clean URLs  |
+| 30  | Pattern Multi-Match       | All matching tabs processed (not just first match)              |
 
 See detailed rationale in design decisions section below.
 
@@ -1261,6 +1263,111 @@ $ snag https://example.com
   - **Sort by title only**: Less stable (multiple tabs can have same title)
 
 **See Also**: For tab ordering documentation, see [arguments/list-tabs.md](arguments/list-tabs.md)
+
+### 29. Tab List Display Format
+
+- **Decision**: Format tab listings as `[N] Title (domain/path)` with query param stripping and 120-char truncation
+- **Format Pattern**: `[N] Title (domain/path)`
+- **Display Rules**:
+  - Title first (more distinctive than URL)
+  - Clean URLs in parentheses (strip `?...` query params and `#...` hash fragments)
+  - Empty titles omitted entirely (no double spaces)
+  - 120-character total line limit
+  - URL maximum 80 chars (including parentheses)
+  - Title gets remainder space (typically 30-70 chars)
+- **Rationale**:
+  - **Readability**: Current format with full query params is cluttered and hard to scan
+  - **Title priority**: Titles are more distinctive and memorable than URLs
+  - **Clean URLs**: Query parameters add noise without value for tab identification
+  - **Scannable**: Short, predictable format makes finding tabs quick
+  - **Terminal-friendly**: 120 chars fits most terminal widths
+  - **Opinionated UX**: One clean format by default (no configuration needed)
+- **Verbose Mode**: `--list-tabs --verbose` shows full URLs with query params (no truncation)
+  - Provides escape hatch for cases where full URL is needed
+  - Explicit opt-in for verbose output
+- **Examples**:
+  ```
+  Normal:
+    [1] New Tab (chrome://newtab)
+    [2] Example Domain (example.com)
+    [3] Contact us | Australian Taxation Office (ato.gov.au/about-ato/contact-us)
+
+  Verbose:
+    [1] https://www.ato.gov.au/about-ato/contact-us?gclsrc=aw.ds&gad_source=1&... - Contact us | Australian Taxation Office
+  ```
+- **Truncation Strategy**:
+  - Layout breakdown: `  [NNN] ` (8 chars) + Title + ` (` + URL + `)`
+  - URL prioritized up to 80 chars (keeps most clean URLs complete)
+  - Title gets remaining space after URL
+  - Truncation indicator: `...` appended to truncated content
+- **Edge Cases**:
+  - Empty/missing titles: Show `[N] (domain/path)` (omit title, no double spaces)
+  - Very long URLs: Truncate at 80 chars with `...`
+  - Very long titles: Truncate after URL takes its space
+  - Chrome internal URLs: Typically short (e.g., `chrome://newtab`), no truncation needed
+- **Pattern Matching Compatibility**: Pattern matching still uses full URLs (not truncated display)
+- **Code Location**: handlers.go (displayTabList, displayTabListOnError functions)
+
+**See Also**: For complete tab list format specification, see [arguments/list-tabs.md](arguments/list-tabs.md)
+
+### 30. Pattern Multi-Match Behavior
+
+- **Decision**: `--tab <pattern>` processes ALL matching tabs, not just the first match
+- **Behavior**:
+  - **Single match**: Output to stdout or file with `-o` (current behavior)
+  - **Multiple matches**: Auto-save all matches with generated filenames (like `--all-tabs`)
+  - **No matches**: Error with tab listing (current behavior)
+- **Rationale**:
+  - **User expectation**: When using a pattern like "github", users likely want all github tabs
+  - **Consistency**: Aligns with `--all-tabs` batch processing behavior
+  - **Workflow improvement**: Enables batch download of all tabs matching a pattern
+  - **Still predictable**: Single match = stdout, multiple = auto-save (clear, documented)
+  - **No production risk**: Tool not in production, no breaking change concerns
+- **Processing Details**:
+  - No confirmation prompt (auto-proceed with good logging like `--all-tabs`)
+  - Process in same sort order as `--list-tabs` (alphabetically by URL)
+  - Cannot use `--output` flag with multiple matches (error: use `--output-dir`)
+  - Can use `--output-dir` to specify save directory
+  - Without output flags: Auto-saves to current directory with generated filenames
+- **Examples**:
+  ```bash
+  # Single match - outputs to stdout (unchanged)
+  snag --tab "example.com"
+
+  # Multiple matches - auto-saves all matches
+  snag --tab "github"
+  # Processing 3 tabs matching pattern 'github'...
+  # [1/3] Processing tab [2]: github.com/user/repo1
+  # ✓ Saved to 2025-10-25-123456-repo1.md
+  # [2/3] Processing tab [5]: github.com/user/repo2
+  # ✓ Saved to 2025-10-25-123456-repo2.md
+  # [3/3] Processing tab [8]: github.com/org/repo3
+  # ✓ Saved to 2025-10-25-123456-repo3.md
+  # ✓ Batch complete: 3 succeeded, 0 failed
+
+  # With output directory
+  snag --tab "github" -d ./repos/
+
+  # Error: Cannot use --output with multiple matches
+  snag --tab "github" -o output.md
+  # ERROR: Cannot use --output with multiple tabs. Use --output-dir instead
+  ```
+- **Pattern Matching Changes**:
+  - Pattern matching now collects ALL matches (not just first)
+  - Progressive fallthrough still applies (exact → contains → regex)
+  - First matching stage wins (if exact matches found, stop; else try contains; else regex)
+  - All tabs matching at first successful stage are returned
+- **Alternative Considered**: Keep "first match wins" behavior
+  - Rejected: Less useful, users can use more specific patterns for single match
+  - Users wanting single match can use exact index (`--tab 1`)
+- **Migration Path** (if needed in future):
+  - Users relying on first-match can use more specific patterns
+  - Or use `--tab <index>` for exact tab selection
+- **Code Location**:
+  - Handler: `main.go` (handleTabFetch function)
+  - Pattern matching: `browser.go` (GetTabsByPattern function - returns `[]*Tab`)
+
+**See Also**: For complete pattern matching specification, see [arguments/tab.md](arguments/tab.md)
 
 ## References
 

@@ -283,10 +283,14 @@ Phase 2 adds efficient tab management capabilities to work with existing browser
 ```bash
 # List all open tabs
 $ snag --list-tabs
-Available tabs in browser (3 tabs, sorted by URL):
-  [1] https://example.com - Example Domain
-  [2] https://github.com/grantcarthew/snag - grantcarthew/snag: Intelligent web content fetcher
-  [3] https://go.dev/doc/ - Documentation - The Go Programming Language
+Available tabs in browser (7 tabs, sorted by URL):
+  [1] New Tab (chrome://newtab)
+  [2] Example Domain (example.com)
+  [3] Order in browser.pages() · Issue #7452 (github.com/puppeteer/puppeteer/issues/7452)
+  [4] Contact us | Australian Taxation Office (ato.gov.au/about-ato/contact-us)
+  [5] BIG W | How good's that (bigw.com.au)
+  [6] youtube - Google Search (google.com/search)
+  [7] X. It's what's happening / X (x.com)
 
 # Fetch from tab by index (1-based)
 snag --tab 1        # First tab
@@ -296,9 +300,9 @@ snag -t 3           # Third tab
 snag -t "https://github.com/grantcarthew/snag"
 snag -t "EXAMPLE.COM"  # Case-insensitive match
 
-# Fetch by substring/contains
-snag -t "github"       # Contains "github"
-snag -t "dashboard"    # Contains "dashboard"
+# Fetch by substring/contains (single match - stdout, multiple matches - auto-save all)
+snag -t "github"       # All tabs containing "github" (auto-saves if multiple matches)
+snag -t "dashboard"    # All tabs containing "dashboard" (auto-saves if multiple matches)
 
 # Fetch by regex pattern
 snag -t "https://.*\.com"              # Regex: https:// + anything + .com
@@ -314,12 +318,16 @@ snag -t 2 --wait-for ".loaded"         # Wait for selector
 **Pattern Matching Rules (Progressive Fallthrough):**
 
 1. **Integer** → Tab index (1-based, e.g., "1" = first tab)
-2. **Exact match** → Case-insensitive URL match (`strings.EqualFold`)
-3. **Contains match** → Case-insensitive substring (`strings.Contains`)
-4. **Regex match** → Case-insensitive regex (`(?i)` flag)
+2. **Exact match** → Case-insensitive URL match (`strings.EqualFold`) - returns ALL exact matches
+3. **Contains match** → Case-insensitive substring (`strings.Contains`) - returns ALL containing matches
+4. **Regex match** → Case-insensitive regex (`(?i)` flag) - returns ALL regex matches
 5. **Error** → No match found (`ErrNoTabMatch`)
 
-First matching tab wins if multiple tabs match.
+**Multiple Matches Behavior:**
+- Single match: Outputs to stdout (or to file with `-o`)
+- Multiple matches: Auto-saves all with generated filenames (like `--all-tabs`), no confirmation prompt
+- Processes in same sort order as `--list-tabs` (alphabetically by URL)
+- Cannot use `--output` with multiple matches (error: use `--output-dir`)
 
 **Key Implementation Details:**
 
@@ -344,6 +352,7 @@ First matching tab wins if multiple tabs match.
 2. **Reduce Tab Clutter**: Reuse existing tabs instead of creating new ones
 3. **Quick Access**: List tabs to find content quickly
 4. **Pattern Workflows**: Match tabs by URL patterns for automation
+5. **Batch Processing**: Fetch all tabs matching a pattern (e.g., all GitHub repos, all docs pages)
 
 ## Dependencies
 
