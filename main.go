@@ -235,6 +235,20 @@ func run(c *cli.Context) error {
 			logger.Error("Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)")
 			return fmt.Errorf("conflicting flags: --all-tabs and URL arguments")
 		}
+		// Check for conflicting --force-headless flag
+		if c.Bool("force-headless") {
+			logger.Error("Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)")
+			return fmt.Errorf("conflicting flags: --force-headless and --all-tabs")
+		}
+		// Check for conflicting --output flag
+		if strings.TrimSpace(c.String("output")) != "" {
+			logger.Error("Cannot use --output with --all-tabs (multiple outputs). Use --output-dir instead")
+			return ErrOutputFlagConflict
+		}
+		// Warn if --open-browser is set (--all-tabs will be ignored)
+		if c.Bool("open-browser") {
+			logger.Warning("--all-tabs ignored with --open-browser (no content fetching)")
+		}
 		return handleAllTabs(c)
 	}
 
