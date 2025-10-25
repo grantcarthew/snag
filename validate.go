@@ -64,6 +64,27 @@ func validateURL(urlStr string) (string, error) {
 	return urlStr, nil
 }
 
+// isNonFetchableURL checks if a URL is a browser-internal URL that cannot be fetched.
+// These URLs (chrome://, about:, devtools://, etc.) should be skipped when processing tabs.
+func isNonFetchableURL(urlStr string) bool {
+	nonFetchablePrefixes := []string{
+		"chrome://",
+		"about:",
+		"devtools://",
+		"chrome-extension://",
+		"edge://",
+		"brave://",
+	}
+
+	urlLower := strings.ToLower(urlStr)
+	for _, prefix := range nonFetchablePrefixes {
+		if strings.HasPrefix(urlLower, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 // validateTimeout checks if timeout value is valid (must be positive)
 func validateTimeout(timeout int) error {
 	if timeout <= 0 {

@@ -295,8 +295,20 @@ func handleAllTabs(c *cli.Context) error {
 	timeout := c.Int("timeout")
 	waitFor := strings.TrimSpace(c.String("wait-for"))
 	outputDir := strings.TrimSpace(c.String("output-dir"))
+	closeTab := c.Bool("close-tab")
 	if outputDir == "" {
 		outputDir = "." // Default to current working directory
+	}
+
+	// Warn about ignored flags
+	if c.IsSet("user-agent") {
+		logger.Warning("--user-agent is ignored with --all-tabs (cannot change existing tabs' user agents)")
+	}
+	if c.IsSet("user-data-dir") {
+		logger.Warning("--user-data-dir ignored when connecting to existing browser")
+	}
+	if c.IsSet("timeout") && waitFor == "" {
+		logger.Warning("--timeout is ignored without --wait-for when using --all-tabs")
 	}
 
 	// Validate format
@@ -344,6 +356,13 @@ func handleAllTabs(c *cli.Context) error {
 	// Process each tab
 	for i, tab := range tabs {
 		tabNum := i + 1
+
+		// Skip non-fetchable URLs (chrome://, about:, devtools://, etc.)
+		if isNonFetchableURL(tab.URL) {
+			logger.Warning("[%d/%d] Skipping tab: %s (not fetchable)", tabNum, len(tabs), tab.URL)
+			continue
+		}
+
 		logger.Info("[%d/%d] Processing: %s", tabNum, len(tabs), tab.URL)
 
 		// Get page object for this tab
@@ -379,10 +398,27 @@ func handleAllTabs(c *cli.Context) error {
 		if err := processPageContent(page, format, outputPath); err != nil {
 			logger.Error("[%d/%d] Failed to process content: %v", tabNum, len(tabs), err)
 			failureCount++
+			// Still attempt to close tab if --close-tab is set
+			if closeTab {
+				if err := page.Close(); err != nil {
+					logger.Verbose("[%d/%d] Failed to close tab: %v", tabNum, len(tabs), err)
+				}
+			}
 			continue
 		}
 
 		successCount++
+
+		// Close tab if --close-tab flag is set
+		if closeTab {
+			// Check if this is the last tab
+			if tabNum == len(tabs) {
+				logger.Info("Closing last tab, browser will close")
+			}
+			if err := page.Close(); err != nil {
+				logger.Verbose("[%d/%d] Failed to close tab: %v", tabNum, len(tabs), err)
+			}
+		}
 	}
 
 	// Summary
