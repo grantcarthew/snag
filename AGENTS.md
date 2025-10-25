@@ -324,6 +324,7 @@ snag -t 2 --wait-for ".loaded"         # Wait for selector
 5. **Error** → No match found (`ErrNoTabMatch`)
 
 **Multiple Matches Behavior:**
+
 - Single match: Outputs to stdout (or to file with `-o`)
 - Multiple matches: Auto-saves all with generated filenames (like `--all-tabs`), no confirmation prompt
 - Processes in same sort order as `--list-tabs` (alphabetically by URL)
