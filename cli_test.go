@@ -650,56 +650,6 @@ func TestBrowser_ForceHeadless(t *testing.T) {
 	_ = output // May or may not contain mode indication
 }
 
-// TestBrowser_OpenBrowserWithCloseTab tests --open-browser with --close-tab
-func TestBrowser_OpenBrowserWithCloseTab(t *testing.T) {
-	t.Skip("DEPRECATED: --open-browser with URL no longer fetches content, just opens browser")
-	if !isBrowserAvailable() {
-		t.Skip("Browser not available, skipping browser integration test")
-	}
-
-	server := startTestServer(t)
-	url := server.URL + "/simple.html"
-
-	// Note: This will actually open a visible browser window
-	// In CI environments, this requires a display server
-	stdout, stderr, err := runSnag("--open-browser", "--close-tab", url)
-
-	assertNoError(t, err)
-	assertExitCode(t, err, 0)
-
-	// Should successfully fetch content
-	assertContains(t, stdout, "# Example Heading")
-
-	// Using --close-tab to clean up the visible browser tab
-	output := stderr
-	_ = output
-}
-
-// TestBrowser_OpenBrowser tests --open-browser flag (open browser and fetch)
-func TestBrowser_OpenBrowser(t *testing.T) {
-	t.Skip("DEPRECATED: --open-browser with URL no longer fetches content, just opens browser")
-	if !isBrowserAvailable() {
-		t.Skip("Browser not available, skipping browser integration test")
-	}
-
-	server := startTestServer(t)
-	url := server.URL + "/simple.html"
-
-	stdout, stderr, err := runSnag("--open-browser", "--open-browser", url)
-
-	assertNoError(t, err)
-	assertExitCode(t, err, 0)
-
-	// Should fetch content in visible browser mode
-	// Stdout should contain the markdown content
-	assertContains(t, stdout, "Example Heading")
-	assertContains(t, stdout, "simple paragraph")
-
-	// Stderr may contain messages about opening browser
-	output := stderr
-	_ = output
-}
-
 // TestBrowser_CustomPort tests --port flag with custom debugging port
 func TestBrowser_CustomPort(t *testing.T) {
 	if !isBrowserAvailable() {
@@ -720,40 +670,6 @@ func TestBrowser_CustomPort(t *testing.T) {
 
 	output := stderr
 	_ = output
-}
-
-// TestBrowser_ConnectExisting tests connecting to existing Chrome instance
-func TestBrowser_ConnectExisting(t *testing.T) {
-	t.Skip("DEPRECATED: --open-browser with URL no longer fetches content, test needs refactoring")
-	if !isBrowserAvailable() {
-		t.Skip("Browser not available, skipping browser integration test")
-	}
-
-	// This test verifies that snag can connect to an already-running Chrome instance
-	// First, launch Chrome with --open-browser to create a persistent instance
-	// Then run snag without force flags to connect to it
-
-	server := startTestServer(t)
-	url := server.URL + "/simple.html"
-
-	// First run: Launch visible browser to create persistent instance
-	stdout1, stderr1, err1 := runSnag("--open-browser", "--close-tab", url)
-
-	assertNoError(t, err1)
-	assertExitCode(t, err1, 0)
-	assertContains(t, stdout1, "# Example Heading")
-
-	// Second run: Should connect to existing instance
-	// (Default behavior is to connect if available)
-	stdout2, stderr2, err2 := runSnag(url)
-
-	assertNoError(t, err2)
-	assertExitCode(t, err2, 0)
-	assertContains(t, stdout2, "# Example Heading")
-
-	// Both runs should succeed
-	_ = stderr1
-	_ = stderr2
 }
 
 // TestBrowser_Auth401Detection tests HTTP 401 authentication detection
@@ -1240,36 +1156,6 @@ func TestCLI_TabInvalidIndex(t *testing.T) {
 	_ = stdout
 }
 
-// TestBrowser_TabByIndex tests --tab <index> with browser running
-func TestBrowser_TabByIndex(t *testing.T) {
-	t.Skip("DEPRECATED: --open-browser with URL no longer fetches content, test needs refactoring")
-	if !isBrowserAvailable() {
-		t.Skip("Browser not available, skipping browser integration test")
-	}
-
-	// Ensure clean state - kill any existing browsers
-	cleanupOrphanedBrowsers()
-
-	// First, open a browser with example.com
-	stdout1, stderr1, err1 := runSnag("--open-browser", "https://example.com")
-	assertNoError(t, err1)
-	assertExitCode(t, err1, 0)
-	assertContains(t, stdout1, "Example Domain")
-
-	// Now fetch from tab index 1 (first tab)
-	stdout2, stderr2, err2 := runSnag("--tab", "1")
-	assertNoError(t, err2)
-	assertExitCode(t, err2, 0)
-
-	// Should get content from example.com
-	assertContains(t, stdout2, "Example Domain")
-
-	// Verify logs show connection to tab
-	assertContains(t, stderr2, "Connected to tab [1]")
-
-	_ = stderr1
-}
-
 // TestBrowser_TabOutOfRange tests --tab with index out of range
 func TestBrowser_TabOutOfRange(t *testing.T) {
 	if !isBrowserAvailable() {
@@ -1292,120 +1178,6 @@ func TestBrowser_TabOutOfRange(t *testing.T) {
 	assertContains(t, stderr, "Tab index out of range")
 
 	_ = stdout
-}
-
-// TestBrowser_TabWithFormat tests --tab with different output formats
-func TestBrowser_TabWithFormat(t *testing.T) {
-	t.Skip("DEPRECATED: --open-browser with URL no longer fetches content, test needs refactoring")
-	if !isBrowserAvailable() {
-		t.Skip("Browser not available, skipping browser integration test")
-	}
-
-	// Ensure clean state - kill any existing browsers
-	cleanupOrphanedBrowsers()
-
-	// First, open a browser
-	stdout1, _, err1 := runSnag("--open-browser", "https://example.com")
-	assertNoError(t, err1)
-	assertContains(t, stdout1, "Example Domain")
-
-	// Fetch from tab with HTML format
-	stdout2, stderr2, err2 := runSnag("--tab", "1", "--format", "html")
-	assertNoError(t, err2)
-	assertExitCode(t, err2, 0)
-
-	// Should get HTML (not Markdown)
-	assertContains(t, stdout2, "<html")
-	assertContains(t, stdout2, "</html>")
-
-	_ = stderr2
-}
-
-// TestBrowser_TabByExactMatch tests --tab with exact URL match (case-insensitive)
-func TestBrowser_TabByExactMatch(t *testing.T) {
-	t.Skip("DEPRECATED: --open-browser with URL no longer fetches content, test needs refactoring")
-	if !isBrowserAvailable() {
-		t.Skip("Browser not available, skipping browser integration test")
-	}
-
-	// Ensure clean state - kill any existing browsers
-	cleanupOrphanedBrowsers()
-
-	// First, open a browser with example.com
-	stdout1, _, err1 := runSnag("--open-browser", "https://example.com/")
-	assertNoError(t, err1)
-	assertContains(t, stdout1, "Example Domain")
-
-	// Fetch using exact URL match (case-insensitive)
-	stdout2, stderr2, err2 := runSnag("--tab", "HTTPS://EXAMPLE.COM/")
-	assertNoError(t, err2)
-	assertExitCode(t, err2, 0)
-
-	// Should get content from example.com
-	assertContains(t, stdout2, "Example Domain")
-
-	// Verify logs show pattern matching with exact pattern
-	assertContains(t, stderr2, "Connected to tab matching pattern: HTTPS://EXAMPLE.COM/")
-
-	_ = stderr2
-}
-
-// TestBrowser_TabBySubstring tests --tab with substring/contains match
-func TestBrowser_TabBySubstring(t *testing.T) {
-	t.Skip("DEPRECATED: --open-browser with URL no longer fetches content, test needs refactoring")
-	if !isBrowserAvailable() {
-		t.Skip("Browser not available, skipping browser integration test")
-	}
-
-	// Ensure clean state - kill any existing browsers
-	cleanupOrphanedBrowsers()
-
-	// First, open a browser with example.com
-	stdout1, _, err1 := runSnag("--open-browser", "https://example.com")
-	assertNoError(t, err1)
-	assertContains(t, stdout1, "Example Domain")
-
-	// Fetch using substring match (contains "example")
-	stdout2, stderr2, err2 := runSnag("--tab", "example")
-	assertNoError(t, err2)
-	assertExitCode(t, err2, 0)
-
-	// Should get content from example.com
-	assertContains(t, stdout2, "Example Domain")
-
-	// Verify logs show pattern matching
-	assertContains(t, stderr2, "Connected to tab matching pattern: example")
-
-	_ = stderr2
-}
-
-// TestBrowser_TabByRegex tests --tab with regex pattern match
-func TestBrowser_TabByRegex(t *testing.T) {
-	t.Skip("DEPRECATED: --open-browser with URL no longer fetches content, test needs refactoring")
-	if !isBrowserAvailable() {
-		t.Skip("Browser not available, skipping browser integration test")
-	}
-
-	// Ensure clean state - kill any existing browsers
-	cleanupOrphanedBrowsers()
-
-	// First, open a browser with example.com
-	stdout1, _, err1 := runSnag("--open-browser", "https://example.com")
-	assertNoError(t, err1)
-	assertContains(t, stdout1, "Example Domain")
-
-	// Fetch using regex pattern (https://.*\.com)
-	stdout2, stderr2, err2 := runSnag("--tab", "https://.*\\.com")
-	assertNoError(t, err2)
-	assertExitCode(t, err2, 0)
-
-	// Should get content from example.com
-	assertContains(t, stdout2, "Example Domain")
-
-	// Verify logs show pattern matching with regex pattern
-	assertContains(t, stderr2, "Connected to tab matching pattern: https://.*\\.com")
-
-	_ = stderr2
 }
 
 // TestBrowser_TabNoMatch tests --tab with pattern that doesn't match any tab
