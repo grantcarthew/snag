@@ -1,7 +1,7 @@
 # Project TODO Items
 
-**Status:** Active
-**Last Updated:** 2025-10-23
+**Status:** Complete
+**Last Updated:** 2025-10-26
 
 This document tracks outstanding implementation tasks identified during the argument handling analysis phase.
 
@@ -52,8 +52,11 @@ Apply `strings.TrimSpace()` to all string arguments after reading from CLI frame
 
 **Priority:** High
 **Effort:** High
+**Status:** ❌ Not Required (2025-10-26)
 
 Define and implement strategy for processing multiple URLs from various sources.
+
+**Decision:** Sequential processing performance is adequate for current use cases. Tested with 30 URLs and performance is acceptable. Future optimization can be reconsidered if needed.
 
 **Affected Operations:**
 - Multiple `<url>` arguments
@@ -98,7 +101,7 @@ Define and implement strategy for processing multiple URLs from various sources.
 **Priority:** Medium
 **Effort:** Medium
 
-**Status:** Partially complete (reviewed during cross-review)
+**Status:** ✅ Completed (2025-10-26)
 
 Review all 21 completed argument analysis tasks to ensure `--user-data-dir` flag behavior is properly documented in each `docs/arguments/[argument].md` file.
 
@@ -129,10 +132,12 @@ Review all 21 completed argument analysis tasks to ensure `--user-data-dir` flag
 - [x] Task 20: `--version` / `-v` - Covered ✓
 - [x] Task 21: `--user-data-dir` - N/A (self)
 
-**Action Required:**
-- Add `--user-data-dir` interaction sections to Tasks 1-7, 9, 15-17
-- Standard interaction: "Works normally" for most flags
-- See user-data-dir.md for expected interactions
+**Implementation Notes:**
+- Reviewed all 21 argument documentation files
+- Found that only wait-for.md was missing `--user-data-dir` interaction
+- Added `--user-data-dir` to wait-for.md's "Other Flag Interactions" section
+- All other files (Tasks 1-6, 9, 15-17) already had proper documentation
+- All files now consistently document `--user-data-dir` interactions per user-data-dir.md specification
 
 ---
 
@@ -170,26 +175,39 @@ Remove the deprecated `--force-visible` flag from the codebase.
 
 **Priority:** High
 **Effort:** Medium
+**Status:** ✅ Completed (2025-10-24)
 
-From PROJECT-review.md (2025-10-23 review):
+From docs/archive/2025-10-24-argument-documentation-cross-review.md:
 
 ### 5. Resolve Documentation Inconsistencies
 
-**Critical Contradictions (7 issues):**
-1. `--list-tabs` + `--wait-for`: Change to silently ignore
-2. `--close-tab` + `--url-file`: Change to works normally
-3. `--tab` + `--open-browser`: Change to error
-4. `--all-tabs` + `--open-browser`: Change to error
-5. `--output` + `--open-browser`: Change to warning
-6. `--tab` + `--user-data-dir`: Change to warning/ignore
-7. `--all-tabs` + `--user-data-dir`: Change to warning/ignore
+**Phase 1: Critical Contradictions (7 issues)** - ✅ COMPLETE
+1. `--list-tabs` + `--wait-for`: Changed to silently ignore ✅
+2. `--close-tab` + `--url-file`: Changed to works normally ✅
+3. `--tab` + `--open-browser`: Changed to warning/ignore ✅
+4. `--all-tabs` + `--open-browser`: Changed to warning/ignore ✅
+5. `--output` + `--open-browser`: Changed to warning/ignore ✅
+6. `--tab` + `--user-data-dir`: Changed to warning/ignore ✅
+7. `--all-tabs` + `--user-data-dir`: Changed to warning/ignore ✅
 
-**Minor Inconsistencies (7 issues):**
-8. Standardize warning message wording across all affected files
+**Phase 2: Warning Message Standardization (7 issues)** - ✅ COMPLETE
+8. `--user-agent` + `--tab`: Standardized ✅
+9. `--user-agent` + `--all-tabs`: Standardized ✅
+10. `--close-tab` + `--open-browser`: Standardized ✅
+11. `--format` + `--open-browser`: Added warning ✅
+12. `--timeout` + `--open-browser`: Added warning ✅
+13. `--output-dir` + `--open-browser`: Added warning ✅
+14. `--wait-for` + `--open-browser`: Standardized ✅
 
-**Files to Update:** 11 files in `docs/arguments/`
+**Phase 3: Verification** - ✅ COMPLETE
+- Re-verified all contradictions resolved ✅
+- Verified examples sections match documented behavior ✅
+- Updated validation.md compatibility matrices ✅
+- Updated README.md compatibility matrices ✅
 
-See PROJECT-review.md for complete details and recommendations.
+**Files Modified:** 11 files in `docs/arguments/`
+
+See docs/archive/2025-10-24-argument-documentation-cross-review.md for complete details.
 
 ---
 
