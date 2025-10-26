@@ -198,21 +198,31 @@ Types: `feat`, `fix`, `docs`, `chore`, `test`, `refactor`
 
 **Strategy:**
 
-- Integration tests with real Chrome/Chromium (no mocking)
+- **Unit tests**: Pure functions without mocking (validate, format, browser detection)
+- **Integration tests**: Real Chrome/Chromium browser (no mocking browser interactions)
 - Tab tests may show minor isolation issues (not functional bugs)
+
+**Test Suite:**
+
+- **124 total tests** across 6 test files
+- **22 pure unit tests** (no interfaces or mocking required)
+- **62 integration tests** (browser-dependent)
+- **40 unit test cases** (all pure functions)
 
 **Running Tests:**
 
 ```bash
 go test -v                           # All tests
-go test -v -run TestBrowser_ListTabs # Specific test
+go test -v -run TestValidate         # Unit tests only (validation)
+go test -v -run TestDetectBrowser    # Unit tests only (browser detection)
+go test -v -run TestBrowser          # Integration tests (requires browser)
 go test -v -cover                    # With coverage
 ```
 
 **Requirements:**
 
-- Chrome, Chromium, Edge, or Brave installed
-- 13 tab-related tests must pass
+- Chrome, Chromium, Edge, or Brave installed (for integration tests)
+- Unit tests run without browser dependency
 
 ## Security Considerations
 
