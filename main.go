@@ -20,7 +20,6 @@ import (
 var version = "dev"
 
 const (
-	// Output format constants for --format flag
 	FormatMarkdown = "md"
 	FormatHTML     = "html"
 	FormatText     = "text"
@@ -47,7 +46,6 @@ func main() {
 			browserManager.Close()
 		}
 
-		// Exit with standard signal codes
 		if sig == os.Interrupt {
 			os.Exit(130) // 128 + 2 (SIGINT)
 		}
@@ -181,12 +179,10 @@ func main() {
 	}
 }
 
-// run is the main application action
 func run(c *cli.Context) error {
 	// Initialize logger based on flags (last flag wins)
 	level := LevelNormal
 
-	// Determine which logging flag was specified last by checking os.Args
 	lastLogFlag := ""
 	lastLogIndex := -1
 	for i, arg := range os.Args {
@@ -208,7 +204,6 @@ func run(c *cli.Context) error {
 		}
 	}
 
-	// Apply the last logging flag that was specified
 	switch lastLogFlag {
 	case "quiet":
 		level = LevelQuiet
@@ -220,14 +215,12 @@ func run(c *cli.Context) error {
 
 	logger = NewLogger(level)
 
-	// Collect URLs from --url-file and command line arguments
 	var urls []string
 
 	// Trim string flags once at the source
 	outputFile := strings.TrimSpace(c.String("output"))
 	outputDir := strings.TrimSpace(c.String("output-dir"))
 
-	// Load URLs from file if --url-file is provided
 	if urlFile := strings.TrimSpace(c.String("url-file")); urlFile != "" {
 		fileURLs, err := loadURLsFromFile(urlFile)
 		if err != nil {
@@ -236,7 +229,6 @@ func run(c *cli.Context) error {
 		urls = append(urls, fileURLs...)
 	}
 
-	// Add command-line URL arguments (trim whitespace)
 	for _, arg := range c.Args().Slice() {
 		trimmedArg := strings.TrimSpace(arg)
 		if trimmedArg != "" {
@@ -256,8 +248,7 @@ func run(c *cli.Context) error {
 		}
 	}
 
-	// Handle --list-tabs flag (list tabs and exit)
-	// Note: --list-tabs overrides URL arguments if both are present (URLs are ignored)
+	// --list-tabs overrides URL arguments if both are present
 	if c.Bool("list-tabs") {
 		if len(urls) > 0 {
 			logger.Verbose("--list-tabs overrides URL arguments (URLs will be ignored)")
@@ -265,63 +256,50 @@ func run(c *cli.Context) error {
 		return handleListTabs(c)
 	}
 
-	// Handle --all-tabs flag (process all tabs)
 	if c.Bool("all-tabs") {
-		// Check for conflicting URL arguments
 		if len(urls) > 0 {
 			logger.Error("Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)")
 			return fmt.Errorf("conflicting flags: --all-tabs and URL arguments")
 		}
-		// Check for conflicting --force-headless flag
 		if c.Bool("force-headless") {
 			logger.Error("Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)")
 			return fmt.Errorf("conflicting flags: --force-headless and --all-tabs")
 		}
-		// Check for conflicting --output flag
 		if outputFile != "" {
 			logger.Error("Cannot use --output with --all-tabs (multiple outputs). Use --output-dir instead")
 			return ErrOutputFlagConflict
 		}
-		// Warn if --open-browser is set (--all-tabs will be ignored)
 		if c.Bool("open-browser") {
 			logger.Warning("--all-tabs ignored with --open-browser (no content fetching)")
 		}
 		return handleAllTabs(c)
 	}
 
-	// Handle --tab flag (fetch from existing tab)
 	if c.IsSet("tab") {
-		// Check for conflicting URL arguments (includes --url-file)
 		if len(urls) > 0 {
 			logger.Error("Cannot use --tab with URL argument (mutually exclusive content sources)")
 			return ErrTabURLConflict
 		}
-		// Check for conflicting --all-tabs flag
 		if c.Bool("all-tabs") {
 			logger.Error("Cannot use both --tab and --all-tabs (mutually exclusive content sources)")
 			return fmt.Errorf("conflicting flags: --tab and --all-tabs")
 		}
-		// Check for conflicting --force-headless flag
 		if c.Bool("force-headless") {
 			logger.Error("Cannot use --force-headless with --tab (--tab requires existing browser connection)")
 			return fmt.Errorf("conflicting flags: --force-headless and --tab")
 		}
-		// Warn if --open-browser is set (--tab will be ignored in open-browser mode)
 		if c.Bool("open-browser") {
 			logger.Warning("--tab ignored with --open-browser (no content fetching)")
 		}
 		return handleTabFetch(c)
 	}
 
-	// Check for conflicting --force-headless + --open-browser flags
 	if c.Bool("open-browser") && c.Bool("force-headless") {
 		logger.Error("Cannot use both --force-headless and --open-browser (conflicting modes)")
 		return fmt.Errorf("conflicting flags: --force-headless and --open-browser")
 	}
 
-	// Handle --open-browser flag WITHOUT URLs (just open browser)
 	if c.Bool("open-browser") && len(urls) == 0 {
-		// Warn about ignored flags (no content fetching without URLs)
 		if c.IsSet("format") {
 			logger.Warning("--format ignored with --open-browser (no content fetching)")
 		}
@@ -344,7 +322,6 @@ func run(c *cli.Context) error {
 			logger.Warning("--close-tab ignored with --open-browser (no content fetching)")
 		}
 
-		// Validate and expand user-data-dir if provided
 		userDataDir := ""
 		if c.IsSet("user-data-dir") {
 			validatedDir, err := validateUserDataDir(c.String("user-data-dir"))
@@ -363,24 +340,19 @@ func run(c *cli.Context) error {
 		return bm.OpenBrowserOnly()
 	}
 
-	// Validate that at least one URL was provided
 	if len(urls) == 0 {
 		logger.Error("No URLs provided")
 		logger.ErrorWithSuggestion("Provide URLs as arguments or use --url-file", "snag <url> or snag --url-file urls.txt")
 		return ErrNoValidURLs
 	}
 
-	// Handle --open-browser WITH URLs (open URLs in tabs, no output)
 	if c.Bool("open-browser") && len(urls) > 0 {
 		return handleOpenURLsInBrowser(c, urls)
 	}
 
-	// Route based on URL count
 	if len(urls) == 1 {
-		// Single URL - use existing single URL flow
 		urlStr := urls[0]
 
-		// Validate and normalize URL
 		validatedURL, err := validateURL(urlStr)
 		if err != nil {
 			return err
@@ -388,10 +360,8 @@ func run(c *cli.Context) error {
 
 		logger.Verbose("Target URL: %s", validatedURL)
 
-		// Normalize format (handles case-insensitive input and aliases)
 		format := normalizeFormat(c.String("format"))
 
-		// Validate and expand user-data-dir if provided
 		userDataDir := ""
 		if c.IsSet("user-data-dir") {
 			validatedDir, err := validateUserDataDir(c.String("user-data-dir"))
@@ -401,19 +371,16 @@ func run(c *cli.Context) error {
 			userDataDir = validatedDir
 		}
 
-		// Validate and sanitize user-agent if provided
 		userAgent := ""
 		if c.IsSet("user-agent") {
 			userAgent = validateUserAgent(c.String("user-agent"))
 		}
 
-		// Validate wait-for selector if provided
 		waitFor := ""
 		if c.IsSet("wait-for") {
 			waitFor = validateWaitFor(c.String("wait-for"))
 		}
 
-		// Extract configuration from flags
 		config := &Config{
 			URL:           validatedURL,
 			OutputFile:    outputFile,
@@ -431,48 +398,39 @@ func run(c *cli.Context) error {
 
 		logger.Debug("Config: format=%s, timeout=%d, port=%d", config.Format, config.Timeout, config.Port)
 
-		// Warn if --close-tab is used with --force-headless (tabs close automatically)
 		if config.CloseTab && config.ForceHeadless {
 			logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
 		}
 
-		// Validate conflicting output flags
 		if config.OutputFile != "" && config.OutputDir != "" {
 			logger.Error("Cannot use --output and --output-dir together")
 			logger.Info("Use --output for specific filename OR --output-dir for auto-generated filename")
 			return fmt.Errorf("conflicting flags: --output and --output-dir")
 		}
 
-		// Validate format
 		if err := validateFormat(config.Format); err != nil {
 			return err
 		}
 
-		// Validate timeout
 		if err := validateTimeout(config.Timeout); err != nil {
 			return err
 		}
 
-		// Validate port
 		if err := validatePort(config.Port); err != nil {
 			return err
 		}
 
-		// Validate output file path if provided
 		if c.IsSet("output") || config.OutputFile != "" {
 			if err := validateOutputPath(config.OutputFile); err != nil {
 				return err
 			}
-			// Check for extension mismatch and warn (non-blocking)
 			checkExtensionMismatch(config.OutputFile, config.Format)
 		}
 
-		// Handle --output-dir empty string: default to current directory
 		if c.IsSet("output-dir") && config.OutputDir == "" {
 			config.OutputDir = "."
 		}
 
-		// Validate output directory if provided
 		if config.OutputDir != "" {
 			if err := validateDirectory(config.OutputDir); err != nil {
 				return err
@@ -481,10 +439,8 @@ func run(c *cli.Context) error {
 
 		logger.Verbose("Configuration: format=%s, timeout=%ds, port=%d", config.Format, config.Timeout, config.Port)
 
-		// Execute the snag operation
 		return snag(config)
 	}
 
-	// Multiple URLs (2+) - use batch processing
 	return handleMultipleURLs(c, urls)
 }
