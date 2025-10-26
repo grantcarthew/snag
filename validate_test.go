@@ -176,7 +176,7 @@ func TestValidateTimeout_Invalid(t *testing.T) {
 }
 
 func TestValidatePort_Valid(t *testing.T) {
-	validPorts := []int{1, 80, 443, 8080, 9222, 65535}
+	validPorts := []int{1024, 8080, 9222, 65535}
 
 	for _, port := range validPorts {
 		err := validatePort(port)
@@ -187,7 +187,7 @@ func TestValidatePort_Valid(t *testing.T) {
 }
 
 func TestValidatePort_Invalid(t *testing.T) {
-	invalidPorts := []int{-1, 0, -100, 65536, 99999}
+	invalidPorts := []int{-1, 0, 1, 80, 443, 1023, -100, 65536, 99999}
 
 	for _, port := range invalidPorts {
 		err := validatePort(port)
