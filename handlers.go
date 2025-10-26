@@ -292,11 +292,12 @@ func displayTabListOnError(bm *BrowserManager) {
 
 // handleAllTabs processes all open browser tabs with auto-generated filenames
 func handleAllTabs(c *cli.Context) error {
+	outputDir := strings.TrimSpace(c.String("output-dir"))
+
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := validateWaitFor(c.String("wait-for"))
-	outputDir := strings.TrimSpace(c.String("output-dir"))
 	closeTab := c.Bool("close-tab")
 	if outputDir == "" {
 		outputDir = "." // Default to current working directory
@@ -458,11 +459,13 @@ func handleListTabs(c *cli.Context) error {
 
 // handleTabRange processes a range of tabs with auto-generated filenames
 func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
+	// Trim string flags once at the source
+	outputDir := strings.TrimSpace(c.String("output-dir"))
+
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := validateWaitFor(c.String("wait-for"))
-	outputDir := strings.TrimSpace(c.String("output-dir"))
 	if outputDir == "" {
 		outputDir = "." // Default to current working directory
 	}
@@ -560,11 +563,12 @@ func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
 
 // handleTabPatternBatch processes multiple tabs matching a pattern with auto-generated filenames
 func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) error {
+	outputDir := strings.TrimSpace(c.String("output-dir"))
+
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := validateWaitFor(c.String("wait-for"))
-	outputDir := strings.TrimSpace(c.String("output-dir"))
 	if outputDir == "" {
 		outputDir = "." // Default to current working directory
 	}
@@ -921,7 +925,7 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := validateWaitFor(c.String("wait-for"))
-	outputDir := strings.TrimSpace(c.String("output-dir"))
+	outputDir := c.String("output-dir")
 	if outputDir == "" {
 		outputDir = "." // Default to current working directory
 	}

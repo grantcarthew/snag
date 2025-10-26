@@ -13,7 +13,7 @@ This document describes the validation order and cross-cutting validation rules 
 All string arguments are trimmed using `strings.TrimSpace()` after reading from CLI framework:
 
 - Removes leading and trailing whitespace (spaces, tabs, newlines)
-- Applied to: `--output`, `--output-dir`, `--format`, `--wait-for`, `--user-agent`, `--user-data-dir`, `--tab`, `--url-file`
+- Applied to: `--output`, `--output-dir`, `--format`, `--wait-for`, `--user-agent`, `--user-data-dir`, `--tab`, `--url-file`, and `<url>` positional arguments
 - Empty strings after trimming are handled per-argument (usually warning + ignored or error)
 - Standard behavior in most CLI tools (git, docker, etc.)
 

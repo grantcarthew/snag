@@ -223,6 +223,10 @@ func run(c *cli.Context) error {
 	// Collect URLs from --url-file and command line arguments
 	var urls []string
 
+	// Trim string flags once at the source
+	outputFile := strings.TrimSpace(c.String("output"))
+	outputDir := strings.TrimSpace(c.String("output-dir"))
+
 	// Load URLs from file if --url-file is provided
 	if urlFile := strings.TrimSpace(c.String("url-file")); urlFile != "" {
 		fileURLs, err := loadURLsFromFile(urlFile)
@@ -234,7 +238,10 @@ func run(c *cli.Context) error {
 
 	// Add command-line URL arguments (trim whitespace)
 	for _, arg := range c.Args().Slice() {
-		urls = append(urls, strings.TrimSpace(arg))
+		trimmedArg := strings.TrimSpace(arg)
+		if trimmedArg != "" {
+			urls = append(urls, trimmedArg)
+		}
 	}
 
 	// Validate that no flags are mixed with URLs (common user error)
@@ -271,7 +278,7 @@ func run(c *cli.Context) error {
 			return fmt.Errorf("conflicting flags: --force-headless and --all-tabs")
 		}
 		// Check for conflicting --output flag
-		if strings.TrimSpace(c.String("output")) != "" {
+		if outputFile != "" {
 			logger.Error("Cannot use --output with --all-tabs (multiple outputs). Use --output-dir instead")
 			return ErrOutputFlagConflict
 		}
@@ -403,8 +410,8 @@ func run(c *cli.Context) error {
 		// Extract configuration from flags
 		config := &Config{
 			URL:           validatedURL,
-			OutputFile:    strings.TrimSpace(c.String("output")),
-			OutputDir:     strings.TrimSpace(c.String("output-dir")),
+			OutputFile:    outputFile,
+			OutputDir:     outputDir,
 			Format:        format,
 			Timeout:       c.Int("timeout"),
 			WaitFor:       waitFor,

@@ -180,6 +180,9 @@ func validateOutputPath(path string) error {
 // normalizeFormat converts format to lowercase and handles aliases
 // Aliases: "markdown" → "md", "txt" → "text"
 func normalizeFormat(format string) string {
+	// Trim whitespace first
+	format = strings.TrimSpace(format)
+
 	// Convert to lowercase for case-insensitive matching
 	format = strings.ToLower(format)
 
