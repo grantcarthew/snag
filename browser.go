@@ -33,6 +33,7 @@ type BrowserManager struct {
 	wasLaunched      bool
 	launchedHeadless bool // True if we launched the browser in headless mode
 	userAgent        string
+	userDataDir      string
 	forceHeadless    bool
 	openBrowser      bool
 	browserName      string // Detected browser name (Chrome, Chromium, Edge, Brave, etc.)
@@ -44,6 +45,7 @@ type BrowserOptions struct {
 	ForceHeadless bool
 	OpenBrowser   bool
 	UserAgent     string
+	UserDataDir   string
 }
 
 // TabInfo represents information about a browser tab
@@ -163,6 +165,7 @@ func NewBrowserManager(opts BrowserOptions) *BrowserManager {
 	return &BrowserManager{
 		port:          opts.Port,
 		userAgent:     opts.UserAgent,
+		userDataDir:   opts.UserDataDir,
 		forceHeadless: opts.ForceHeadless,
 		openBrowser:   opts.OpenBrowser,
 	}
@@ -253,6 +256,12 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 	if bm.userAgent != "" {
 		l = l.Set("user-agent", bm.userAgent)
 		logger.Verbose("Using custom user agent: %s", bm.userAgent)
+	}
+
+	// Set custom user data directory if provided
+	if bm.userDataDir != "" {
+		l = l.Set("user-data-dir", bm.userDataDir)
+		logger.Verbose("Using custom user data directory: %s", bm.userDataDir)
 	}
 
 	// Always set remote debugging port explicitly (don't rely on launcher's default)
