@@ -1,0 +1,48 @@
+# Test file with 30 URLs for performance testing
+# Created: 2025-10-26
+
+# Documentation sites
+https://go.dev
+https://go.dev/doc/
+https://go.dev/blog/
+https://pkg.go.dev
+https://golang.org/ref/spec
+
+# Tech news and resources
+https://news.ycombinator.com
+https://lobste.rs
+https://dev.to
+https://www.reddit.com/r/golang
+
+# GitHub repositories
+https://github.com/golang/go
+https://github.com/go-rod/rod
+https://github.com/urfave/cli
+https://github.com/JohannesKaufmann/html-to-markdown
+
+# Mozilla Developer Network
+https://developer.mozilla.org
+https://developer.mozilla.org/en-US/docs/Web/CSS
+https://developer.mozilla.org/en-US/docs/Web/JavaScript
+https://developer.mozilla.org/en-US/docs/Web/HTML
+
+# Wikipedia pages
+https://en.wikipedia.org/wiki/Go_(programming_language)
+https://en.wikipedia.org/wiki/Chrome_DevTools_Protocol
+https://en.wikipedia.org/wiki/Web_scraping
+
+# Testing sites
+https://example.com
+https://httpbin.org/html
+https://httpbin.org/json
+https://www.iana.org
+
+# Stack Overflow
+https://stackoverflow.com/questions/tagged/go
+https://stackoverflow.com/questions/tagged/web-scraping
+https://stackoverflow.com/questions/tagged/chrome-devtools-protocol
+
+# Misc tech sites
+https://www.chromium.org
+https://chromium.googlesource.com/chromium/src/+/main/docs/
+https://web.dev
