@@ -358,3 +358,178 @@ func TestValidateOutputPathEscape_Dangerous(t *testing.T) {
 		}
 	}
 }
+
+func TestIsNonFetchableURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		url      string
+		expected bool
+	}{
+		// Non-fetchable URLs (browser-internal)
+		{"chrome newtab", "chrome://newtab", true},
+		{"chrome settings", "chrome://settings", true},
+		{"chrome uppercase", "CHROME://FLAGS", true},
+		{"about blank", "about:blank", true},
+		{"about preferences", "about:preferences", true},
+		{"devtools", "devtools://devtools/bundled/inspector.html", true},
+		{"chrome extension", "chrome-extension://abcdefg", true},
+		{"edge internal", "edge://settings", true},
+		{"brave internal", "brave://settings", true},
+
+		// Fetchable URLs
+		{"http example", "http://example.com", false},
+		{"https example", "https://example.com", false},
+		{"file url", "file:///path/to/file.html", false},
+		{"domain only", "example.com", false},
+		{"subdomain", "https://sub.example.com", false},
+		{"path and query", "https://example.com/path?query=value", false},
+		{"localhost", "http://localhost:8080", false},
+		{"ip address", "http://192.168.1.1", false},
+		{"empty string", "", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isNonFetchableURL(tt.url)
+			if result != tt.expected {
+				t.Errorf("isNonFetchableURL(%q) = %v, expected %v", tt.url, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCheckExtensionMismatch(t *testing.T) {
+	tests := []struct {
+		name       string
+		outputFile string
+		format     string
+		expected   bool // true = mismatch detected
+	}{
+		// Matching extensions
+		{"md matches", "output.md", "md", false},
+		{"html matches", "output.html", "html", false},
+		{"txt matches", "output.txt", "text", false},
+		{"pdf matches", "output.pdf", "pdf", false},
+		{"png matches", "output.png", "png", false},
+
+		// Case insensitivity
+		{"uppercase ext", "output.MD", "md", false},
+		{"mixed case", "output.Html", "html", false},
+
+		// Mismatches
+		{"md vs html", "output.md", "html", true},
+		{"html vs text", "output.html", "text", true},
+		{"md vs pdf", "output.md", "pdf", true},
+		{"txt vs png", "output.txt", "png", true},
+
+		// No extension
+		{"no extension md", "output", "md", true},
+		{"no extension html", "output", "html", true},
+
+		// Empty output file (should not mismatch)
+		{"empty output", "", "md", false},
+
+		// Path with extension
+		{"path with ext", "/path/to/output.md", "md", false},
+		{"path mismatch", "/path/to/output.html", "md", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := checkExtensionMismatch(tt.outputFile, tt.format)
+			if result != tt.expected {
+				t.Errorf("checkExtensionMismatch(%q, %q) = %v, expected %v",
+					tt.outputFile, tt.format, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestValidateWaitFor(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"valid selector", ".content", ".content"},
+		{"valid id selector", "#main", "#main"},
+		{"valid complex selector", "div.content > p", "div.content > p"},
+		{"with whitespace", "  .content  ", ".content"},
+		{"with tabs", "\t.content\t", ".content"},
+		{"empty string", "", ""},
+		{"only whitespace", "   ", ""},
+		{"attribute selector", "[data-test='value']", "[data-test='value']"},
+		{"pseudo selector", "div:first-child", "div:first-child"},
+		{"multiple classes", ".class1.class2", ".class1.class2"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := validateWaitFor(tt.input)
+			if result != tt.expected {
+				t.Errorf("validateWaitFor(%q) = %q, expected %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestValidateUserAgent(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"valid chrome ua", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"},
+		{"valid firefox ua", "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0", "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0"},
+		{"simple ua", "MyBot/1.0", "MyBot/1.0"},
+
+		// Whitespace handling
+		{"with whitespace", "  MyBot/1.0  ", "MyBot/1.0"},
+		{"with tabs", "\tMyBot/1.0\t", "MyBot/1.0"},
+		{"empty string", "", ""},
+		{"only whitespace", "   ", ""},
+
+		// Security: newline injection prevention
+		{"with newline", "MyBot/1.0\nInjected-Header: value", "MyBot/1.0 Injected-Header: value"},
+		{"with carriage return", "MyBot/1.0\rInjected-Header: value", "MyBot/1.0 Injected-Header: value"},
+		{"with crlf", "MyBot/1.0\r\nInjected-Header: value", "MyBot/1.0  Injected-Header: value"},
+		{"multiple newlines", "Line1\nLine2\nLine3", "Line1 Line2 Line3"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := validateUserAgent(tt.input)
+			if result != tt.expected {
+				t.Errorf("validateUserAgent(%q) = %q, expected %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestValidateUserAgent_SecuritySanitization(t *testing.T) {
+	// Focused security tests for HTTP header injection prevention
+	maliciousInputs := []struct {
+		name     string
+		input    string
+		hasSpace bool // Result should have spaces instead of newlines
+	}{
+		{"crlf injection", "MyBot/1.0\r\nX-Injected: malicious", true},
+		{"lf injection", "MyBot/1.0\nX-Injected: malicious", true},
+		{"cr injection", "MyBot/1.0\rX-Injected: malicious", true},
+		{"multiple crlf", "A\r\nB\r\nC", true},
+	}
+
+	for _, tt := range maliciousInputs {
+		t.Run(tt.name, func(t *testing.T) {
+			result := validateUserAgent(tt.input)
+			// Result should not contain \n or \r
+			if strings.Contains(result, "\n") || strings.Contains(result, "\r") {
+				t.Errorf("validateUserAgent(%q) still contains newline/CR characters: %q", tt.input, result)
+			}
+			// If input had newlines, result should have spaces
+			if tt.hasSpace && !strings.Contains(result, " ") {
+				t.Errorf("validateUserAgent(%q) should contain spaces after sanitization: %q", tt.input, result)
+			}
+		})
+	}
+}
