@@ -22,26 +22,26 @@ Snag has a comprehensive test suite covering unit tests, integration tests, and 
 
 ### Test Statistics
 
-- **Total Test Functions**: 100
-- **Test Files**: 5 (`*_test.go`)
+- **Total Test Functions**: 124
+- **Test Files**: 6 (`*_test.go`)
 - **Interactive Test Cases**: 73 (CSV-driven)
-- **Test Code Lines**: ~2,854 lines
+- **Test Code Lines**: ~3,100 lines
 - **Production Code Lines**: ~2,500 lines
-- **Test Coverage Ratio**: 1.14:1
+- **Test Coverage Ratio**: 1.24:1
 
 ### Test Categories
 
-| Category              | Description                                  | Test Files                                                                |
-| --------------------- | -------------------------------------------- | ------------------------------------------------------------------------- |
-| **Unit Tests**        | Fast, isolated tests of individual functions | `output_test.go`, `validate_test.go`, `formats_test.go`, `logger_test.go` |
-| **Integration Tests** | End-to-end tests with browser                | `cli_test.go`                                                             |
-| **Interactive Tests** | Manual verification via script               | `test-interactive` + `test-interactive.csv`                               |
+| Category              | Description                                  | Test Files                                                                               |
+| --------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Unit Tests**        | Fast, isolated tests of individual functions | `output_test.go`, `validate_test.go`, `formats_test.go`, `logger_test.go`, `browser_test.go`, `handlers_test.go` |
+| **Integration Tests** | End-to-end tests with browser                | `cli_test.go`                                                                            |
+| **Interactive Tests** | Manual verification via script               | `test-interactive` + `test-interactive.csv`                                              |
 
 ---
 
 ## Test Files
 
-### 1. `cli_test.go` (53 tests, 1,660 lines)
+### 1. `cli_test.go` (62 tests, 1,600 lines)
 
 **Purpose**: Integration tests for CLI functionality and browser interactions
 
@@ -97,7 +97,7 @@ TestCLI_InvalidFormat()      // Tests format validation
 "Very Long Title..."          → "very-long-title" (80 char max)
 ```
 
-### 3. `validate_test.go` (19 tests, 360 lines)
+### 3. `validate_test.go` (24 tests, 535 lines)
 
 **Purpose**: Tests input validation and security checks
 
@@ -111,6 +111,11 @@ TestCLI_InvalidFormat()      // Tests format validation
 - `TestValidateOutputPath_*` - Output path validation (3 tests)
 - `TestValidateDirectory_*` - Directory validation (4 tests)
 - `TestValidateOutputPathEscape_*` - Path escape prevention (2 tests)
+- `TestIsNonFetchableURL()` - Browser-internal URL detection (18 cases)
+- `TestCheckExtensionMismatch()` - File extension validation (16 cases)
+- `TestValidateWaitFor()` - CSS selector validation (10 cases)
+- `TestValidateUserAgent()` - User agent sanitization (11 cases)
+- `TestValidateUserAgent_SecuritySanitization()` - HTTP header injection prevention (4 cases)
 
 **Security Tests**:
 
@@ -144,9 +149,9 @@ TestValidateOutputPathEscape_Dangerous()
 "<a href='...'>link</a>" → "link text + URL"
 ```
 
-### 5. `logger_test.go` (7 tests, 139 lines)
+### 5. `logger_test.go` (9 tests, 247 lines)
 
-**Purpose**: Tests logging functionality
+**Purpose**: Tests logging functionality and utility functions
 
 **Coverage**:
 
@@ -157,6 +162,35 @@ TestValidateOutputPathEscape_Dangerous()
 - `TestLogger_QuietMode()` - Quiet mode (no output)
 - `TestLogger_VerboseMode()` - Verbose mode
 - `TestLogger_StderrOnly()` - Stderr-only output
+- `TestShouldUseColor()` - NO_COLOR environment variable handling (3 cases)
+- `TestNewLogger()` - Logger constructor for all log levels (4 cases)
+
+### 6. `browser_test.go` (4 tests, 176 lines)
+
+**Purpose**: Tests browser detection and utility functions
+
+**Coverage**:
+
+- `TestDetectBrowserName()` - Browser name detection (46 cases)
+  - Chrome, Chromium, Ungoogled-Chromium, Edge, Brave
+  - Opera, Vivaldi, Arc, Yandex, Thorium, Slimjet, Cent
+  - Extension stripping (.exe, .app)
+  - Case-insensitive matching
+  - Fallback behavior for unknown browsers
+- `TestDetectBrowserName_OrderOfPrecedence()` - Detection priority (2 cases)
+- `TestDetectBrowserName_ExtensionStripping()` - Cross-platform path handling (2 cases)
+- `TestDetectBrowserName_FallbackBehavior()` - Unknown browser handling (3 cases)
+
+### 7. `handlers_test.go` (4 tests, 198 lines)
+
+**Purpose**: Tests handler utility functions
+
+**Coverage**:
+
+- `TestStripURLParams()` - URL parameter stripping (8 cases)
+- `TestFormatTabLine()` - Tab list formatting (8 cases)
+- `TestFormatTabLine_Length()` - Line length verification
+- `TestDisplayTabList()` - Tab list display with sorting
 
 ---
 
