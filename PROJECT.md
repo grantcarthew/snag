@@ -61,8 +61,8 @@ For each argument documentation file:
 
 ### Utility Arguments
 
-- [ ] **help.md** - Help text and usage information (-h, --help)
-- [ ] **version.md** - Version information (--version)
+- [x] **help.md** - Help text and usage information (-h, --help) (✅ 2025-10-26)
+- [x] **version.md** - Version information (--version) (✅ 2025-10-26)
 - [ ] **timeout.md** - Page load timeout configuration
 
 ### Meta Documentation
@@ -113,7 +113,7 @@ For each argument, verify:
 - **Started**: 2025-10-24
 - **Completed**: _In Progress_
 - **Total Arguments**: 22
-- **Reviewed**: 18
-- **Fully Implemented**: 18
+- **Reviewed**: 20
+- **Fully Implemented**: 20
 - **Partially Implemented**: 0
 - **Not Implemented**: 0
