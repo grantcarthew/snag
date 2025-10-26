@@ -368,6 +368,12 @@ func run(c *cli.Context) error {
 			userDataDir = validatedDir
 		}
 
+		// Validate and sanitize user-agent if provided
+		userAgent := validateUserAgent(c.String("user-agent"))
+
+		// Validate wait-for selector if provided
+		waitFor := validateWaitFor(c.String("wait-for"))
+
 		// Extract configuration from flags
 		config := &Config{
 			URL:           validatedURL,
@@ -375,12 +381,12 @@ func run(c *cli.Context) error {
 			OutputDir:     strings.TrimSpace(c.String("output-dir")),
 			Format:        format,
 			Timeout:       c.Int("timeout"),
-			WaitFor:       strings.TrimSpace(c.String("wait-for")),
+			WaitFor:       waitFor,
 			Port:          c.Int("port"),
 			CloseTab:      c.Bool("close-tab"),
 			ForceHeadless: c.Bool("force-headless"),
 			OpenBrowser:   c.Bool("open-browser"),
-			UserAgent:     strings.TrimSpace(c.String("user-agent")),
+			UserAgent:     userAgent,
 			UserDataDir:   userDataDir,
 		}
 

@@ -331,6 +331,42 @@ func validateOutputPathEscape(outputDir, filename string) error {
 	return nil
 }
 
+// validateWaitFor validates the wait-for CSS selector string.
+// Returns the trimmed selector, or empty string with warning if input is empty.
+func validateWaitFor(selector string) string {
+	// Trim whitespace
+	selector = strings.TrimSpace(selector)
+
+	// Empty selector means don't wait (not an error, just a warning if explicitly set)
+	if selector == "" {
+		logger.Warning("--wait-for is empty, ignoring")
+		return ""
+	}
+
+	return selector
+}
+
+// validateUserAgent validates and sanitizes the user agent string.
+// Returns the sanitized user agent, or empty string with warning if input is empty.
+// Sanitizes newlines for security (prevents HTTP header injection).
+func validateUserAgent(ua string) string {
+	// Trim whitespace
+	ua = strings.TrimSpace(ua)
+
+	// Empty user agent means use browser default (not an error, just a warning)
+	if ua == "" {
+		logger.Warning("--user-agent is empty, using default user agent")
+		return ""
+	}
+
+	// Sanitize newlines for security (prevents HTTP header injection)
+	// Replace \n and \r with spaces
+	ua = strings.ReplaceAll(ua, "\n", " ")
+	ua = strings.ReplaceAll(ua, "\r", " ")
+
+	return ua
+}
+
 // validateUserDataDir validates and expands the user data directory path.
 // Returns the expanded path, or empty string with warning if input is empty.
 // Performs tilde expansion, directory existence check, and permission check.

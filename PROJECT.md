@@ -50,8 +50,8 @@ For each argument documentation file:
 - [x] **force-headless.md** - Force headless mode even with existing browser (✅ 2025-10-26)
 - [x] **port.md** - Remote debugging port specification (✅ 2025-10-26)
 - [x] **user-data-dir.md** - Custom Chrome user data directory (✅ 2025-10-26)
-- [ ] **user-agent.md** - Custom user agent string
-- [ ] **wait-for.md** - Wait for CSS selector before fetching
+- [x] **user-agent.md** - Custom user agent string (✅ 2025-10-26)
+- [x] **wait-for.md** - Wait for CSS selector before fetching (✅ 2025-10-26)
 
 ### Logging and Output Arguments
 
@@ -113,7 +113,7 @@ For each argument, verify:
 - **Started**: 2025-10-24
 - **Completed**: _In Progress_
 - **Total Arguments**: 22
-- **Reviewed**: 13
-- **Fully Implemented**: 13
+- **Reviewed**: 15
+- **Fully Implemented**: 15
 - **Partially Implemented**: 0
 - **Not Implemented**: 0
