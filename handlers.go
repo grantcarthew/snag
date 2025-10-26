@@ -33,6 +33,7 @@ type Config struct {
 	ForceHeadless bool
 	OpenBrowser   bool
 	UserAgent     string
+	UserDataDir   string
 }
 
 // snag is the main function that orchestrates the web page fetching
@@ -43,6 +44,7 @@ func snag(config *Config) error {
 		ForceHeadless: config.ForceHeadless,
 		OpenBrowser:   config.OpenBrowser,
 		UserAgent:     config.UserAgent,
+		UserDataDir:   config.UserDataDir,
 	})
 
 	// Assign to global for signal handler access
@@ -836,12 +838,23 @@ func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
 
 	logger.Info("Opening %d URLs in browser...", len(urls))
 
+	// Validate and expand user-data-dir if provided
+	userDataDir := ""
+	if c.IsSet("user-data-dir") {
+		validatedDir, err := validateUserDataDir(c.String("user-data-dir"))
+		if err != nil {
+			return err
+		}
+		userDataDir = validatedDir
+	}
+
 	// Create browser manager in visible mode
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          c.Int("port"),
 		OpenBrowser:   true,
 		ForceHeadless: false,
 		UserAgent:     strings.TrimSpace(c.String("user-agent")),
+		UserDataDir:   userDataDir,
 	})
 
 	// Assign to global for signal handler access
@@ -930,11 +943,22 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 		logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
 	}
 
+	// Validate and expand user-data-dir if provided
+	userDataDir := ""
+	if c.IsSet("user-data-dir") {
+		validatedDir, err := validateUserDataDir(c.String("user-data-dir"))
+		if err != nil {
+			return err
+		}
+		userDataDir = validatedDir
+	}
+
 	// Create browser manager
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          c.Int("port"),
 		ForceHeadless: c.Bool("force-headless"),
 		UserAgent:     strings.TrimSpace(c.String("user-agent")),
+		UserDataDir:   userDataDir,
 	})
 
 	// Assign to global for signal handler access

@@ -331,6 +331,74 @@ func validateOutputPathEscape(outputDir, filename string) error {
 	return nil
 }
 
+// validateUserDataDir validates and expands the user data directory path.
+// Returns the expanded path, or empty string with warning if input is empty.
+// Performs tilde expansion, directory existence check, and permission check.
+func validateUserDataDir(path string) (string, error) {
+	// Trim whitespace
+	path = strings.TrimSpace(path)
+
+	// Empty path means use browser default (not an error, just a warning)
+	if path == "" {
+		logger.Warning("--user-data-dir is empty, using default profile")
+		return "", nil
+	}
+
+	// Expand tilde to home directory
+	if strings.HasPrefix(path, "~") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("failed to get home directory: %w", err)
+		}
+		if path == "~" {
+			path = homeDir
+		} else if strings.HasPrefix(path, "~/") {
+			path = filepath.Join(homeDir, path[2:])
+		}
+	}
+
+	// Check if path exists
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		logger.Error("User data directory does not exist: %s", path)
+		logger.ErrorWithSuggestion(
+			fmt.Sprintf("Directory '%s' not found", path),
+			fmt.Sprintf("mkdir -p %s && snag --user-data-dir %s <url>", path, path),
+		)
+		return "", fmt.Errorf("user data directory does not exist: %s", path)
+	}
+	if err != nil {
+		logger.Error("Error accessing user data directory: %s", path)
+		return "", fmt.Errorf("error accessing directory: %w", err)
+	}
+
+	// Check if it's a directory (not a file)
+	if !info.IsDir() {
+		logger.Error("Path is not a directory: %s", path)
+		logger.ErrorWithSuggestion(
+			"User data directory must be a directory, not a file",
+			"snag --user-data-dir /path/to/directory <url>",
+		)
+		return "", fmt.Errorf("path is not a directory: %s", path)
+	}
+
+	// Check if directory is readable and writable
+	testFile, err := os.CreateTemp(path, ".snag-permission-test-*")
+	if err != nil {
+		logger.Error("Permission denied accessing user data directory: %s", path)
+		logger.ErrorWithSuggestion(
+			"Cannot read/write to directory",
+			fmt.Sprintf("chmod u+rw %s", path),
+		)
+		return "", fmt.Errorf("permission denied accessing user data directory: %s", path)
+	}
+	testFilePath := testFile.Name()
+	testFile.Close()
+	os.Remove(testFilePath)
+
+	return path, nil
+}
+
 // loadURLsFromFile reads and parses a URL file, returning a list of valid URLs.
 // File format supports:
 //   - Full-line comments starting with # or //

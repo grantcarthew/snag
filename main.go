@@ -167,6 +167,10 @@ func main() {
 				Name:  "user-agent",
 				Usage: "Custom user agent `STRING` (bypass headless detection)",
 			},
+			&cli.StringFlag{
+				Name:  "user-data-dir",
+				Usage: "Custom Chrome user data `DIRECTORY` (for session isolation)",
+			},
 		},
 		Action: run,
 	}
@@ -306,10 +310,22 @@ func run(c *cli.Context) error {
 		if c.Bool("close-tab") {
 			logger.Warning("--close-tab ignored with --open-browser (no content fetching)")
 		}
+
+		// Validate and expand user-data-dir if provided
+		userDataDir := ""
+		if c.IsSet("user-data-dir") {
+			validatedDir, err := validateUserDataDir(c.String("user-data-dir"))
+			if err != nil {
+				return err
+			}
+			userDataDir = validatedDir
+		}
+
 		logger.Info("Opening browser...")
 		bm := NewBrowserManager(BrowserOptions{
 			Port:        c.Int("port"),
 			OpenBrowser: true,
+			UserDataDir: userDataDir,
 		})
 		return bm.OpenBrowserOnly()
 	}
@@ -342,6 +358,16 @@ func run(c *cli.Context) error {
 		// Normalize format (handles case-insensitive input and aliases)
 		format := normalizeFormat(c.String("format"))
 
+		// Validate and expand user-data-dir if provided
+		userDataDir := ""
+		if c.IsSet("user-data-dir") {
+			validatedDir, err := validateUserDataDir(c.String("user-data-dir"))
+			if err != nil {
+				return err
+			}
+			userDataDir = validatedDir
+		}
+
 		// Extract configuration from flags
 		config := &Config{
 			URL:           validatedURL,
@@ -355,6 +381,7 @@ func run(c *cli.Context) error {
 			ForceHeadless: c.Bool("force-headless"),
 			OpenBrowser:   c.Bool("open-browser"),
 			UserAgent:     strings.TrimSpace(c.String("user-agent")),
+			UserDataDir:   userDataDir,
 		}
 
 		logger.Debug("Config: format=%s, timeout=%d, port=%d", config.Format, config.Timeout, config.Port)
