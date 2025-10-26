@@ -9,6 +9,7 @@ package main
 import (
 	"bytes"
 	"io"
+	"os"
 	"strings"
 	"testing"
 )
@@ -136,3 +137,86 @@ func TestLogger_StderrOnly(t *testing.T) {
 		t.Errorf("expected message in stderr output, got: %s", output)
 	}
 }
+
+func TestShouldUseColor(t *testing.T) {
+	// Note: This function checks environment variable and terminal status
+	// We can only reliably test the NO_COLOR environment variable behavior
+
+	// Save original NO_COLOR value
+	originalNOCOLOR := os.Getenv("NO_COLOR")
+	defer func() {
+		if originalNOCOLOR != "" {
+			os.Setenv("NO_COLOR", originalNOCOLOR)
+		} else {
+			os.Unsetenv("NO_COLOR")
+		}
+	}()
+
+	// Test with NO_COLOR set
+	t.Run("with NO_COLOR set", func(t *testing.T) {
+		os.Setenv("NO_COLOR", "1")
+		result := shouldUseColor()
+		if result != false {
+			t.Errorf("shouldUseColor() with NO_COLOR=1 should return false, got %v", result)
+		}
+	})
+
+	// Test with NO_COLOR unset (result depends on terminal status)
+	t.Run("with NO_COLOR unset", func(t *testing.T) {
+		os.Unsetenv("NO_COLOR")
+		result := shouldUseColor()
+		// Result can be true or false depending on whether stderr is a terminal
+		// Just verify it returns a boolean without panicking
+		_ = result
+	})
+
+	// Test with empty NO_COLOR (should behave as unset)
+	t.Run("with NO_COLOR empty", func(t *testing.T) {
+		os.Setenv("NO_COLOR", "")
+		result := shouldUseColor()
+		// Empty NO_COLOR should behave as unset
+		// Result depends on terminal status
+		_ = result
+	})
+}
+
+func TestNewLogger(t *testing.T) {
+	// Test all log levels
+	tests := []struct {
+		name  string
+		level LogLevel
+	}{
+		{"quiet level", LevelQuiet},
+		{"normal level", LevelNormal},
+		{"verbose level", LevelVerbose},
+		{"debug level", LevelDebug},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger := NewLogger(tt.level)
+
+			if logger == nil {
+				t.Fatal("NewLogger returned nil")
+			}
+
+			if logger.level != tt.level {
+				t.Errorf("NewLogger(%v) level = %v, expected %v", tt.level, logger.level, tt.level)
+			}
+
+			if logger.writer == nil {
+				t.Error("NewLogger created logger with nil writer")
+			}
+
+			// Verify writer is os.Stderr in production
+			if logger.writer != os.Stderr {
+				t.Errorf("NewLogger created logger with writer %v, expected os.Stderr", logger.writer)
+			}
+
+			// Color setting depends on shouldUseColor() which depends on environment
+			// Just verify it's a boolean
+			_ = logger.color
+		})
+	}
+}
+
