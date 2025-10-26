@@ -1,119 +1,201 @@
-# PROJECT: Argument Documentation Review and Implementation
+# Project TODO Items
 
-## Overview
+**Status:** Active
+**Last Updated:** 2025-10-23
 
-Comprehensive review and implementation of all CLI arguments documented in `docs/arguments/`. This project ensures that every argument is fully implemented, validated, and matches its documentation.
+This document tracks outstanding implementation tasks identified during the argument handling analysis phase.
 
-## Objectives
+---
 
-1. Review each argument documentation file in `docs/arguments/`
-2. Verify implementation status against source code
-3. Identify gaps between documentation and implementation
-4. Implement missing or partial functionality
-5. Ensure consistency across all arguments
+## Implementation Tasks
 
-## Review Process
+### 1. Argument Trimming
 
-For each argument documentation file:
+**Priority:** Medium
+**Effort:** Low
+**Status:** ✅ Completed (2025-10-24)
 
-1. **Read Documentation**: Review the argument's documented behavior, flags, validation, and examples
-2. **Analyze Source Code**: Examine relevant source files (main.go, browser.go, fetch.go, validate.go, etc.)
-3. **Determine Status**:
-   - ✅ Fully Implemented: Documentation matches implementation completely
-   - ⚠️ Partially Implemented: Core functionality exists but missing features or validation
-   - ❌ Not Implemented: Argument not implemented or significantly incomplete
-4. **Implement/Fix**: Add missing functionality, validation, or corrections
-5. **Verify**: Test the implementation matches documentation
-6. **Tests**: Review the test files and update as needed, including adding to the test-interactive.csv file
-7. **Mark Complete**: Check off task when fully implemented and verified in the PROJECT.md document
+Apply `strings.TrimSpace()` to all string arguments after reading from CLI framework.
 
-## Tasks
+**Affected Arguments:**
+- `--wait-for` ✅
+- `--user-agent` ✅
+- `--output` ✅
+- `--output-dir` ✅
+- `--tab` ✅
+- `--url-file` ✅
+- `<url>` positional arguments ✅
+- `--user-data-dir` (not yet implemented in code)
 
-### Core Arguments
+**Rationale:**
+- Standard behavior in most CLI tools (git, docker, etc.)
+- Handles copy-paste trailing spaces gracefully
+- Prevents user confusion from invisible whitespace
 
-- [x] **url.md** - Primary URL argument(s) for fetching content (✅ 2025-10-24)
-- [x] **url-file.md** - Batch URL processing from file input (✅ 2025-10-24)
-- [x] **format.md** - Output format selection (markdown/html/text/pdf/png) (✅ 2025-10-24)
-- [x] **output.md** - Output file specification (-o flag) (✅ 2025-10-25)
-- [x] **output-dir.md** - Output directory for batch operations (-d flag) (✅ 2025-10-25)
+**Implementation Notes:**
+- Applied `strings.TrimSpace()` immediately after reading flag value
+- Trimming occurs before any validation or processing
+- Added to both `main.go` and `handlers.go`
+- URLs from files already trimmed in `loadURLsFromFile()` (validate.go:265)
+- Positional URL arguments now trimmed in loop (main.go:206-208)
 
-### Tab Management Arguments
+**Testing:**
+- ✅ Verified `--output` with leading/trailing spaces
+- ✅ Verified `--output-dir` with leading/trailing spaces
+- ✅ Verified `--url-file` path trimming
+- ✅ Verified URL arguments trimming
+- ✅ All tests pass
 
-- [x] **tab.md** - Tab selection by index or pattern (-t flag) (✅ 2025-10-25)
-- [x] **list-tabs.md** - List all available browser tabs (-l flag) (✅ 2025-10-26)
-- [x] **all-tabs.md** - Fetch content from all open tabs (✅ 2025-10-26)
-- [x] **close-tab.md** - Close tab after fetching (headless default) (✅ 2025-10-26)
+---
 
-### Browser Control Arguments
+### 2. Parallel Processing Strategy
 
-- [x] **open-browser.md** - Open persistent browser mode (✅ 2025-10-26)
-- [x] **force-headless.md** - Force headless mode even with existing browser (✅ 2025-10-26)
-- [x] **port.md** - Remote debugging port specification (✅ 2025-10-26)
-- [x] **user-data-dir.md** - Custom Chrome user data directory (✅ 2025-10-26)
-- [x] **user-agent.md** - Custom user agent string (✅ 2025-10-26)
-- [x] **wait-for.md** - Wait for CSS selector before fetching (✅ 2025-10-26)
+**Priority:** High
+**Effort:** High
 
-### Logging and Output Arguments
+Define and implement strategy for processing multiple URLs from various sources.
 
-- [x] **quiet.md** - Suppress all non-essential output (-q flag) (✅ 2025-10-26)
-- [x] **verbose.md** - Enable verbose logging (✅ 2025-10-26)
-- [x] **debug.md** - Enable debug-level logging (--debug flag) (✅ 2025-10-26)
+**Affected Operations:**
+- Multiple `<url>` arguments
+- `--url-file` with multiple URLs
+- `--all-tabs` processing
 
-### Utility Arguments
+**Options to Evaluate:**
 
-- [x] **help.md** - Help text and usage information (-h, --help) (✅ 2025-10-26)
-- [x] **version.md** - Version information (--version) (✅ 2025-10-26)
-- [x] **timeout.md** - Page load timeout configuration (✅ 2025-10-26)
+1. **Sequential** (current behavior):
+   - Process URLs one-by-one
+   - Predictable order
+   - Lower resource usage
+   - Slower for large batches
 
-### Meta Documentation
+2. **Parallel**:
+   - Process URLs concurrently with goroutines
+   - Faster for large batches
+   - Higher resource usage
+   - May overwhelm browser
 
-- [ ] **README.md** - Argument documentation overview and index
-- [x] **validation.md** - Argument validation rules and compatibility matrix (✅ 2025-10-26)
+3. **Hybrid**:
+   - Parallel with configurable concurrency limit
+   - Balance between speed and resource usage
+   - Example: Process 5 URLs at a time
 
-## Implementation Checklist
+**Considerations:**
+- Browser resource usage and stability
+- Tab creation/closing order
+- Error handling across goroutines
+- Output file ordering/naming
+- `--close-tab` behavior with concurrent processing
+- Progress logging with concurrent operations
 
-For each argument, verify:
+**Related Documentation:**
+- close-tab.md line 120: "Parallel Processing Note"
+- Multiple files assume sequential processing currently
 
-- [ ] CLI flag(s) defined in main.go
-- [ ] Flag aliases (short form) if applicable
-- [ ] Default values match documentation
-- [ ] Validation logic implemented (validate.go or inline)
-- [ ] Error messages are clear and actionable
-- [ ] Functionality implemented in appropriate module
-- [ ] Edge cases handled
-- [ ] Help text matches documentation
-- [ ] Examples in documentation are tested and working
+---
 
-## Success Criteria
+### 3. Review `--user-data-dir` Interactions
 
-- All 22 argument documentation files reviewed
-- All arguments marked as "Fully Implemented" (✅)
-- All documented features working as specified
-- All validation rules enforced
-- No contradictions between documentation and code
-- All examples in documentation verified working
+**Priority:** Medium
+**Effort:** Medium
+
+**Status:** Partially complete (reviewed during cross-review)
+
+Review all 21 completed argument analysis tasks to ensure `--user-data-dir` flag behavior is properly documented in each `docs/arguments/[argument].md` file.
+
+**Background:**
+- `--user-data-dir` flag was added after initial tasks (1-9) were designed
+- Needs to be retroactively documented for consistency
+
+**Tasks to Review:**
+- [x] Task 1: `<url>` - Not covered (should add)
+- [x] Task 2: `--url-file` - Not covered (should add)
+- [x] Task 3: `--output` / `-o` - Not covered (should add)
+- [x] Task 4: `--output-dir` / `-d` - Not covered (should add)
+- [x] Task 5: `--format` / `-f` - Not covered (should add)
+- [x] Task 6: `--timeout` - Not covered (should add)
+- [x] Task 7: `--wait-for` / `-w` - Not covered (should add)
+- [x] Task 8: `--port` / `-p` - Covered ✓
+- [x] Task 9: `--close-tab` / `-c` - Not covered (should add)
+- [x] Task 10: `--force-headless` - Covered ✓
+- [x] Task 11: `--open-browser` / `-b` - Covered ✓
+- [x] Task 12: `--list-tabs` / `-l` - Covered ✓
+- [x] Task 13: `--tab` / `-t` - Covered ✓ (inconsistency found, see PROJECT-review.md)
+- [x] Task 14: `--all-tabs` / `-a` - Covered ✓ (inconsistency found, see PROJECT-review.md)
+- [x] Task 15: `--verbose` - Not covered (should add)
+- [x] Task 16: `--quiet` / `-q` - Not covered (should add)
+- [x] Task 17: `--debug` - Not covered (should add)
+- [x] Task 18: `--user-agent` - Covered ✓
+- [x] Task 19: `--help` / `-h` - Covered ✓
+- [x] Task 20: `--version` / `-v` - Covered ✓
+- [x] Task 21: `--user-data-dir` - N/A (self)
+
+**Action Required:**
+- Add `--user-data-dir` interaction sections to Tasks 1-7, 9, 15-17
+- Standard interaction: "Works normally" for most flags
+- See user-data-dir.md for expected interactions
+
+---
+
+### 4. Remove `--force-visible` Flag
+
+**Priority:** Low
+**Effort:** Low
+**Status:** ✅ Completed (2025-10-24)
+
+Remove the deprecated `--force-visible` flag from the codebase.
+
+**Tasks:**
+- [x] Remove flag definition from `main.go`
+- [x] Remove all references and logic in `browser.go`
+- [x] Remove validation logic and error messages
+- [x] Update any tests that reference this flag
+- [x] Ensure browser mode logic works correctly without this flag
+- [x] Verify no documentation references remain
+
+**Background:**
+- This flag was mentioned in early design discussions
+- Was replaced by `--open-browser` flag
+- Successfully removed from codebase
+
+**Implementation Notes:**
+- Removed `ForceVisible` field from `Config` and `BrowserOptions` structs
+- Updated browser mode logic to use `!openBrowser` instead of `!forceVisible`
+- Updated error messages in `fetch.go` to suggest `--open-browser` instead
+- Renamed test `TestBrowser_ForceVisible` to `TestBrowser_OpenBrowserWithCloseTab`
+- All browser mode tests pass successfully
+
+---
+
+## Cross-Review Follow-up Tasks
+
+**Priority:** High
+**Effort:** Medium
+
+From PROJECT-review.md (2025-10-23 review):
+
+### 5. Resolve Documentation Inconsistencies
+
+**Critical Contradictions (7 issues):**
+1. `--list-tabs` + `--wait-for`: Change to silently ignore
+2. `--close-tab` + `--url-file`: Change to works normally
+3. `--tab` + `--open-browser`: Change to error
+4. `--all-tabs` + `--open-browser`: Change to error
+5. `--output` + `--open-browser`: Change to warning
+6. `--tab` + `--user-data-dir`: Change to warning/ignore
+7. `--all-tabs` + `--user-data-dir`: Change to warning/ignore
+
+**Minor Inconsistencies (7 issues):**
+8. Standardize warning message wording across all affected files
+
+**Files to Update:** 11 files in `docs/arguments/`
+
+See PROJECT-review.md for complete details and recommendations.
+
+---
 
 ## Notes
 
-- Refer to AGENTS.md for code style guidelines
-- Follow conventional commit format for changes
-- Update documentation if implementation differs from spec
-- Run `go test -v` after each implementation
-- Test with real browser instances for tab-related arguments
-
-## Related Documentation
-
-- `docs/arguments/README.md` - Argument documentation index
-- `docs/arguments/validation.md` - Compatibility matrix
-- `docs/design-record.md` - Design decisions and rationale
-- `AGENTS.md` - Development guidelines and conventions
-
-## Status
-
-- **Started**: 2025-10-24
-- **Completed**: _In Progress_
-- **Total Arguments**: 22
-- **Reviewed**: 22
-- **Fully Implemented**: 22
-- **Partially Implemented**: 0
-- **Not Implemented**: 0
+- Tasks are independent unless noted
+- Priority levels: High (affects functionality), Medium (affects UX/docs), Low (cleanup)
+- Cross-reference with PROJECT-review.md for documentation fixes
+- Update this file as tasks are completed or new tasks identified
