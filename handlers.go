@@ -814,6 +814,11 @@ func handleTabFetch(c *cli.Context) error {
 // handleOpenURLsInBrowser opens multiple URLs in browser tabs without fetching content
 // This implements the --open-browser behavior with URLs (just opens, no output)
 func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
+	// Warn if --close-tab was specified but will be ignored
+	if c.Bool("close-tab") {
+		logger.Warning("--close-tab ignored with --open-browser (no content fetching)")
+	}
+
 	logger.Info("Opening %d URLs in browser...", len(urls))
 
 	// Create browser manager in visible mode
@@ -903,6 +908,11 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 	// Validate output directory
 	if err := validateDirectory(outputDir); err != nil {
 		return err
+	}
+
+	// Warn if --close-tab is used with --force-headless (tabs close automatically)
+	if c.Bool("close-tab") && c.Bool("force-headless") {
+		logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
 	}
 
 	// Create browser manager

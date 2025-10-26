@@ -282,6 +282,10 @@ func run(c *cli.Context) error {
 		if c.IsSet("format") {
 			logger.Warning("--format ignored with --open-browser (no content fetching)")
 		}
+		// Warn if --close-tab was specified but will be ignored
+		if c.Bool("close-tab") {
+			logger.Warning("--close-tab ignored with --open-browser (no content fetching)")
+		}
 		logger.Info("Opening browser...")
 		bm := NewBrowserManager(BrowserOptions{
 			Port:        c.Int("port"),
@@ -334,6 +338,11 @@ func run(c *cli.Context) error {
 		}
 
 		logger.Debug("Config: format=%s, timeout=%d, port=%d", config.Format, config.Timeout, config.Port)
+
+		// Warn if --close-tab is used with --force-headless (tabs close automatically)
+		if config.CloseTab && config.ForceHeadless {
+			logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
+		}
 
 		// Validate conflicting output flags
 		if config.OutputFile != "" && config.OutputDir != "" {
