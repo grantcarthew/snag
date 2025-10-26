@@ -55,7 +55,7 @@ func main() {
 	app := &cli.App{
 		Name:            "snag",
 		Usage:           "Intelligently fetch web page content with browser engine",
-		UsageText:       "snag [options] <url>",
+		UsageText:       "snag [options] <url> [url...]",
 		Version:         version,
 		HideVersion:     false,
 		HideHelpCommand: true,
@@ -65,7 +65,7 @@ func main() {
 				Email: "grant@carthew.net",
 			},
 		},
-		Description: `snag fetches web page content using Chrome/Chromium via the Chrome DevTools Protocol.
+		Description: `snag fetches web page content using Chromium/Chrome via the Chrome DevTools Protocol.
    It can connect to existing browser sessions, launch headless browsers, or open
    visible browsers for authenticated sessions. Output formats: Markdown, HTML, text, PDF, or PNG.
 
@@ -127,7 +127,7 @@ func main() {
 			&cli.BoolFlag{
 				Name:    "open-browser",
 				Aliases: []string{"b"},
-				Usage:   "Open Chrome browser in visible state (no URL required)",
+				Usage:   "Open browser visibly with remote debugging enabled (no URL required)",
 			},
 			&cli.BoolFlag{
 				Name:    "list-tabs",
@@ -167,7 +167,7 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:  "user-data-dir",
-				Usage: "Custom Chrome user data `DIRECTORY` (for session isolation)",
+				Usage: "Custom Chromium/Chrome user data `DIRECTORY` (for session isolation)",
 			},
 		},
 		Action: run,
