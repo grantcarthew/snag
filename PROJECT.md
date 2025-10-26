@@ -47,8 +47,8 @@ For each argument documentation file:
 ### Browser Control Arguments
 
 - [x] **open-browser.md** - Open persistent browser mode (✅ 2025-10-26)
-- [ ] **force-headless.md** - Force headless mode even with existing browser
-- [ ] **port.md** - Remote debugging port specification
+- [x] **force-headless.md** - Force headless mode even with existing browser (✅ 2025-10-26)
+- [x] **port.md** - Remote debugging port specification (✅ 2025-10-26)
 - [ ] **user-data-dir.md** - Custom Chrome user data directory
 - [ ] **user-agent.md** - Custom user agent string
 - [ ] **wait-for.md** - Wait for CSS selector before fetching
@@ -113,7 +113,7 @@ For each argument, verify:
 - **Started**: 2025-10-24
 - **Completed**: _In Progress_
 - **Total Arguments**: 22
-- **Reviewed**: 10
-- **Fully Implemented**: 10
+- **Reviewed**: 12
+- **Fully Implemented**: 12
 - **Partially Implemented**: 0
 - **Not Implemented**: 0

@@ -98,12 +98,13 @@ func validateTimeout(timeout int) error {
 	return nil
 }
 
-// validatePort checks if port is in valid range (1-65535)
+// validatePort checks if port is in valid range (1024-65535)
+// Excludes privileged ports 1-1023 which require root/admin access
 func validatePort(port int) error {
-	if port < 1 || port > 65535 {
+	if port < 1024 || port > 65535 {
 		logger.Error("Invalid port: %d", port)
 		logger.ErrorWithSuggestion(
-			"Port must be between 1 and 65535",
+			"Port must be between 1024 and 65535",
 			"snag <url> --port 9222",
 		)
 		return fmt.Errorf("invalid port: %d", port)
