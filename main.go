@@ -402,10 +402,16 @@ func run(c *cli.Context) error {
 		}
 
 		// Validate and sanitize user-agent if provided
-		userAgent := validateUserAgent(c.String("user-agent"))
+		userAgent := ""
+		if c.IsSet("user-agent") {
+			userAgent = validateUserAgent(c.String("user-agent"))
+		}
 
 		// Validate wait-for selector if provided
-		waitFor := validateWaitFor(c.String("wait-for"))
+		waitFor := ""
+		if c.IsSet("wait-for") {
+			waitFor = validateWaitFor(c.String("wait-for"))
+		}
 
 		// Extract configuration from flags
 		config := &Config{
