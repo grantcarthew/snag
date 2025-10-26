@@ -183,15 +183,41 @@ func main() {
 
 // run is the main application action
 func run(c *cli.Context) error {
-	// Initialize logger based on flags
+	// Initialize logger based on flags (last flag wins)
 	level := LevelNormal
-	if c.Bool("quiet") {
+
+	// Determine which logging flag was specified last by checking os.Args
+	lastLogFlag := ""
+	lastLogIndex := -1
+	for i, arg := range os.Args {
+		if arg == "--quiet" || arg == "-q" {
+			if i > lastLogIndex {
+				lastLogIndex = i
+				lastLogFlag = "quiet"
+			}
+		} else if arg == "--verbose" {
+			if i > lastLogIndex {
+				lastLogIndex = i
+				lastLogFlag = "verbose"
+			}
+		} else if arg == "--debug" {
+			if i > lastLogIndex {
+				lastLogIndex = i
+				lastLogFlag = "debug"
+			}
+		}
+	}
+
+	// Apply the last logging flag that was specified
+	switch lastLogFlag {
+	case "quiet":
 		level = LevelQuiet
-	} else if c.Bool("debug") {
+	case "debug":
 		level = LevelDebug
-	} else if c.Bool("verbose") {
+	case "verbose":
 		level = LevelVerbose
 	}
+
 	logger = NewLogger(level)
 
 	// Collect URLs from --url-file and command line arguments
