@@ -18,13 +18,11 @@ import (
 // validateURL checks and normalizes the URL, adding https:// if no scheme is present.
 // Supported schemes: http, https, file
 func validateURL(urlStr string) (string, error) {
-	// Add https:// if no scheme present
 	if !strings.Contains(urlStr, "://") {
 		urlStr = "https://" + urlStr
 		logger.Verbose("No scheme provided, using: %s", urlStr)
 	}
 
-	// Parse and validate URL
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		logger.Error("Invalid URL: %s", urlStr)
@@ -35,7 +33,6 @@ func validateURL(urlStr string) (string, error) {
 		return "", ErrInvalidURL
 	}
 
-	// Validate scheme
 	validSchemes := map[string]bool{
 		"http":  true,
 		"https": true,
@@ -51,7 +48,6 @@ func validateURL(urlStr string) (string, error) {
 		return "", ErrInvalidURL
 	}
 
-	// Validate host (except for file://)
 	if parsedURL.Scheme != "file" && parsedURL.Host == "" {
 		logger.Error("Invalid URL: missing host")
 		logger.ErrorWithSuggestion(
@@ -114,7 +110,6 @@ func validatePort(port int) error {
 
 // validateOutputPath checks if the output file path is writable
 func validateOutputPath(path string) error {
-	// Check for empty string
 	if path == "" {
 		logger.Error("Output file path cannot be empty")
 		logger.ErrorWithSuggestion(
@@ -124,7 +119,6 @@ func validateOutputPath(path string) error {
 		return fmt.Errorf("output file path cannot be empty")
 	}
 
-	// Check if path is a directory
 	if info, err := os.Stat(path); err == nil && info.IsDir() {
 		logger.Error("Output path is a directory, not a file: %s", path)
 		logger.ErrorWithSuggestion(
@@ -134,9 +128,7 @@ func validateOutputPath(path string) error {
 		return fmt.Errorf("output path is a directory, not a file: %s", path)
 	}
 
-	// Check if existing file is read-only
 	if info, err := os.Stat(path); err == nil {
-		// File exists, check if it's writable
 		if info.Mode().Perm()&0200 == 0 {
 			logger.Error("Cannot write to read-only file: %s", path)
 			logger.ErrorWithSuggestion(
@@ -147,10 +139,8 @@ func validateOutputPath(path string) error {
 		}
 	}
 
-	// Get the directory path
 	dir := filepath.Dir(path)
 
-	// Check if directory exists
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		logger.Error("Output directory does not exist: %s", dir)
 		logger.ErrorWithSuggestion(
@@ -160,7 +150,6 @@ func validateOutputPath(path string) error {
 		return fmt.Errorf("output directory does not exist: %s", dir)
 	}
 
-	// Check if directory is writable by attempting to create a temp file
 	f, err := os.CreateTemp(dir, ".snag-write-test-*")
 	if err != nil {
 		logger.Error("Cannot write to output directory: %s", dir)
@@ -180,13 +169,9 @@ func validateOutputPath(path string) error {
 // normalizeFormat converts format to lowercase and handles aliases
 // Aliases: "markdown" → "md", "txt" → "text"
 func normalizeFormat(format string) string {
-	// Trim whitespace first
 	format = strings.TrimSpace(format)
-
-	// Convert to lowercase for case-insensitive matching
 	format = strings.ToLower(format)
 
-	// Handle aliases
 	aliases := map[string]string{
 		"markdown": FormatMarkdown, // "markdown" → "md"
 		"txt":      FormatText,     // "txt" → "text"
@@ -201,7 +186,6 @@ func normalizeFormat(format string) string {
 
 // validateFormat checks if format is valid (md, html, text, pdf, or png)
 func validateFormat(format string) error {
-	// Check for empty format
 	if format == "" {
 		logger.Error("Format cannot be empty")
 		logger.ErrorWithSuggestion(
@@ -242,14 +226,11 @@ func checkExtensionMismatch(outputFile string, format string) bool {
 	ext := strings.ToLower(filepath.Ext(outputFile))
 	expectedExt := strings.ToLower(GetFileExtension(format))
 
-	// Check for mismatch
 	if ext != expectedExt {
-		// Special case: no extension at all
 		if ext == "" {
 			logger.Warning("Writing %s format to file with no extension: %s", format, outputFile)
 			return true
 		}
-		// Extension mismatch
 		logger.Warning("Writing %s format to file with %s extension: %s", format, ext, outputFile)
 		return true
 	}
@@ -259,7 +240,6 @@ func checkExtensionMismatch(outputFile string, format string) bool {
 
 // validateDirectory checks if a directory exists and is writable
 func validateDirectory(dir string) error {
-	// Check if directory exists
 	info, err := os.Stat(dir)
 	if os.IsNotExist(err) {
 		logger.Error("Directory does not exist: %s", dir)
@@ -273,13 +253,11 @@ func validateDirectory(dir string) error {
 		return fmt.Errorf("error accessing directory: %w", err)
 	}
 
-	// Check if it's actually a directory
 	if !info.IsDir() {
 		logger.Error("Path is not a directory: %s", dir)
 		return fmt.Errorf("not a directory: %s", dir)
 	}
 
-	// Check if directory is writable
 	testFile, err := os.CreateTemp(dir, ".snag-write-test-*")
 	if err != nil {
 		logger.Error("Directory not writable: %s", dir)
@@ -304,12 +282,10 @@ func validateOutputPathEscape(outputDir, filename string) error {
 		return nil
 	}
 
-	// Join the paths and clean them
 	fullPath := filepath.Join(outputDir, filename)
 	cleanPath := filepath.Clean(fullPath)
 	cleanDir := filepath.Clean(outputDir)
 
-	// Make cleanDir absolute for comparison
 	absDir, err := filepath.Abs(cleanDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve directory path: %w", err)
@@ -337,10 +313,8 @@ func validateOutputPathEscape(outputDir, filename string) error {
 // validateWaitFor validates the wait-for CSS selector string.
 // Returns the trimmed selector, or empty string with warning if input is empty.
 func validateWaitFor(selector string) string {
-	// Trim whitespace
 	selector = strings.TrimSpace(selector)
 
-	// Empty selector means don't wait (not an error, just a warning if explicitly set)
 	if selector == "" {
 		logger.Warning("--wait-for is empty, ignoring")
 		return ""
@@ -353,17 +327,14 @@ func validateWaitFor(selector string) string {
 // Returns the sanitized user agent, or empty string with warning if input is empty.
 // Sanitizes newlines for security (prevents HTTP header injection).
 func validateUserAgent(ua string) string {
-	// Trim whitespace
 	ua = strings.TrimSpace(ua)
 
-	// Empty user agent means use browser default (not an error, just a warning)
 	if ua == "" {
 		logger.Warning("--user-agent is empty, using default user agent")
 		return ""
 	}
 
-	// Sanitize newlines for security (prevents HTTP header injection)
-	// Replace \n and \r with spaces
+	// SECURITY: Sanitize newlines to prevent HTTP header injection
 	ua = strings.ReplaceAll(ua, "\n", " ")
 	ua = strings.ReplaceAll(ua, "\r", " ")
 
@@ -374,16 +345,13 @@ func validateUserAgent(ua string) string {
 // Returns the expanded path, or empty string with warning if input is empty.
 // Performs tilde expansion, directory existence check, and permission check.
 func validateUserDataDir(path string) (string, error) {
-	// Trim whitespace
 	path = strings.TrimSpace(path)
 
-	// Empty path means use browser default (not an error, just a warning)
 	if path == "" {
 		logger.Warning("--user-data-dir is empty, using default profile")
 		return "", nil
 	}
 
-	// Expand tilde to home directory
 	if strings.HasPrefix(path, "~") {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
@@ -396,7 +364,6 @@ func validateUserDataDir(path string) (string, error) {
 		}
 	}
 
-	// Check if path exists
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		logger.Error("User data directory does not exist: %s", path)
@@ -411,7 +378,6 @@ func validateUserDataDir(path string) (string, error) {
 		return "", fmt.Errorf("error accessing directory: %w", err)
 	}
 
-	// Check if it's a directory (not a file)
 	if !info.IsDir() {
 		logger.Error("Path is not a directory: %s", path)
 		logger.ErrorWithSuggestion(
@@ -421,7 +387,6 @@ func validateUserDataDir(path string) (string, error) {
 		return "", fmt.Errorf("path is not a directory: %s", path)
 	}
 
-	// Check if directory is readable and writable
 	testFile, err := os.CreateTemp(path, ".snag-permission-test-*")
 	if err != nil {
 		logger.Error("Permission denied accessing user data directory: %s", path)
@@ -461,17 +426,14 @@ func loadURLsFromFile(filename string) ([]string, error) {
 		lineNum++
 		line := strings.TrimSpace(scanner.Text())
 
-		// Skip empty lines
 		if line == "" {
 			continue
 		}
 
-		// Skip full-line comments
 		if strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") {
 			continue
 		}
 
-		// Handle inline comments
 		hasComment := false
 		for _, marker := range []string{" #", " //"} {
 			if idx := strings.Index(line, marker); idx != -1 {
@@ -487,12 +449,10 @@ func loadURLsFromFile(filename string) ([]string, error) {
 			continue
 		}
 
-		// Auto-prepend https:// if missing protocol
 		if !strings.HasPrefix(line, "http://") && !strings.HasPrefix(line, "https://") && !strings.HasPrefix(line, "file://") {
 			line = "https://" + line
 		}
 
-		// Validate URL
 		if _, err := validateURL(line); err != nil {
 			logger.Warning("Line %d: Invalid URL - skipping: %s", lineNum, scanner.Text())
 			continue
