@@ -1,6 +1,6 @@
 # Validation Rules and Order
 
-**Last Updated:** 2025-10-24
+**Last Updated:** 2025-10-26
 
 This document describes the validation order and cross-cutting validation rules that apply to multiple arguments.
 
@@ -23,8 +23,11 @@ All string arguments are trimmed using `strings.TrimSpace()` after reading from 
 
 - When the same flag is specified multiple times, the last value is used
 - No error, no warning - silent override
-- Applies to: `--output`, `--output-dir`, `--format`, `--timeout`, `--wait-for`, `--user-agent`, `--user-data-dir`, `--tab`, `--url-file`, `--port`
-- Logging flags also follow this pattern: `--verbose`, `--quiet`, `--debug`
+- Applies to all flags:
+  - **String flags**: `--output`, `--output-dir`, `--format`, `--wait-for`, `--user-agent`, `--user-data-dir`, `--tab`, `--url-file`
+  - **Integer flags**: `--timeout`, `--port`
+  - **Boolean flags**: `--close-tab`, `--force-headless`, `--open-browser`, `--list-tabs`, `--all-tabs`
+  - **Logging flags**: `--verbose`, `--quiet`, `--debug`
 
 **Examples:**
 
