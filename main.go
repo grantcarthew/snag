@@ -276,13 +276,33 @@ func run(c *cli.Context) error {
 		return handleTabFetch(c)
 	}
 
+	// Check for conflicting --force-headless + --open-browser flags
+	if c.Bool("open-browser") && c.Bool("force-headless") {
+		logger.Error("Cannot use both --force-headless and --open-browser (conflicting modes)")
+		return fmt.Errorf("conflicting flags: --force-headless and --open-browser")
+	}
+
 	// Handle --open-browser flag WITHOUT URLs (just open browser)
 	if c.Bool("open-browser") && len(urls) == 0 {
-		// Warn if --format was specified but will be ignored
+		// Warn about ignored flags (no content fetching without URLs)
 		if c.IsSet("format") {
 			logger.Warning("--format ignored with --open-browser (no content fetching)")
 		}
-		// Warn if --close-tab was specified but will be ignored
+		if c.IsSet("output") {
+			logger.Warning("--output ignored with --open-browser (no content fetching)")
+		}
+		if c.IsSet("output-dir") {
+			logger.Warning("--output-dir ignored with --open-browser (no content fetching)")
+		}
+		if c.IsSet("timeout") {
+			logger.Warning("--timeout ignored with --open-browser (no content fetching)")
+		}
+		if c.IsSet("wait-for") {
+			logger.Warning("--wait-for ignored with --open-browser (no content fetching)")
+		}
+		if c.IsSet("user-agent") {
+			logger.Warning("--user-agent ignored with --open-browser (no navigation)")
+		}
 		if c.Bool("close-tab") {
 			logger.Warning("--close-tab ignored with --open-browser (no content fetching)")
 		}

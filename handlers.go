@@ -814,7 +814,22 @@ func handleTabFetch(c *cli.Context) error {
 // handleOpenURLsInBrowser opens multiple URLs in browser tabs without fetching content
 // This implements the --open-browser behavior with URLs (just opens, no output)
 func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
-	// Warn if --close-tab was specified but will be ignored
+	// Warn about ignored flags (no content fetching with URLs)
+	if c.IsSet("output") {
+		logger.Warning("--output ignored with --open-browser (no content fetching)")
+	}
+	if c.IsSet("output-dir") {
+		logger.Warning("--output-dir ignored with --open-browser (no content fetching)")
+	}
+	if c.IsSet("format") {
+		logger.Warning("--format ignored with --open-browser (no content fetching)")
+	}
+	if c.IsSet("timeout") {
+		logger.Warning("--timeout ignored with --open-browser (no content fetching)")
+	}
+	if c.IsSet("wait-for") {
+		logger.Warning("--wait-for ignored with --open-browser (no content fetching)")
+	}
 	if c.Bool("close-tab") {
 		logger.Warning("--close-tab ignored with --open-browser (no content fetching)")
 	}
