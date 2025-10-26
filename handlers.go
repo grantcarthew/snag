@@ -295,7 +295,7 @@ func handleAllTabs(c *cli.Context) error {
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
-	waitFor := strings.TrimSpace(c.String("wait-for"))
+	waitFor := validateWaitFor(c.String("wait-for"))
 	outputDir := strings.TrimSpace(c.String("output-dir"))
 	closeTab := c.Bool("close-tab")
 	if outputDir == "" {
@@ -461,7 +461,7 @@ func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
-	waitFor := strings.TrimSpace(c.String("wait-for"))
+	waitFor := validateWaitFor(c.String("wait-for"))
 	outputDir := strings.TrimSpace(c.String("output-dir"))
 	if outputDir == "" {
 		outputDir = "." // Default to current working directory
@@ -563,7 +563,7 @@ func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) er
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
-	waitFor := strings.TrimSpace(c.String("wait-for"))
+	waitFor := validateWaitFor(c.String("wait-for"))
 	outputDir := strings.TrimSpace(c.String("output-dir"))
 	if outputDir == "" {
 		outputDir = "." // Default to current working directory
@@ -758,7 +758,7 @@ func handleTabFetch(c *cli.Context) error {
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
-	waitFor := strings.TrimSpace(c.String("wait-for"))
+	waitFor := validateWaitFor(c.String("wait-for"))
 	outputFile := strings.TrimSpace(c.String("output"))
 
 	// Validate format
@@ -848,12 +848,15 @@ func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
 		userDataDir = validatedDir
 	}
 
+	// Validate and sanitize user-agent if provided
+	userAgent := validateUserAgent(c.String("user-agent"))
+
 	// Create browser manager in visible mode
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          c.Int("port"),
 		OpenBrowser:   true,
 		ForceHeadless: false,
-		UserAgent:     strings.TrimSpace(c.String("user-agent")),
+		UserAgent:     userAgent,
 		UserDataDir:   userDataDir,
 	})
 
@@ -917,7 +920,7 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
-	waitFor := strings.TrimSpace(c.String("wait-for"))
+	waitFor := validateWaitFor(c.String("wait-for"))
 	outputDir := strings.TrimSpace(c.String("output-dir"))
 	if outputDir == "" {
 		outputDir = "." // Default to current working directory
@@ -953,11 +956,14 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 		userDataDir = validatedDir
 	}
 
+	// Validate and sanitize user-agent if provided
+	userAgent := validateUserAgent(c.String("user-agent"))
+
 	// Create browser manager
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          c.Int("port"),
 		ForceHeadless: c.Bool("force-headless"),
-		UserAgent:     strings.TrimSpace(c.String("user-agent")),
+		UserAgent:     userAgent,
 		UserDataDir:   userDataDir,
 	})
 
