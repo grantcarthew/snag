@@ -101,6 +101,14 @@ ADDITIONAL HELP TOPICS:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
 
+var rootCmd = &cobra.Command{
+	Use:     "snag [options] URL...",
+	Short:   "Intelligently fetch web page content using a browser engine",
+	Version: version,
+	Args:    cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
+	RunE:    runCobra,
+}
+
 func init() {
 	// String flags
 	rootCmd.Flags().StringVar(&urlFile, "url-file", "", "Read URLs from FILE (one per line, supports comments)")
@@ -131,14 +139,6 @@ func init() {
 
 	// Set custom help template
 	rootCmd.SetHelpTemplate(cobraHelpTemplate)
-}
-
-var rootCmd = &cobra.Command{
-	Use:     "snag [options] URL...",
-	Short:   "Intelligently fetch web page content using a browser engine",
-	Version: version,
-	Args:    cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
-	RunE:    runCobra,
 }
 
 func main() {
