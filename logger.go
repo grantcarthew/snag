@@ -12,21 +12,15 @@ import (
 	"os"
 )
 
-// LogLevel represents the logging verbosity level
 type LogLevel int
 
 const (
-	// LevelQuiet suppresses all output except fatal errors
 	LevelQuiet LogLevel = iota
-	// LevelNormal shows key operations with emoji indicators
 	LevelNormal
-	// LevelVerbose shows detailed operation logs
 	LevelVerbose
-	// LevelDebug shows everything including CDP messages and timing
 	LevelDebug
 )
 
-// ANSI color codes
 const (
 	colorReset  = "\033[0m"
 	colorRed    = "\033[31m"
@@ -35,14 +29,12 @@ const (
 	colorCyan   = "\033[36m"
 )
 
-// Logger handles formatted output to stderr
 type Logger struct {
 	level  LogLevel
 	color  bool
 	writer io.Writer
 }
 
-// NewLogger creates a new logger instance
 func NewLogger(level LogLevel) *Logger {
 	color := shouldUseColor()
 	return &Logger{
@@ -52,14 +44,11 @@ func NewLogger(level LogLevel) *Logger {
 	}
 }
 
-// shouldUseColor determines if color output should be used
 func shouldUseColor() bool {
-	// Respect NO_COLOR environment variable
 	if os.Getenv("NO_COLOR") != "" {
 		return false
 	}
 
-	// Check if stderr is a terminal
 	if fileInfo, err := os.Stderr.Stat(); err == nil {
 		return (fileInfo.Mode() & os.ModeCharDevice) != 0
 	}
@@ -67,7 +56,6 @@ func shouldUseColor() bool {
 	return false
 }
 
-// Success logs a success message with green checkmark
 func (l *Logger) Success(format string, args ...interface{}) {
 	if l.level >= LevelNormal {
 		msg := fmt.Sprintf(format, args...)
@@ -79,7 +67,6 @@ func (l *Logger) Success(format string, args ...interface{}) {
 	}
 }
 
-// Info logs an informational message (plain text)
 func (l *Logger) Info(format string, args ...interface{}) {
 	if l.level >= LevelNormal {
 		msg := fmt.Sprintf(format, args...)
@@ -87,7 +74,6 @@ func (l *Logger) Info(format string, args ...interface{}) {
 	}
 }
 
-// Verbose logs a detailed message (only in verbose/debug mode)
 func (l *Logger) Verbose(format string, args ...interface{}) {
 	if l.level >= LevelVerbose {
 		msg := fmt.Sprintf(format, args...)
@@ -98,7 +84,6 @@ func (l *Logger) Verbose(format string, args ...interface{}) {
 	}
 }
 
-// Debug logs a debug message (only in debug mode)
 func (l *Logger) Debug(format string, args ...interface{}) {
 	if l.level >= LevelDebug {
 		msg := fmt.Sprintf(format, args...)
@@ -106,7 +91,6 @@ func (l *Logger) Debug(format string, args ...interface{}) {
 	}
 }
 
-// Warning logs a warning message with yellow indicator
 func (l *Logger) Warning(format string, args ...interface{}) {
 	if l.level >= LevelNormal {
 		msg := fmt.Sprintf(format, args...)
@@ -118,7 +102,6 @@ func (l *Logger) Warning(format string, args ...interface{}) {
 	}
 }
 
-// Error logs an error message with red X (always shown, even in quiet mode)
 func (l *Logger) Error(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	prefix := "✗"
@@ -128,7 +111,6 @@ func (l *Logger) Error(format string, args ...interface{}) {
 	fmt.Fprintf(l.writer, "%s %s\n", prefix, msg)
 }
 
-// ErrorWithSuggestion logs an error with a helpful suggestion
 func (l *Logger) ErrorWithSuggestion(errMsg string, suggestion string) {
 	prefix := "✗"
 	if l.color {
