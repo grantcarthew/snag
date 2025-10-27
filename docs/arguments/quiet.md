@@ -11,9 +11,10 @@
 
 **Multiple Flag Conflicts:**
 
-- Multiple `--quiet` flags → Last flag honored (standard Unix behavior)
-- `--quiet` + `--verbose` → Last flag wins
-- `--quiet` + `--debug` → Last flag wins
+- Multiple `--quiet` flags → Last flag honored (standard behavior)
+- `--quiet` + `--verbose` → Error: mutually exclusive
+- `--quiet` + `--debug` → Error: mutually exclusive
+- Only one logging level flag can be used at a time
 
 #### Behavior
 
@@ -38,16 +39,16 @@ snag https://example.com --quiet
 
 #### Interaction Matrix
 
-**Logging Level Priority (Last Flag Wins):**
+**Logging Level Flags (Mutually Exclusive):**
 
-| Combination                 | Effective Level | Rationale                      |
-| --------------------------- | --------------- | ------------------------------ |
-| `--quiet`                   | Quiet           | Suppress all but errors        |
-| `--quiet --verbose`         | Verbose         | Last flag wins (Unix standard) |
-| `--verbose --quiet`         | Quiet           | Last flag wins                 |
-| `--quiet --debug`           | Debug           | Last flag wins                 |
-| `--debug --quiet`           | Quiet           | Last flag wins                 |
-| `--quiet --verbose --debug` | Debug           | Last flag wins                 |
+| Combination                 | Result          | Error Message                                                             |
+| --------------------------- | --------------- | ------------------------------------------------------------------------- |
+| `--quiet`                   | Quiet           | (Valid - quiet mode)                                                      |
+| `--quiet --verbose`         | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [quiet verbose] were all set` |
+| `--verbose --quiet`         | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [quiet verbose] were all set` |
+| `--quiet --debug`           | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet] were all set` |
+| `--debug --quiet`           | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet] were all set` |
+| `--quiet --verbose --debug` | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet verbose] were all set` |
 
 **All Other Flags:**
 
@@ -71,13 +72,15 @@ snag https://example.com -q -o page.md              # Silent file save
 snag --url-file urls.txt --quiet                    # Silent batch processing
 snag --tab 1 --quiet                                # Silent tab fetch
 snag --list-tabs --quiet                            # Silent tab listing (shows tabs only)
-snag https://example.com --verbose --quiet          # Quiet wins (last flag)
 ```
 
-**No Invalid Combinations:**
+**Invalid (Mutually Exclusive):**
 
-- Boolean flag, no invalid values
-- Works with everything
+```bash
+snag https://example.com --quiet --verbose          # Error: mutually exclusive
+snag https://example.com --quiet --debug            # Error: mutually exclusive
+snag https://example.com -q --verbose --debug       # Error: mutually exclusive
+```
 
 #### Implementation Details
 
@@ -89,8 +92,8 @@ snag https://example.com --verbose --quiet          # Quiet wins (last flag)
 
 **Processing:**
 
-1. Check if `--quiet` flag is present
-2. If multiple logging flags, last one wins
+1. Cobra validates that only one logging flag is present (mutually exclusive)
+2. Check if `--quiet` flag is set
 3. Initialize logger with quiet level
 4. All subsequent operations suppress non-error logs
 
