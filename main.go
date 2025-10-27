@@ -27,21 +27,18 @@ const (
 	FormatPNG      = "png"
 )
 
-// Custom help template with AI AGENT NOTES as a top-level section
-var customAppHelpTemplate = `NAME:
-   {{template "helpNameTemplate" .}}
-
-USAGE:
+// Custom help template with AGENT USAGE as a top-level section
+var customAppHelpTemplate = `USAGE:
    {{if .UsageText}}{{wrap .UsageText 3}}{{else}}{{.HelpName}} {{if .VisibleFlags}}[options]{{end}}{{if .ArgsUsage}} {{.ArgsUsage}}{{else}} [arguments...]{{end}}{{end}}{{if .Description}}
 
 DESCRIPTION:
    {{template "descriptionTemplate" .}}{{end}}
 
-AI AGENT NOTES:
+AGENT USAGE:
    Common workflows:
-   • Fetch to stdout: snag <url>
-   • Save multiple URLs: snag -d output/ <url1> <url2> <url3>
-   • Authenticated content: snag --open-browser (user authenticates), then snag -t <pattern>
+   • Fetch to stdout: snag example.com
+   • Save multiple URLs: snag -d output/ example.com google.com github.com
+   • Authenticated content: snag --open-browser (user authenticates), then snag -t github
    • Batch processing: snag --all-tabs -d output/ (extracts all open tabs)
 
    Integration tips:
@@ -49,7 +46,7 @@ AI AGENT NOTES:
    • Non-zero exit code on any error (safe for scripting)
    • Auto-generates filenames for batch operations (timestamp-based)
 
-   Performance: Typical page fetch 2-5 seconds. Tab reuse is faster than new navigation.
+   Performance: Typical fetch 2-5 seconds (varies by page complexity). Tab reuse is faster.
 {{if .VisibleCommands}}
 
 COMMANDS:{{template "visibleCommandCategoryTemplate" .}}{{end}}{{if .VisibleFlagCategories}}
@@ -88,8 +85,8 @@ func main() {
 
 	app := &cli.App{
 		Name:            "snag",
-		Usage:           "Intelligently fetch web page content with browser engine",
-		UsageText:       "snag [options] <url> [url...]",
+		Usage:           "Intelligently fetch web page content using a browser engine",
+		UsageText:       "snag [options] URL...",
 		Version:         version,
 		HideVersion:     false,
 		HideHelpCommand: true,
@@ -99,7 +96,7 @@ func main() {
 				Email: "grant@carthew.net",
 			},
 		},
-		Description: `snag fetches web page content using Chromium/Chrome via the Chrome DevTools Protocol.
+		Description: `snag fetches web page content using Chromium/Chrome automation.
 It can connect to existing browser sessions, launch headless browsers, or open
 visible browsers for authenticated sessions. Output formats: Markdown, HTML, text, PDF, or PNG.
 
