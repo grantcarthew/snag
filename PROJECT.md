@@ -221,6 +221,8 @@ Moved validation to occur before browser connections in affected handlers.
 
 ### Task 2.2: Add Context Support for Cancellation
 
+**Status:** ❌ Won't Do (2025-10-27)
+
 **Location:** All handler functions
 
 **Problem:** No context support means:
@@ -228,7 +230,16 @@ Moved validation to occur before browser connections in affected handlers.
 - No timeout control beyond page-level timeouts
 - No graceful shutdown for batch operations
 
-**Solution:** Add context.Context throughout the call chain.
+**Solution Proposed:** Add context.Context throughout the call chain.
+
+**Decision: Not Worth It**
+
+**Reasoning:**
+- **Large architectural change** (2-3 hours): New Runtime struct, 7+ function signature changes
+- **Signal handling already exists** (main.go:145-161): Cleans up browser on Ctrl+C
+- **Rare use case**: Most operations complete quickly, large batches uncommon
+- **Cost/benefit**: Significant refactoring for minimal user value
+- **Works well enough**: Current immediate-exit behavior is acceptable for CLI tool
 
 **Implementation Steps:**
 
