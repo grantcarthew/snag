@@ -27,6 +27,26 @@ const (
 	FormatPNG      = "png"
 )
 
+// Exit codes
+const (
+	ExitCodeSuccess   = 0
+	ExitCodeError     = 1
+	ExitCodeInterrupt = 130 // 128 + SIGINT (2)
+	ExitCodeSIGTERM   = 143 // 128 + SIGTERM (15)
+)
+
+// Display formatting
+const (
+	MaxDisplayURLLength = 80  // Maximum URL length in display output
+	MaxTabLineLength    = 120 // Maximum total line length for tab listings
+	MaxSlugLength       = 80  // Maximum length for filename slugs
+)
+
+// Default values
+const (
+	DefaultTimeout = 30 // Default timeout in seconds
+)
+
 var (
 	logger         *Logger
 	browserManager *BrowserManager
@@ -155,15 +175,15 @@ func main() {
 		}
 
 		if sig == os.Interrupt {
-			os.Exit(130)
+			os.Exit(ExitCodeInterrupt)
 		}
-		os.Exit(143)
+		os.Exit(ExitCodeSIGTERM)
 	}()
 
 	// Execute Cobra command
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		os.Exit(ExitCodeError)
 	}
 }
 

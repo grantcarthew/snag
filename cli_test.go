@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 		<-sigChan
 		fmt.Fprintf(os.Stderr, "\nCleaning up browsers before exit...\n")
 		cleanupOrphanedBrowsers()
-		os.Exit(130) // 128 + 2 (SIGINT)
+		os.Exit(ExitCodeInterrupt)
 	}()
 
 	// Clean up any orphaned Chrome instances before running tests

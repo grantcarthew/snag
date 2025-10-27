@@ -21,6 +21,7 @@ While the migration is functional (all 124 tests passing), some refactorings wer
 - ✅ Task 2.3: Evaluated and rejected error handling refactor (already consistent)
 - ✅ Task 2.4: Fixed inconsistent cleanup pattern (consistent deferred cleanup)
 - ✅ Task 3.1: Extracted duplicate batch processing code (~92 lines eliminated)
+- ✅ Task 3.2: Replaced magic numbers with named constants (4 files updated)
 
 **Pending Review:** Phase 3 (Code Quality) tasks remain.
 
@@ -613,6 +614,8 @@ The refactoring was successfully completed with the following implementation:
 
 ### Task 3.2: Replace Magic Numbers with Constants
 
+**Status:** ✅ Complete (2025-10-27)
+
 **Location:** Multiple files
 
 **Problem:** Magic numbers scattered throughout code reduce maintainability.
@@ -677,9 +680,39 @@ The refactoring was successfully completed with the following implementation:
 - Verify exit codes unchanged
 - Verify display output unchanged
 
+**Implementation Outcome:**
+
+Successfully replaced all magic numbers with named constants:
+
+1. **Added package-level constants in main.go** (lines 30-48):
+   - Exit codes: `ExitCodeSuccess`, `ExitCodeError`, `ExitCodeInterrupt`, `ExitCodeSIGTERM`
+   - Display formatting: `MaxDisplayURLLength`, `MaxTabLineLength`, `MaxSlugLength`
+   - Default values: `DefaultTimeout`
+
+2. **Replaced exit codes**:
+   - main.go:178: `os.Exit(130)` → `os.Exit(ExitCodeInterrupt)`
+   - main.go:180: `os.Exit(143)` → `os.Exit(ExitCodeSIGTERM)`
+   - main.go:186: `os.Exit(1)` → `os.Exit(ExitCodeError)`
+   - cli_test.go:34: `os.Exit(130)` → `os.Exit(ExitCodeInterrupt)`
+
+3. **Replaced display constants in handlers.go**:
+   - Line 202: `const maxURLLen = 80` → `const maxURLLen = MaxDisplayURLLength`
+   - Line 232: `formatTabLine(..., 120, ...)` → `formatTabLine(..., MaxTabLineLength, ...)`
+
+4. **Replaced slug length in output.go**:
+   - Line 67: `SlugifyTitle(hostname, 80)` → `SlugifyTitle(hostname, MaxSlugLength)`
+   - Line 97: `SlugifyTitle(title, 80)` → `SlugifyTitle(title, MaxSlugLength)`
+
+**Results:**
+- All magic numbers replaced with self-documenting named constants
+- Code is more maintainable (single source of truth for values)
+- No behavioral changes expected
+
 **Files Modified:**
-- `main.go`
-- `handlers.go`
+- `main.go` (added constants, replaced 3 exit codes)
+- `cli_test.go` (replaced 1 exit code)
+- `handlers.go` (replaced 2 display formatting constants)
+- `output.go` (replaced 2 slug length constants)
 
 ---
 
