@@ -16,13 +16,14 @@ While the migration is functional (all 124 tests passing), some refactorings wer
 - ✅ Task 3.4: Fixed rootCmd declaration order (moved before init())
 - ✅ Task 1.1: Evaluated and rejected global state refactoring (appropriate for CLI)
 - ✅ Task 1.2: Replaced manual os.Args parsing with MarkFlagsMutuallyExclusive (breaking change)
+- ✅ Task 2.1: Moved validation before expensive operations (instant error feedback)
 
 **Pending Review:** Remaining tasks need individual evaluation for necessity.
 
 ## Success Criteria
 
 - ✅ Critical issues (Priority 1): All complete (Task 3.4 ✅, Task 1.1 ❌ Won't Do, Task 1.2 ✅)
-- ⏳ High-priority issues (Priority 2): Pending evaluation
+- ⚠️ High-priority issues (Priority 2): 1 complete (Task 2.1 ✅), 3 pending (Tasks 2.2, 2.3, 2.4)
 - ✅ All 124 tests continue to pass
 - ✅ No behavioral changes for users
 - ✅ Code coverage remains ≥ current level
@@ -169,73 +170,49 @@ Used Cobra's `MarkFlagsMutuallyExclusive()` to enforce standard CLI behavior whe
 
 ### Task 2.1: Move Validation Before Expensive Operations
 
-**Location:** Multiple handlers in `handlers.go`
+**Status:** ✅ Complete (2025-10-27)
 
-**Problem:** Browser connections happen before validating format, timeout, etc.
+**Location:** `handlers.go`
 
-**Example (handlers.go:281-291):**
-```go
-bm, err := connectToExistingBrowser(port)  // Expensive operation
-if err != nil {
-    return err
-}
+**Problem:** Browser connections happened before validating format, timeout, and output paths, resulting in:
+- Wasted 1-2 seconds on browser connection for validation errors
+- Poor user experience (slow feedback for simple errors)
+- Unnecessary resource usage
 
-if err := validateFormat(outputFormat); err != nil {  // Should be first!
-    return err
-}
-```
+**Solution Implemented:**
+Moved validation to occur before browser connections in affected handlers.
 
-**Solution:** Move all validation to the top of each handler function.
+**Changes Made:**
 
-**Implementation Steps:**
+1. **`handleTabFetch()`** (handlers.go:401-418):
+   - Moved format/timeout/output validation from line 478 to line 401
+   - Now validates BEFORE browser connection (line 421)
+   - Removed duplicate validation code
 
-1. Create a validation helper for each handler:
-   ```go
-   func validateAllTabsConfig(format string, timeout int, outDir string) error {
-       if err := validateFormat(format); err != nil {
-           return err
-       }
-       if err := validateTimeout(timeout); err != nil {
-           return err
-       }
-       if err := validateDirectory(outDir); err != nil {
-           return err
-       }
-       return nil
-   }
-   ```
+2. **`handleOpenURLsInBrowser()`** (handlers.go:707-720):
+   - Added URL validation loop before browser connection
+   - Pre-validates all URLs, skips invalid ones
+   - Returns early if no valid URLs (before connecting)
+   - Browser only launches if there are valid URLs to open
 
-2. Update each handler to validate first:
-   ```go
-   func handleAllTabs(rt *Runtime, cmd *cobra.Command) error {
-       outputFormat := normalizeFormat(format)
-       outDir := strings.TrimSpace(outputDir)
-       if outDir == "" {
-           outDir = "."
-       }
-
-       // VALIDATE FIRST - before any expensive operations
-       if err := validateAllTabsConfig(outputFormat, timeout, outDir); err != nil {
-           return err
-       }
-
-       // Now connect to browser
-       bm, err := connectToExistingBrowser(port)
-       // ...
-   }
-   ```
-
-3. Apply pattern to all handlers:
-   - `handleAllTabs`
-   - `handleTabFetch`
-   - `handleTabRange`
-   - `handleTabPatternBatch`
-   - `handleMultipleURLs`
-   - `handleOpenURLsInBrowser`
+**Handlers Reviewed:**
+- ✅ `handleAllTabs` - Already correct
+- ✅ `handleTabFetch` - Fixed
+- ⚠️ `handleTabRange` - Receives BrowserManager as parameter (validated by caller)
+- ⚠️ `handleTabPatternBatch` - Receives pages as parameter (validated by caller)
+- ✅ `handleMultipleURLs` - Already correct
+- ✅ `handleOpenURLsInBrowser` - Fixed
+- ✅ `snag()` - Validated by caller in main.go
 
 **Testing:**
-- Test that validation errors don't create browser connections
-- Verify all validation tests still pass
+- ✅ Invalid format error appears instantly (no browser connection)
+- ✅ Invalid URLs rejected before browser launch
+- ✅ Code compiles successfully
+
+**Impact:**
+- Users get instant feedback for validation errors
+- Browser connections only happen when all validation passes
+- Reduced resource waste from unnecessary browser operations
 
 **Files Modified:**
 - `handlers.go`

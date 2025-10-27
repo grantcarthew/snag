@@ -398,6 +398,26 @@ func handleTabFetch(cmd *cobra.Command) error {
 		logger.Warning("--timeout is ignored without --wait-for when using --tab")
 	}
 
+	// Validate early before expensive browser connection
+	outputFormat := normalizeFormat(format)
+	validatedWaitFor := validateWaitFor(waitFor)
+	outputFile := strings.TrimSpace(output)
+
+	if err := validateFormat(outputFormat); err != nil {
+		return err
+	}
+
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	if outputFile != "" {
+		if err := validateOutputPath(outputFile); err != nil {
+			return err
+		}
+		checkExtensionMismatch(outputFile, outputFormat)
+	}
+
 	bm, err := connectToExistingBrowser(port)
 	if err != nil {
 		return err
@@ -470,26 +490,7 @@ func handleTabFetch(cmd *cobra.Command) error {
 		return handleTabPatternBatch(cmd, matchedPages, tabValue)
 	}
 
-	// Single tab fetch
-	outputFormat := normalizeFormat(format)
-	validatedWaitFor := validateWaitFor(waitFor)
-	outputFile := strings.TrimSpace(output)
-
-	if err := validateFormat(outputFormat); err != nil {
-		return err
-	}
-
-	if err := validateTimeout(timeout); err != nil {
-		return err
-	}
-
-	if outputFile != "" {
-		if err := validateOutputPath(outputFile); err != nil {
-			return err
-		}
-		checkExtensionMismatch(outputFile, outputFormat)
-	}
-
+	// Single tab fetch (validation already done earlier)
 	info, err := page.Info()
 	if err != nil {
 		return fmt.Errorf("failed to get page info: %w", err)
@@ -703,7 +704,23 @@ func handleOpenURLsInBrowser(cmd *cobra.Command, urls []string) error {
 		logger.Warning("--close-tab ignored with --open-browser (no content fetching)")
 	}
 
-	logger.Info("Opening %d URLs in browser...", len(urls))
+	// Validate all URLs before expensive browser connection
+	var validatedURLs []string
+	for _, urlStr := range urls {
+		validatedURL, err := validateURL(urlStr)
+		if err != nil {
+			logger.Warning("Skipping invalid URL '%s': %v", urlStr, err)
+			continue
+		}
+		validatedURLs = append(validatedURLs, validatedURL)
+	}
+
+	if len(validatedURLs) == 0 {
+		logger.Error("No valid URLs to open")
+		return fmt.Errorf("no valid URLs provided")
+	}
+
+	logger.Info("Opening %d valid URL%s in browser...", len(validatedURLs), plural(len(validatedURLs)))
 
 	validatedUserDataDir := ""
 	if cmd.Flags().Changed("user-data-dir") {
@@ -732,32 +749,26 @@ func handleOpenURLsInBrowser(cmd *cobra.Command, urls []string) error {
 		return err
 	}
 
-	for i, urlStr := range urls {
+	for i, validatedURL := range validatedURLs {
 		current := i + 1
-		logger.Info("[%d/%d] Opening: %s", current, len(urls), urlStr)
-
-		validatedURL, err := validateURL(urlStr)
-		if err != nil {
-			logger.Warning("[%d/%d] Invalid URL - skipping: %s", current, len(urls), urlStr)
-			continue
-		}
+		logger.Info("[%d/%d] Opening: %s", current, len(validatedURLs), validatedURL)
 
 		page, err := bm.NewPage()
 		if err != nil {
-			logger.Error("[%d/%d] Failed to create page: %v", current, len(urls), err)
+			logger.Error("[%d/%d] Failed to create page: %v", current, len(validatedURLs), err)
 			continue
 		}
 
 		err = page.Timeout(time.Duration(timeout) * time.Second).Navigate(validatedURL)
 		if err != nil {
-			logger.Error("[%d/%d] Failed to navigate: %v", current, len(urls), err)
+			logger.Error("[%d/%d] Failed to navigate: %v", current, len(validatedURLs), err)
 			continue
 		}
 
-		logger.Success("[%d/%d] Opened: %s", current, len(urls), validatedURL)
+		logger.Success("[%d/%d] Opened: %s", current, len(validatedURLs), validatedURL)
 	}
 
-	logger.Success("Browser will remain open with %d tabs", len(urls))
+	logger.Success("Browser will remain open with %d tabs", len(validatedURLs))
 	logger.Info("Use 'snag --list-tabs' to see opened tabs")
 	logger.Info("Use 'snag --tab <index>' to fetch content from a tab")
 
