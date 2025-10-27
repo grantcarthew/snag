@@ -520,6 +520,63 @@ func handleTabFetch(cmd *cobra.Command) error {
 	return processPageContent(page, outputFormat, outputFile)
 }
 
+// processBatchTabs processes multiple tabs with common batch logic
+func processBatchTabs(pages []*rod.Page, config *Config) error {
+	timestamp := time.Now()
+
+	successCount := 0
+	failureCount := 0
+
+	for i, page := range pages {
+		current := i + 1
+		total := len(pages)
+
+		info, err := page.Info()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to get tab info: %v", current, total, err)
+			failureCount++
+			continue
+		}
+
+		logger.Info("[%d/%d] Processing: %s", current, total, info.URL)
+
+		if config.WaitFor != "" {
+			err := waitForSelector(page, config.WaitFor, time.Duration(config.Timeout)*time.Second)
+			if err != nil {
+				logger.Error("[%d/%d] Wait failed: %v", current, total, err)
+				failureCount++
+				continue
+			}
+		}
+
+		outputPath, err := generateOutputFilename(
+			info.Title, info.URL, config.Format,
+			timestamp, config.OutputDir,
+		)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to generate filename: %v", current, total, err)
+			failureCount++
+			continue
+		}
+
+		if err := processPageContent(page, config.Format, outputPath); err != nil {
+			logger.Error("[%d/%d] Failed to process content: %v", current, total, err)
+			failureCount++
+			continue
+		}
+
+		successCount++
+	}
+
+	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
+
+	if failureCount > 0 {
+		return fmt.Errorf("batch processing completed with %d failures", failureCount)
+	}
+
+	return nil
+}
+
 func handleTabRange(cmd *cobra.Command, bm *BrowserManager, start, end int) error {
 	outputFormat := normalizeFormat(format)
 	validatedWaitFor := validateWaitFor(waitFor)
@@ -548,62 +605,16 @@ func handleTabRange(cmd *cobra.Command, bm *BrowserManager, start, end int) erro
 		return err
 	}
 
-	timestamp := time.Now()
-
 	logger.Info("Processing %d tabs from range [%d-%d]...", len(pages), start, end)
 
-	successCount := 0
-	failureCount := 0
-
-	for i, page := range pages {
-		tabNum := start + i
-		totalTabs := len(pages)
-		current := i + 1
-
-		info, err := page.Info()
-		if err != nil {
-			logger.Error("[%d/%d] Failed to get tab info for tab [%d]: %v", current, totalTabs, tabNum, err)
-			failureCount++
-			continue
-		}
-
-		logger.Info("[%d/%d] Processing tab [%d]: %s", current, totalTabs, tabNum, info.URL)
-
-		if validatedWaitFor != "" {
-			err := waitForSelector(page, validatedWaitFor, time.Duration(timeout)*time.Second)
-			if err != nil {
-				logger.Error("[%d/%d] Wait failed for tab [%d]: %v", current, totalTabs, tabNum, err)
-				failureCount++
-				continue
-			}
-		}
-
-		outputPath, err := generateOutputFilename(
-			info.Title, info.URL, outputFormat,
-			timestamp, outDir,
-		)
-		if err != nil {
-			logger.Error("[%d/%d] Failed to generate filename for tab [%d]: %v", current, totalTabs, tabNum, err)
-			failureCount++
-			continue
-		}
-
-		if err := processPageContent(page, outputFormat, outputPath); err != nil {
-			logger.Error("[%d/%d] Failed to process content for tab [%d]: %v", current, totalTabs, tabNum, err)
-			failureCount++
-			continue
-		}
-
-		successCount++
+	config := &Config{
+		Format:    outputFormat,
+		WaitFor:   validatedWaitFor,
+		Timeout:   timeout,
+		OutputDir: outDir,
 	}
 
-	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
-
-	if failureCount > 0 {
-		return fmt.Errorf("batch processing completed with %d failures", failureCount)
-	}
-
-	return nil
+	return processBatchTabs(pages, config)
 }
 
 func handleTabPatternBatch(cmd *cobra.Command, pages []*rod.Page, pattern string) error {
@@ -626,61 +637,16 @@ func handleTabPatternBatch(cmd *cobra.Command, pages []*rod.Page, pattern string
 		return err
 	}
 
-	timestamp := time.Now()
-
 	logger.Info("Processing %d tabs matching pattern '%s'...", len(pages), pattern)
 
-	successCount := 0
-	failureCount := 0
-
-	for i, page := range pages {
-		totalTabs := len(pages)
-		current := i + 1
-
-		info, err := page.Info()
-		if err != nil {
-			logger.Error("[%d/%d] Failed to get tab info: %v", current, totalTabs, err)
-			failureCount++
-			continue
-		}
-
-		logger.Info("[%d/%d] Processing: %s", current, totalTabs, info.URL)
-
-		if validatedWaitFor != "" {
-			err := waitForSelector(page, validatedWaitFor, time.Duration(timeout)*time.Second)
-			if err != nil {
-				logger.Error("[%d/%d] Wait failed: %v", current, totalTabs, err)
-				failureCount++
-				continue
-			}
-		}
-
-		outputPath, err := generateOutputFilename(
-			info.Title, info.URL, outputFormat,
-			timestamp, outDir,
-		)
-		if err != nil {
-			logger.Error("[%d/%d] Failed to generate filename: %v", current, totalTabs, err)
-			failureCount++
-			continue
-		}
-
-		if err := processPageContent(page, outputFormat, outputPath); err != nil {
-			logger.Error("[%d/%d] Failed to process content: %v", current, totalTabs, err)
-			failureCount++
-			continue
-		}
-
-		successCount++
+	config := &Config{
+		Format:    outputFormat,
+		WaitFor:   validatedWaitFor,
+		Timeout:   timeout,
+		OutputDir: outDir,
 	}
 
-	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
-
-	if failureCount > 0 {
-		return fmt.Errorf("batch processing completed with %d failures", failureCount)
-	}
-
-	return nil
+	return processBatchTabs(pages, config)
 }
 
 func handleOpenURLsInBrowser(cmd *cobra.Command, urls []string) error {

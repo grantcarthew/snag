@@ -20,6 +20,7 @@ While the migration is functional (all 124 tests passing), some refactorings wer
 - ✅ Task 2.2: Evaluated and rejected context support (too large, already have signal handling)
 - ✅ Task 2.3: Evaluated and rejected error handling refactor (already consistent)
 - ✅ Task 2.4: Fixed inconsistent cleanup pattern (consistent deferred cleanup)
+- ✅ Task 3.1: Extracted duplicate batch processing code (~92 lines eliminated)
 
 **Pending Review:** Phase 3 (Code Quality) tasks remain.
 
@@ -447,6 +448,8 @@ if err != nil {
 
 ### Task 3.1: Extract Duplicate Batch Processing Code
 
+**Status:** ✅ Complete (2025-10-27)
+
 **Location:** `handlers.go:522-606` (handleTabRange) and `handlers.go:608-682` (handleTabPatternBatch)
 
 **Problem:** 80+ lines of nearly identical batch processing logic duplicated.
@@ -571,6 +574,37 @@ if err != nil {
 **Testing:**
 - Verify all batch operations produce same output as before
 - Test error handling in batch operations
+
+**Implementation Outcome:**
+
+The refactoring was successfully completed with the following implementation:
+
+1. **Reused existing Config struct** instead of creating new BatchConfig:
+   - Decision: Simpler to reuse Config struct than create a new one
+   - Passed unused fields (e.g., CloseTab) are harmless for batch operations
+
+2. **Created processBatchTabs() function** (handlers.go:523-578):
+   - Accepts `pages []*rod.Page` and `config *Config`
+   - Generates timestamp internally for batch consistency
+   - Uses standardized log format: `[1/5] Processing: https://example.com`
+   - Returns error if any failures occurred
+
+3. **Refactored handleTabRange()** (handlers.go:580-618):
+   - Reduced from 85 lines to 38 lines (-47 lines)
+   - Eliminated duplicate batch processing logic
+
+4. **Refactored handleTabPatternBatch()** (handlers.go:620-650):
+   - Reduced from 75 lines to 30 lines (-45 lines)
+   - Eliminated duplicate batch processing logic
+
+5. **Evaluated handleAllTabs()** - NOT refactored:
+   - Different enough (closeTab logic, TabInfo vs Pages, non-fetchable URL checks)
+   - Forcing it to use processBatchTabs() would complicate the common function
+
+**Results:**
+- ~92 lines of duplicate code eliminated
+- All 124 tests pass (no behavioral changes)
+- Consistent batch processing across tab range and pattern operations
 
 **Files Modified:**
 - `handlers.go`
