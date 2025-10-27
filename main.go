@@ -27,6 +27,40 @@ const (
 	FormatPNG      = "png"
 )
 
+// Custom help template with AI AGENT NOTES as a top-level section
+var customAppHelpTemplate = `NAME:
+   {{template "helpNameTemplate" .}}
+
+USAGE:
+   {{if .UsageText}}{{wrap .UsageText 3}}{{else}}{{.HelpName}} {{if .VisibleFlags}}[options]{{end}}{{if .ArgsUsage}} {{.ArgsUsage}}{{else}} [arguments...]{{end}}{{end}}{{if .Description}}
+
+DESCRIPTION:
+   {{template "descriptionTemplate" .}}{{end}}
+
+AI AGENT NOTES:
+   Common workflows:
+   • Fetch to stdout: snag <url>
+   • Save multiple URLs: snag -d output/ <url1> <url2> <url3>
+   • Authenticated content: snag --open-browser (user authenticates), then snag -t <pattern>
+   • Batch processing: snag --all-tabs -d output/ (extracts all open tabs)
+
+   Integration tips:
+   • All logs go to stderr, content to stdout (safe for piping)
+   • Non-zero exit code on any error (safe for scripting)
+   • Auto-generates filenames for batch operations (timestamp-based)
+
+   Performance: Typical page fetch 2-5 seconds. Tab reuse is faster than new navigation.
+{{if .VisibleCommands}}
+
+COMMANDS:{{template "visibleCommandCategoryTemplate" .}}{{end}}{{if .VisibleFlagCategories}}
+
+GLOBAL OPTIONS:{{template "visibleFlagCategoryTemplate" .}}{{else}}{{if .VisibleFlags}}
+GLOBAL OPTIONS:{{template "visibleFlagTemplate" .}}{{end}}{{end}}{{if .Copyright}}
+
+COPYRIGHT:
+   {{template "copyrightTemplate" .}}{{end}}
+`
+
 var (
 	logger         *Logger
 	browserManager *BrowserManager
@@ -50,6 +84,8 @@ func main() {
 		os.Exit(143)
 	}()
 
+	cli.AppHelpTemplate = customAppHelpTemplate
+
 	app := &cli.App{
 		Name:            "snag",
 		Usage:           "Intelligently fetch web page content with browser engine",
@@ -64,10 +100,10 @@ func main() {
 			},
 		},
 		Description: `snag fetches web page content using Chromium/Chrome via the Chrome DevTools Protocol.
-   It can connect to existing browser sessions, launch headless browsers, or open
-   visible browsers for authenticated sessions. Output formats: Markdown, HTML, text, PDF, or PNG.
+It can connect to existing browser sessions, launch headless browsers, or open
+visible browsers for authenticated sessions. Output formats: Markdown, HTML, text, PDF, or PNG.
 
-   The perfect companion for AI agents to gain context from web pages.`,
+The perfect companion for AI agents to gain context from web pages.`,
 		ArgsUsage: "[url...]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
