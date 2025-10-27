@@ -46,6 +46,15 @@ func snag(config *Config) error {
 
 	browserManager = bm
 
+	// Ensure browser cleanup on all exit paths
+	defer func() {
+		if config.CloseTab {
+			logger.Verbose("Cleanup: closing tab and browser if needed")
+		}
+		bm.Close()
+		browserManager = nil
+	}()
+
 	_, err := bm.Connect()
 	if err != nil {
 		if errors.Is(err, ErrBrowserNotFound) {
@@ -55,18 +64,8 @@ func snag(config *Config) error {
 				"brew install --cask google-chrome",
 			)
 		}
-		browserManager = nil
 		return err
 	}
-
-	// Ensure browser cleanup
-	defer func() {
-		if config.CloseTab {
-			logger.Verbose("Cleanup: closing tab and browser if needed")
-		}
-		bm.Close()
-		browserManager = nil
-	}()
 
 	page, err := bm.NewPage()
 	if err != nil {
@@ -250,6 +249,7 @@ func handleListTabs(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
+	defer func() { browserManager = nil }()
 
 	tabs, err := bm.ListTabs()
 	if err != nil {
@@ -742,10 +742,10 @@ func handleOpenURLsInBrowser(cmd *cobra.Command, urls []string) error {
 	})
 
 	browserManager = bm
+	defer func() { browserManager = nil }()
 
 	_, err := bm.Connect()
 	if err != nil {
-		browserManager = nil
 		return err
 	}
 
@@ -847,16 +847,15 @@ func handleMultipleURLs(cmd *cobra.Command, urls []string) error {
 		UserDataDir:   validatedUserDataDir,
 	})
 	browserManager = bm
-
-	_, err := bm.Connect()
-	if err != nil {
-		browserManager = nil
-		return err
-	}
 	defer func() {
 		bm.Close()
 		browserManager = nil
 	}()
+
+	_, err := bm.Connect()
+	if err != nil {
+		return err
+	}
 
 	// Warn if --close-tab is used with --force-headless (tabs close automatically)
 	if closeTab && forceHead {
