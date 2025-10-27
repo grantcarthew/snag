@@ -33,7 +33,6 @@ var (
 )
 
 func main() {
-	// Set up signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
@@ -41,15 +40,14 @@ func main() {
 		sig := <-sigChan
 		fmt.Fprintf(os.Stderr, "\nReceived %v, cleaning up...\n", sig)
 
-		// Clean up browser if it exists (only closes headless browsers)
 		if browserManager != nil {
 			browserManager.Close()
 		}
 
 		if sig == os.Interrupt {
-			os.Exit(130) // 128 + 2 (SIGINT)
+			os.Exit(130)
 		}
-		os.Exit(143) // 128 + 15 (SIGTERM)
+		os.Exit(143)
 	}()
 
 	app := &cli.App{
@@ -72,13 +70,10 @@ func main() {
    The perfect companion for AI agents to gain context from web pages.`,
 		ArgsUsage: "[url...]",
 		Flags: []cli.Flag{
-			// Input Control
 			&cli.StringFlag{
 				Name:  "url-file",
 				Usage: "Read URLs from `FILE` (one per line, supports comments)",
 			},
-
-			// Output Control
 			&cli.StringFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
@@ -95,8 +90,6 @@ func main() {
 				Usage:   "Output `FORMAT`: md | html | text | pdf | png",
 				Value:   FormatMarkdown,
 			},
-
-			// Page Loading
 			&cli.IntFlag{
 				Name:  "timeout",
 				Usage: "Page load timeout in `SECONDS`",
@@ -107,8 +100,6 @@ func main() {
 				Aliases: []string{"w"},
 				Usage:   "Wait for CSS `SELECTOR` before extracting content",
 			},
-
-			// Browser Control
 			&cli.IntFlag{
 				Name:    "port",
 				Aliases: []string{"p"},
@@ -144,8 +135,6 @@ func main() {
 				Aliases: []string{"a"},
 				Usage:   "Process all open browser tabs (saves with auto-generated filenames)",
 			},
-
-			// Logging/Debugging
 			&cli.BoolFlag{
 				Name:  "verbose",
 				Usage: "Enable verbose logging output",
@@ -159,8 +148,6 @@ func main() {
 				Name:  "debug",
 				Usage: "Enable debug output",
 			},
-
-			// Request Control
 			&cli.StringFlag{
 				Name:  "user-agent",
 				Usage: "Custom user agent `STRING` (bypass headless detection)",
@@ -180,7 +167,6 @@ func main() {
 }
 
 func run(c *cli.Context) error {
-	// Initialize logger based on flags (last flag wins)
 	level := LevelNormal
 
 	lastLogFlag := ""
@@ -217,7 +203,6 @@ func run(c *cli.Context) error {
 
 	var urls []string
 
-	// Trim string flags once at the source
 	outputFile := strings.TrimSpace(c.String("output"))
 	outputDir := strings.TrimSpace(c.String("output-dir"))
 
@@ -236,7 +221,6 @@ func run(c *cli.Context) error {
 		}
 	}
 
-	// Validate that no flags are mixed with URLs (common user error)
 	for _, arg := range urls {
 		if strings.HasPrefix(arg, "-") {
 			logger.Error("Flags must come before URL arguments")
@@ -248,7 +232,6 @@ func run(c *cli.Context) error {
 		}
 	}
 
-	// --list-tabs overrides URL arguments if both are present
 	if c.Bool("list-tabs") {
 		if len(urls) > 0 {
 			logger.Verbose("--list-tabs overrides URL arguments (URLs will be ignored)")

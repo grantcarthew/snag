@@ -16,20 +16,17 @@ import (
 	"github.com/go-rod/rod"
 )
 
-// PageFetcher handles fetching page content
 type PageFetcher struct {
 	page    *rod.Page
 	timeout time.Duration
 }
 
-// FetchOptions contains options for fetching a page
 type FetchOptions struct {
 	URL     string
 	Timeout int
 	WaitFor string
 }
 
-// NewPageFetcher creates a new page fetcher
 func NewPageFetcher(page *rod.Page, timeout int) *PageFetcher {
 	return &PageFetcher{
 		page:    page,
@@ -37,11 +34,9 @@ func NewPageFetcher(page *rod.Page, timeout int) *PageFetcher {
 	}
 }
 
-// Fetch navigates to a URL and returns the HTML content
 func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 	logger.Info("Fetching %s...", opts.URL)
 
-	// Navigate to the URL with timeout
 	logger.Verbose("Navigating to %s (timeout: %ds)...", opts.URL, opts.Timeout)
 
 	// Apply timeout to long-running operations (navigation, wait-for) using inline .Timeout()
@@ -49,7 +44,6 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 	// (HTML extraction, auth detection), preventing cumulative timeout issues
 	err := pf.page.Timeout(pf.timeout).Navigate(opts.URL)
 	if err != nil {
-		// Check if it's a timeout using proper error type checking
 		if errors.Is(err, context.DeadlineExceeded) {
 			logger.Error("Page load timeout exceeded (%ds)", opts.Timeout)
 			logger.ErrorWithSuggestion(
@@ -61,18 +55,15 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 		return "", fmt.Errorf("%w: %w", ErrNavigationFailed, err)
 	}
 
-	// Wait for page to be stable (use original page - no timeout constraint)
 	logger.Verbose("Waiting for page to stabilize...")
 	err = pf.page.WaitStable(StabilizeTimeout)
 	if err != nil {
 		logger.Warning("Page did not stabilize: %v", err)
 	}
 
-	// If WaitFor selector is specified, wait for it (with timeout)
 	if opts.WaitFor != "" {
 		err := waitForSelector(pf.page, opts.WaitFor, pf.timeout)
 		if err != nil {
-			// Add URL-specific suggestion for timeout errors
 			if errors.Is(err, context.DeadlineExceeded) {
 				logger.ErrorWithSuggestion(
 					fmt.Sprintf("Selector not found within %ds", opts.Timeout),
@@ -83,12 +74,10 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 		}
 	}
 
-	// Check for authentication requirements
 	if authErr := pf.detectAuth(); authErr != nil {
 		return "", authErr
 	}
 
-	// Extract HTML content (use original page - should be fast, no timeout needed)
 	logger.Verbose("Extracting HTML content...")
 	html, err := pf.page.HTML()
 	if err != nil {
@@ -101,9 +90,7 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 	return html, nil
 }
 
-// detectAuth checks if the page requires authentication
 func (pf *PageFetcher) detectAuth() error {
-	// Check HTTP status code by evaluating JavaScript
 	// SECURITY: This JavaScript is hardcoded and safe. Never accept user-provided
 	// JavaScript for evaluation as it would create XSS vulnerabilities.
 	statusCode, err := pf.page.Eval(`() => {
@@ -124,17 +111,14 @@ func (pf *PageFetcher) detectAuth() error {
 		}
 	}
 
-	// Check for common login page indicators in the page content
 	hasLogin, _, err := pf.page.Has("input[type='password']")
 	if err == nil && hasLogin {
-		// Check if we also have username field and submit button (likely a login form)
 		hasUsername, _, _ := pf.page.Has("input[type='text'], input[type='email'], input[name*='user'], input[name*='login']")
 		hasSubmit, _, _ := pf.page.Has("button[type='submit'], input[type='submit']")
 
 		if hasUsername && hasSubmit {
 			logger.Debug("Detected login form on page")
 
-			// Also check the title or URL for login keywords
 			title, _ := pf.page.Info()
 			if title != nil && (strings.Contains(strings.ToLower(title.Title), "login") ||
 				strings.Contains(strings.ToLower(title.Title), "sign in") ||
@@ -147,7 +131,6 @@ func (pf *PageFetcher) detectAuth() error {
 					"Authentication may be required",
 					"snag --open-browser "+pf.getURL(),
 				)
-				// Don't return error yet - might be a page that just happens to have a login form
 			}
 		}
 	}
@@ -155,7 +138,6 @@ func (pf *PageFetcher) detectAuth() error {
 	return nil
 }
 
-// getURL gets the current page URL
 func (pf *PageFetcher) getURL() string {
 	info, err := pf.page.Info()
 	if err != nil {
