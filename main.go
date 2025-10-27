@@ -36,17 +36,17 @@ DESCRIPTION:
 
 AGENT USAGE:
    Common workflows:
-   • Fetch to stdout: snag example.com
-   • Save multiple URLs: snag -d output/ example.com google.com github.com
-   • Authenticated content: snag --open-browser (user authenticates), then snag -t github
-   • Batch processing: snag --all-tabs -d output/ (extracts all open tabs)
+   • Single page: snag example.com
+   • Multiple pages: snag -d output/ url1 url2 url3
+   • Authenticated pages: snag --open-browser (authenticate), then snag -t <pattern>
+   • All browser tabs: snag --all-tabs -d output/
 
-   Integration tips:
-   • All logs go to stderr, content to stdout (safe for piping)
-   • Non-zero exit code on any error (safe for scripting)
-   • Auto-generates filenames for batch operations (timestamp-based)
+   Integration:
+   • Content → stdout, logs → stderr (pipe-safe)
+   • Non-zero exit on errors
+   • Auto-names files with timestamps
 
-   Performance: Typical fetch 2-5 seconds (varies by page complexity). Tab reuse is faster.
+   Performance: 2-5 seconds per page. Tab reuse is faster.
 {{if .VisibleCommands}}
 
 COMMANDS:{{template "visibleCommandCategoryTemplate" .}}{{end}}{{if .VisibleFlagCategories}}
@@ -98,7 +98,9 @@ func main() {
 		},
 		Description: `snag fetches web page content using Chromium/Chrome automation.
 It can connect to existing browser sessions, launch headless browsers, or open
-visible browsers for authenticated sessions. Output formats: Markdown, HTML, text, PDF, or PNG.
+visible browsers for authenticated sessions.
+
+Output formats: Markdown, HTML, text, PDF, or PNG.
 
 The perfect companion for AI agents to gain context from web pages.`,
 		ArgsUsage: "[url...]",
