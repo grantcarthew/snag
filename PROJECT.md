@@ -1,21 +1,27 @@
 # PROJECT: Post-Migration Refactoring (Cobra CLI Cleanup)
 
-**Status:** Not Started
-**Priority:** High
-**Effort:** 8-12 hours
-**Start Date:** TBD
+**Status:** Partially Complete / Some Tasks Rejected
+**Priority:** Medium (downgraded from High)
+**Effort:** TBD (original estimate: 8-12 hours)
+**Start Date:** 2025-10-27
 **Completion Date:** TBD
 
 ## Overview
 
-Following the successful migration from urfave/cli to Cobra, a comprehensive code review identified several technical debt items and improvement opportunities. This project addresses critical issues, architectural improvements, code quality enhancements, and documentation gaps introduced or exposed during the migration.
+Following the successful migration from urfave/cli to Cobra, a comprehensive code review identified several technical debt items and improvement opportunities. This project addresses code quality enhancements and documentation gaps introduced or exposed during the migration.
 
-While the migration is functional (all 124 tests passing), these refactorings will improve maintainability, testability, and adherence to Go best practices.
+While the migration is functional (all 124 tests passing), some refactorings were evaluated and deemed unnecessary for a single-execution CLI tool, while others remain valid improvements.
+
+**Completed:**
+- ✅ Task 3.4: Fixed rootCmd declaration order (moved before init())
+- ✅ Task 1.1: Evaluated and rejected global state refactoring (appropriate for CLI)
+
+**Pending Review:** Remaining tasks need individual evaluation for necessity.
 
 ## Success Criteria
 
-- ✅ All critical issues (Priority 1) resolved
-- ✅ All high-priority issues (Priority 2) resolved
+- ⚠️ Critical issues (Priority 1): 1 complete (Task 3.4), 1 rejected as unnecessary (Task 1.1), 1 pending (Task 1.2)
+- ⏳ High-priority issues (Priority 2): Pending evaluation
 - ✅ All 124 tests continue to pass
 - ✅ No behavioral changes for users
 - ✅ Code coverage remains ≥ current level
@@ -27,6 +33,8 @@ While the migration is functional (all 124 tests passing), these refactorings wi
 **Goal:** Resolve critical architectural issues that could cause bugs or maintenance problems.
 
 ### Task 1.1: Replace Global Mutable State with Dependency Injection
+
+**Status:** ❌ Won't Do (Decided Against - 2025-10-27)
 
 **Location:** `main.go:31-33`
 
@@ -45,6 +53,16 @@ var (
 - State leakage between operations
 
 **Solution:** Pass logger and browserManager as parameters through call chain.
+
+**Decision:** This refactoring is **not necessary for a single-execution CLI tool**. Global state is appropriate here because:
+1. **Single-execution model**: CLI runs once and exits (no long-running process)
+2. **No concurrency**: Operations are sequential, no concurrent goroutines sharing state
+3. **Standard pattern**: Cobra documentation and major CLI tools (Hugo, kubectl, gh, docker) use globals
+4. **Working tests**: All 124 tests pass with current architecture
+5. **Not a library**: snag is an end-user tool, not imported by others
+6. **Simplicity**: Current code is readable and maintainable
+
+The "avoid global state" advice applies to web servers, long-running services, and libraries - not to CLI tools that run → process → exit.
 
 **Implementation Steps:**
 
@@ -762,11 +780,15 @@ defer func() {  // Deferred cleanup
 
 ### Task 3.4: Move rootCmd Initialization to init()
 
+**Status:** ✅ Complete (2025-10-27) - Variation Applied
+
 **Location:** `main.go:136-142`
 
 **Problem:** Package-level variable defined before init() function - Go style prefers init() for setup.
 
 **Solution:** Move command definition into init().
+
+**What We Did:** Instead of moving rootCmd INTO init(), we moved the declaration BEFORE init() for better readability. This follows standard Cobra patterns (see Hugo, kubectl examples) and keeps the code simpler. Global rootCmd is appropriate and standard for Cobra CLI applications.
 
 **Implementation Steps:**
 
