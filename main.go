@@ -7,13 +7,17 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
-	"github.com/urfave/cli/v2"
+	"github.com/go-rod/rod"
+	"github.com/spf13/cobra"
 )
 
 // version can be set via ldflags at build time
@@ -27,43 +31,122 @@ const (
 	FormatPNG      = "png"
 )
 
-// Custom help template with AGENT USAGE as a top-level section
-var customAppHelpTemplate = `USAGE:
-   {{if .UsageText}}{{wrap .UsageText 3}}{{else}}{{.HelpName}} {{if .VisibleFlags}}[options]{{end}}{{if .ArgsUsage}} {{.ArgsUsage}}{{else}} [arguments...]{{end}}{{end}}{{if .Description}}
-
-DESCRIPTION:
-   {{template "descriptionTemplate" .}}{{end}}
-
-AGENT USAGE:
-   Common workflows:
-   • Single page: snag example.com
-   • Multiple pages: snag -d output/ url1 url2 url3
-   • Authenticated pages: snag --open-browser (authenticate), then snag -t <pattern>
-   • All browser tabs: snag --all-tabs -d output/
-
-   Integration:
-   • Content → stdout, logs → stderr (pipe-safe)
-   • Non-zero exit on errors
-   • Auto-names files with timestamps
-
-   Performance: 2-5 seconds per page. Tab reuse is faster.
-{{if .VisibleCommands}}
-
-COMMANDS:{{template "visibleCommandCategoryTemplate" .}}{{end}}{{if .VisibleFlagCategories}}
-
-GLOBAL OPTIONS:{{template "visibleFlagCategoryTemplate" .}}{{else}}{{if .VisibleFlags}}
-GLOBAL OPTIONS:{{template "visibleFlagTemplate" .}}{{end}}{{end}}{{if .Copyright}}
-
-COPYRIGHT:
-   {{template "copyrightTemplate" .}}{{end}}
-`
-
 var (
 	logger         *Logger
 	browserManager *BrowserManager
 )
 
+var (
+	// Flag variables
+	urlFile     string
+	output      string
+	outputDir   string
+	format      string
+	timeout     int
+	waitFor     string
+	port        int
+	closeTab    bool
+	forceHead   bool
+	openBrowser bool
+	listTabs    bool
+	tab         string
+	allTabs     bool
+	verbose     bool
+	quiet       bool
+	debug       bool
+	userAgent   string
+	userDataDir string
+)
+
+// Custom help template matching the original urfave/cli template
+var cobraHelpTemplate = `USAGE:
+  {{.UseLine}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+ALIASES:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+EXAMPLES:
+{{.Example}}{{end}}
+
+DESCRIPTION:
+  snag fetches web page content using Chromium/Chrome automation.
+  It can connect to existing browser sessions, launch headless browsers, or open
+  visible browsers for authenticated sessions.
+
+  Output formats: Markdown, HTML, text, PDF, or PNG.
+
+  The perfect companion for AI agents to gain context from web pages.
+
+AGENT USAGE:
+  Common workflows:
+  • Single page: snag example.com
+  • Multiple pages: snag -d output/ url1 url2 url3
+  • Authenticated pages: snag --open-browser (authenticate), then snag -t <pattern>
+  • All browser tabs: snag --all-tabs -d output/
+
+  Integration:
+  • Content → stdout, logs → stderr (pipe-safe)
+  • Non-zero exit on errors
+  • Auto-names files with timestamps
+
+  Performance: 2-5 seconds per page. Tab reuse is faster.
+{{if .HasAvailableLocalFlags}}
+
+GLOBAL OPTIONS:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+GLOBAL OPTIONS:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+ADDITIONAL HELP TOPICS:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`
+
+func init() {
+	// String flags
+	rootCmd.Flags().StringVar(&urlFile, "url-file", "", "Read URLs from FILE (one per line, supports comments)")
+	rootCmd.Flags().StringVarP(&output, "output", "o", "", "Save output to FILE instead of stdout")
+	rootCmd.Flags().StringVarP(&outputDir, "output-dir", "d", "", "Save files with auto-generated names to DIRECTORY")
+	rootCmd.Flags().StringVarP(&format, "format", "f", FormatMarkdown, "Output FORMAT: md | html | text | pdf | png")
+	rootCmd.Flags().StringVarP(&waitFor, "wait-for", "w", "", "Wait for CSS SELECTOR before extracting content")
+	rootCmd.Flags().StringVarP(&tab, "tab", "t", "", "Fetch from existing tab by PATTERN (tab number or string)")
+	rootCmd.Flags().StringVar(&userAgent, "user-agent", "", "Custom user agent STRING (bypass headless detection)")
+	rootCmd.Flags().StringVar(&userDataDir, "user-data-dir", "", "Custom Chromium/Chrome user data DIRECTORY (for session isolation)")
+
+	// Int flags
+	rootCmd.Flags().IntVar(&timeout, "timeout", 30, "Page load timeout in SECONDS")
+	rootCmd.Flags().IntVarP(&port, "port", "p", 9222, "Chrome remote debugging PORT")
+
+	// Bool flags
+	rootCmd.Flags().BoolVarP(&closeTab, "close-tab", "c", false, "Close the browser tab after fetching content")
+	rootCmd.Flags().BoolVar(&forceHead, "force-headless", false, "Force headless mode even if Chrome is running")
+	rootCmd.Flags().BoolVarP(&openBrowser, "open-browser", "b", false, "Open browser visibly with remote debugging enabled (no URL required)")
+	rootCmd.Flags().BoolVarP(&listTabs, "list-tabs", "l", false, "List all open tabs in the browser")
+	rootCmd.Flags().BoolVarP(&allTabs, "all-tabs", "a", false, "Process all open browser tabs (saves with auto-generated filenames)")
+	rootCmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose logging output")
+	rootCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress all output except errors and content")
+	rootCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug output")
+
+	// Hide default values for boolean flags in help output
+	// Cobra doesn't show "(default: false)" by default, so we're good!
+
+	// Set custom help template
+	rootCmd.SetHelpTemplate(cobraHelpTemplate)
+}
+
+var rootCmd = &cobra.Command{
+	Use:     "snag [options] URL...",
+	Short:   "Intelligently fetch web page content using a browser engine",
+	Version: version,
+	Args:    cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
+	RunE:    runCobra,
+}
+
 func main() {
+	// Setup signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
@@ -81,127 +164,15 @@ func main() {
 		os.Exit(143)
 	}()
 
-	cli.AppHelpTemplate = customAppHelpTemplate
-
-	app := &cli.App{
-		Name:            "snag",
-		Usage:           "Intelligently fetch web page content using a browser engine",
-		UsageText:       "snag [options] URL...",
-		Version:         version,
-		HideVersion:     false,
-		HideHelpCommand: true,
-		Authors: []*cli.Author{
-			{
-				Name:  "Grant Carthew",
-				Email: "grant@carthew.net",
-			},
-		},
-		Description: `snag fetches web page content using Chromium/Chrome automation.
-It can connect to existing browser sessions, launch headless browsers, or open
-visible browsers for authenticated sessions.
-
-Output formats: Markdown, HTML, text, PDF, or PNG.
-
-The perfect companion for AI agents to gain context from web pages.`,
-		ArgsUsage: "[url...]",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "url-file",
-				Usage: "Read URLs from `FILE` (one per line, supports comments)",
-			},
-			&cli.StringFlag{
-				Name:    "output",
-				Aliases: []string{"o"},
-				Usage:   "Save output to `FILE` instead of stdout",
-			},
-			&cli.StringFlag{
-				Name:    "output-dir",
-				Aliases: []string{"d"},
-				Usage:   "Save files with auto-generated names to `DIRECTORY`",
-			},
-			&cli.StringFlag{
-				Name:    "format",
-				Aliases: []string{"f"},
-				Usage:   "Output `FORMAT`: md | html | text | pdf | png",
-				Value:   FormatMarkdown,
-			},
-			&cli.IntFlag{
-				Name:  "timeout",
-				Usage: "Page load timeout in `SECONDS`",
-				Value: 30,
-			},
-			&cli.StringFlag{
-				Name:    "wait-for",
-				Aliases: []string{"w"},
-				Usage:   "Wait for CSS `SELECTOR` before extracting content",
-			},
-			&cli.IntFlag{
-				Name:    "port",
-				Aliases: []string{"p"},
-				Usage:   "Chrome remote debugging `PORT`",
-				Value:   9222,
-			},
-			&cli.BoolFlag{
-				Name:    "close-tab",
-				Aliases: []string{"c"},
-				Usage:   "Close the browser tab after fetching content",
-			},
-			&cli.BoolFlag{
-				Name:  "force-headless",
-				Usage: "Force headless mode even if Chrome is running",
-			},
-			&cli.BoolFlag{
-				Name:    "open-browser",
-				Aliases: []string{"b"},
-				Usage:   "Open browser visibly with remote debugging enabled (no URL required)",
-			},
-			&cli.BoolFlag{
-				Name:    "list-tabs",
-				Aliases: []string{"l"},
-				Usage:   "List all open tabs in the browser",
-			},
-			&cli.StringFlag{
-				Name:    "tab",
-				Aliases: []string{"t"},
-				Usage:   "Fetch from existing tab by `PATTERN` (tab number or string)",
-			},
-			&cli.BoolFlag{
-				Name:    "all-tabs",
-				Aliases: []string{"a"},
-				Usage:   "Process all open browser tabs (saves with auto-generated filenames)",
-			},
-			&cli.BoolFlag{
-				Name:  "verbose",
-				Usage: "Enable verbose logging output",
-			},
-			&cli.BoolFlag{
-				Name:    "quiet",
-				Aliases: []string{"q"},
-				Usage:   "Suppress all output except errors and content",
-			},
-			&cli.BoolFlag{
-				Name:  "debug",
-				Usage: "Enable debug output",
-			},
-			&cli.StringFlag{
-				Name:  "user-agent",
-				Usage: "Custom user agent `STRING` (bypass headless detection)",
-			},
-			&cli.StringFlag{
-				Name:  "user-data-dir",
-				Usage: "Custom Chromium/Chrome user data `DIRECTORY` (for session isolation)",
-			},
-		},
-		Action: run,
-	}
-
-	if err := app.Run(os.Args); err != nil {
+	// Execute Cobra command
+	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(c *cli.Context) error {
+func runCobra(cmd *cobra.Command, args []string) error {
+	// Determine logging level (same logic as original)
 	level := LevelNormal
 
 	lastLogFlag := ""
@@ -238,48 +209,43 @@ func run(c *cli.Context) error {
 
 	var urls []string
 
-	outputFile := strings.TrimSpace(c.String("output"))
-	outputDir := strings.TrimSpace(c.String("output-dir"))
+	outputFile := strings.TrimSpace(output)
+	outDir := strings.TrimSpace(outputDir)
 
-	if urlFile := strings.TrimSpace(c.String("url-file")); urlFile != "" {
-		fileURLs, err := loadURLsFromFile(urlFile)
+	// Load URLs from file if specified
+	if urlFile != "" {
+		fileURLs, err := loadURLsFromFile(strings.TrimSpace(urlFile))
 		if err != nil {
 			return err
 		}
 		urls = append(urls, fileURLs...)
 	}
 
-	for _, arg := range c.Args().Slice() {
+	// Add command line URL arguments
+	for _, arg := range args {
 		trimmedArg := strings.TrimSpace(arg)
 		if trimmedArg != "" {
 			urls = append(urls, trimmedArg)
 		}
 	}
 
-	for _, arg := range urls {
-		if strings.HasPrefix(arg, "-") {
-			logger.Error("Flags must come before URL arguments")
-			logger.ErrorWithSuggestion(
-				fmt.Sprintf("Found '%s' after URLs - flags must be specified before URLs", arg),
-				"snag --force-headless -d ./output example.com go.dev",
-			)
-			return fmt.Errorf("invalid argument order: flags must come before URLs")
-		}
-	}
+	// Cobra handles flag parsing automatically - flags can appear anywhere
 
-	if c.Bool("list-tabs") {
+	// Handle --list-tabs
+	if listTabs {
 		if len(urls) > 0 {
 			logger.Verbose("--list-tabs overrides URL arguments (URLs will be ignored)")
 		}
-		return handleListTabs(c)
+		return handleListTabsCobra(cmd)
 	}
 
-	if c.Bool("all-tabs") {
+	// Handle --all-tabs
+	if allTabs {
 		if len(urls) > 0 {
 			logger.Error("Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)")
 			return fmt.Errorf("conflicting flags: --all-tabs and URL arguments")
 		}
-		if c.Bool("force-headless") {
+		if forceHead {
 			logger.Error("Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)")
 			return fmt.Errorf("conflicting flags: --force-headless and --all-tabs")
 		}
@@ -287,87 +253,93 @@ func run(c *cli.Context) error {
 			logger.Error("Cannot use --output with --all-tabs (multiple outputs). Use --output-dir instead")
 			return ErrOutputFlagConflict
 		}
-		if c.Bool("open-browser") {
+		if openBrowser {
 			logger.Warning("--all-tabs ignored with --open-browser (no content fetching)")
 		}
-		return handleAllTabs(c)
+		return handleAllTabsCobra(cmd)
 	}
 
-	if c.IsSet("tab") {
+	// Handle --tab
+	if cmd.Flags().Changed("tab") {
 		if len(urls) > 0 {
 			logger.Error("Cannot use --tab with URL argument (mutually exclusive content sources)")
 			return ErrTabURLConflict
 		}
-		if c.Bool("all-tabs") {
+		if allTabs {
 			logger.Error("Cannot use both --tab and --all-tabs (mutually exclusive content sources)")
 			return fmt.Errorf("conflicting flags: --tab and --all-tabs")
 		}
-		if c.Bool("force-headless") {
+		if forceHead {
 			logger.Error("Cannot use --force-headless with --tab (--tab requires existing browser connection)")
 			return fmt.Errorf("conflicting flags: --force-headless and --tab")
 		}
-		if c.Bool("open-browser") {
+		if openBrowser {
 			logger.Warning("--tab ignored with --open-browser (no content fetching)")
 		}
-		return handleTabFetch(c)
+		return handleTabFetchCobra(cmd)
 	}
 
-	if c.Bool("open-browser") && c.Bool("force-headless") {
+	// Check for conflicting browser modes
+	if openBrowser && forceHead {
 		logger.Error("Cannot use both --force-headless and --open-browser (conflicting modes)")
 		return fmt.Errorf("conflicting flags: --force-headless and --open-browser")
 	}
 
-	if c.Bool("open-browser") && len(urls) == 0 {
-		if c.IsSet("format") {
+	// Handle --open-browser without URLs
+	if openBrowser && len(urls) == 0 {
+		if cmd.Flags().Changed("format") {
 			logger.Warning("--format ignored with --open-browser (no content fetching)")
 		}
-		if c.IsSet("output") {
+		if cmd.Flags().Changed("output") {
 			logger.Warning("--output ignored with --open-browser (no content fetching)")
 		}
-		if c.IsSet("output-dir") {
+		if cmd.Flags().Changed("output-dir") {
 			logger.Warning("--output-dir ignored with --open-browser (no content fetching)")
 		}
-		if c.IsSet("timeout") {
+		if cmd.Flags().Changed("timeout") {
 			logger.Warning("--timeout ignored with --open-browser (no content fetching)")
 		}
-		if c.IsSet("wait-for") {
+		if cmd.Flags().Changed("wait-for") {
 			logger.Warning("--wait-for ignored with --open-browser (no content fetching)")
 		}
-		if c.IsSet("user-agent") {
+		if cmd.Flags().Changed("user-agent") {
 			logger.Warning("--user-agent ignored with --open-browser (no navigation)")
 		}
-		if c.Bool("close-tab") {
+		if closeTab {
 			logger.Warning("--close-tab ignored with --open-browser (no content fetching)")
 		}
 
-		userDataDir := ""
-		if c.IsSet("user-data-dir") {
-			validatedDir, err := validateUserDataDir(c.String("user-data-dir"))
+		validatedUserDataDir := ""
+		if cmd.Flags().Changed("user-data-dir") {
+			validatedDir, err := validateUserDataDir(userDataDir)
 			if err != nil {
 				return err
 			}
-			userDataDir = validatedDir
+			validatedUserDataDir = validatedDir
 		}
 
 		logger.Info("Opening browser...")
 		bm := NewBrowserManager(BrowserOptions{
-			Port:        c.Int("port"),
+			Port:        port,
 			OpenBrowser: true,
-			UserDataDir: userDataDir,
+			UserDataDir: validatedUserDataDir,
 		})
 		return bm.OpenBrowserOnly()
 	}
 
+	// Require at least one URL
 	if len(urls) == 0 {
 		logger.Error("No URLs provided")
 		logger.ErrorWithSuggestion("Provide URLs as arguments or use --url-file", "snag <url> or snag --url-file urls.txt")
 		return ErrNoValidURLs
 	}
 
-	if c.Bool("open-browser") && len(urls) > 0 {
-		return handleOpenURLsInBrowser(c, urls)
+	// Handle --open-browser with URLs
+	if openBrowser && len(urls) > 0 {
+		return handleOpenURLsInBrowserCobra(cmd, urls)
 	}
 
+	// Handle single URL
 	if len(urls) == 1 {
 		urlStr := urls[0]
 
@@ -378,40 +350,40 @@ func run(c *cli.Context) error {
 
 		logger.Verbose("Target URL: %s", validatedURL)
 
-		format := normalizeFormat(c.String("format"))
+		outputFormat := normalizeFormat(format)
 
-		userDataDir := ""
-		if c.IsSet("user-data-dir") {
-			validatedDir, err := validateUserDataDir(c.String("user-data-dir"))
+		validatedUserDataDir := ""
+		if cmd.Flags().Changed("user-data-dir") {
+			validatedDir, err := validateUserDataDir(userDataDir)
 			if err != nil {
 				return err
 			}
-			userDataDir = validatedDir
+			validatedUserDataDir = validatedDir
 		}
 
-		userAgent := ""
-		if c.IsSet("user-agent") {
-			userAgent = validateUserAgent(c.String("user-agent"))
+		validatedUserAgent := ""
+		if cmd.Flags().Changed("user-agent") {
+			validatedUserAgent = validateUserAgent(userAgent)
 		}
 
-		waitFor := ""
-		if c.IsSet("wait-for") {
-			waitFor = validateWaitFor(c.String("wait-for"))
+		validatedWaitFor := ""
+		if cmd.Flags().Changed("wait-for") {
+			validatedWaitFor = validateWaitFor(waitFor)
 		}
 
 		config := &Config{
 			URL:           validatedURL,
 			OutputFile:    outputFile,
-			OutputDir:     outputDir,
-			Format:        format,
-			Timeout:       c.Int("timeout"),
-			WaitFor:       waitFor,
-			Port:          c.Int("port"),
-			CloseTab:      c.Bool("close-tab"),
-			ForceHeadless: c.Bool("force-headless"),
-			OpenBrowser:   c.Bool("open-browser"),
-			UserAgent:     userAgent,
-			UserDataDir:   userDataDir,
+			OutputDir:     outDir,
+			Format:        outputFormat,
+			Timeout:       timeout,
+			WaitFor:       validatedWaitFor,
+			Port:          port,
+			CloseTab:      closeTab,
+			ForceHeadless: forceHead,
+			OpenBrowser:   openBrowser,
+			UserAgent:     validatedUserAgent,
+			UserDataDir:   validatedUserDataDir,
 		}
 
 		logger.Debug("Config: format=%s, timeout=%d, port=%d", config.Format, config.Timeout, config.Port)
@@ -438,14 +410,14 @@ func run(c *cli.Context) error {
 			return err
 		}
 
-		if c.IsSet("output") || config.OutputFile != "" {
+		if cmd.Flags().Changed("output") || config.OutputFile != "" {
 			if err := validateOutputPath(config.OutputFile); err != nil {
 				return err
 			}
 			checkExtensionMismatch(config.OutputFile, config.Format)
 		}
 
-		if c.IsSet("output-dir") && config.OutputDir == "" {
+		if cmd.Flags().Changed("output-dir") && config.OutputDir == "" {
 			config.OutputDir = "."
 		}
 
@@ -460,5 +432,696 @@ func run(c *cli.Context) error {
 		return snag(config)
 	}
 
-	return handleMultipleURLs(c, urls)
+	// Handle multiple URLs
+	return handleMultipleURLsCobra(cmd, urls)
+}
+
+// Cobra-compatible handler wrappers
+func handleListTabsCobra(cmd *cobra.Command) error {
+	bm, err := connectToExistingBrowser(port)
+	if err != nil {
+		return err
+	}
+
+	tabs, err := bm.ListTabs()
+	if err != nil {
+		return err
+	}
+
+	displayTabList(tabs, os.Stdout, verbose)
+
+	return nil
+}
+
+func handleAllTabsCobra(cmd *cobra.Command) error {
+	outputFormat := normalizeFormat(format)
+	outDir := strings.TrimSpace(outputDir)
+	if outDir == "" {
+		outDir = "."
+	}
+
+	if cmd.Flags().Changed("user-agent") {
+		logger.Warning("--user-agent is ignored with --all-tabs (cannot change existing tabs' user agents)")
+	}
+	if cmd.Flags().Changed("user-data-dir") {
+		logger.Warning("--user-data-dir ignored when connecting to existing browser")
+	}
+	if cmd.Flags().Changed("timeout") && waitFor == "" {
+		logger.Warning("--timeout is ignored without --wait-for when using --all-tabs")
+	}
+
+	if err := validateFormat(outputFormat); err != nil {
+		return err
+	}
+
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	if err := validateDirectory(outDir); err != nil {
+		return err
+	}
+
+	bm, err := connectToExistingBrowser(port)
+	if err != nil {
+		return err
+	}
+	defer func() { browserManager = nil }()
+
+	tabs, err := bm.ListTabs()
+	if err != nil {
+		return err
+	}
+
+	if len(tabs) == 0 {
+		logger.Info("No tabs open in browser")
+		return nil
+	}
+
+	timestamp := time.Now()
+
+	logger.Info("Processing %d tabs...", len(tabs))
+
+	successCount := 0
+	failureCount := 0
+
+	for i, tab := range tabs {
+		tabNum := i + 1
+
+		if isNonFetchableURL(tab.URL) {
+			logger.Warning("[%d/%d] Skipping tab: %s (not fetchable)", tabNum, len(tabs), tab.URL)
+			continue
+		}
+
+		logger.Info("[%d/%d] Processing: %s", tabNum, len(tabs), tab.URL)
+
+		page, err := bm.GetTabByIndex(tabNum)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to get tab: %v", tabNum, len(tabs), err)
+			failureCount++
+			continue
+		}
+
+		if waitFor != "" {
+			err := waitForSelector(page, waitFor, time.Duration(timeout)*time.Second)
+			if err != nil {
+				logger.Error("[%d/%d] Wait failed: %v", tabNum, len(tabs), err)
+				failureCount++
+				continue
+			}
+		}
+
+		outputPath, err := generateOutputFilename(
+			tab.Title, tab.URL, outputFormat,
+			timestamp, outDir,
+		)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to generate filename: %v", tabNum, len(tabs), err)
+			failureCount++
+			continue
+		}
+
+		if err := processPageContent(page, outputFormat, outputPath); err != nil {
+			logger.Error("[%d/%d] Failed to process content: %v", tabNum, len(tabs), err)
+			failureCount++
+			if closeTab {
+				if err := page.Close(); err != nil {
+					logger.Verbose("[%d/%d] Failed to close tab: %v", tabNum, len(tabs), err)
+				}
+			}
+			continue
+		}
+
+		successCount++
+
+		if closeTab {
+			if tabNum == len(tabs) {
+				logger.Info("Closing last tab, browser will close")
+			}
+			if err := page.Close(); err != nil {
+				logger.Verbose("[%d/%d] Failed to close tab: %v", tabNum, len(tabs), err)
+			}
+		}
+	}
+
+	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
+
+	if failureCount > 0 {
+		return fmt.Errorf("batch processing completed with %d failures", failureCount)
+	}
+
+	return nil
+}
+
+func handleTabFetchCobra(cmd *cobra.Command) error {
+	tabValue := strings.TrimSpace(tab)
+	if tabValue == "" {
+		logger.Error("Tab pattern cannot be empty")
+		return fmt.Errorf("tab pattern cannot be empty")
+	}
+
+	if cmd.Flags().Changed("user-agent") {
+		logger.Warning("--user-agent is ignored with --tab (cannot change existing tab's user agent)")
+	}
+	if cmd.Flags().Changed("user-data-dir") {
+		logger.Warning("--user-data-dir ignored when connecting to existing browser")
+	}
+	if cmd.Flags().Changed("timeout") && !cmd.Flags().Changed("wait-for") {
+		logger.Warning("--timeout is ignored without --wait-for when using --tab")
+	}
+
+	bm, err := connectToExistingBrowser(port)
+	if err != nil {
+		return err
+	}
+	defer func() { browserManager = nil }()
+
+	// Check for tab range pattern (e.g., "1-5")
+	if strings.Contains(tabValue, "-") {
+		parts := strings.SplitN(tabValue, "-", 2)
+		if len(parts) == 2 {
+			start, err1 := strconv.Atoi(strings.TrimSpace(parts[0]))
+			end, err2 := strconv.Atoi(strings.TrimSpace(parts[1]))
+
+			if err1 == nil && err2 == nil && start > 0 && end > 0 {
+				if cmd.Flags().Changed("output") {
+					logger.Error("Cannot use --output with multiple tabs. Use --output-dir instead")
+					return ErrOutputFlagConflict
+				}
+
+				return handleTabRangeCobra(cmd, bm, start, end)
+			}
+		}
+	}
+
+	var page *rod.Page
+	var multipleMatches bool
+	var matchedPages []*rod.Page
+
+	// Try parsing as tab index
+	if tabIndex, err := strconv.Atoi(tabValue); err == nil {
+		logger.Verbose("Fetching from tab index: %d", tabIndex)
+		page, err = bm.GetTabByIndex(tabIndex)
+		if err != nil {
+			if errors.Is(err, ErrTabIndexInvalid) {
+				logger.Error("Tab index out of range")
+				logger.Info("Run 'snag --list-tabs' to see available tabs")
+				displayTabListOnError(bm)
+			}
+			return err
+		}
+		logger.Success("Connected to tab [%d] from sorted order (by URL)", tabIndex)
+	} else {
+		// Pattern matching
+		logger.Verbose("Fetching from tab matching pattern: %s", tabValue)
+		matchedPages, err = bm.GetTabsByPattern(tabValue)
+		if err != nil {
+			if errors.Is(err, ErrNoTabMatch) {
+				logger.Error("No tab matches pattern '%s'", tabValue)
+				logger.Info("Run 'snag --list-tabs' to see available tabs")
+				displayTabListOnError(bm)
+			}
+			return err
+		}
+
+		if len(matchedPages) == 1 {
+			page = matchedPages[0]
+			logger.Success("Connected to tab matching pattern: %s", tabValue)
+		} else {
+			multipleMatches = true
+			if cmd.Flags().Changed("output") {
+				logger.Error("Cannot use --output with multiple tabs. Use --output-dir instead")
+				logger.Info("Pattern '%s' matched %d tabs", tabValue, len(matchedPages))
+				return ErrOutputFlagConflict
+			}
+			logger.Info("Pattern '%s' matched %d tabs", tabValue, len(matchedPages))
+		}
+	}
+
+	if multipleMatches {
+		return handleTabPatternBatchCobra(cmd, matchedPages, tabValue)
+	}
+
+	// Single tab fetch
+	outputFormat := normalizeFormat(format)
+	validatedWaitFor := validateWaitFor(waitFor)
+	outputFile := strings.TrimSpace(output)
+
+	if err := validateFormat(outputFormat); err != nil {
+		return err
+	}
+
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	if outputFile != "" {
+		if err := validateOutputPath(outputFile); err != nil {
+			return err
+		}
+		checkExtensionMismatch(outputFile, outputFormat)
+	}
+
+	info, err := page.Info()
+	if err != nil {
+		return fmt.Errorf("failed to get page info: %w", err)
+	}
+
+	logger.Info("Fetching content from: %s", info.URL)
+
+	if validatedWaitFor != "" {
+		err := waitForSelector(page, validatedWaitFor, time.Duration(timeout)*time.Second)
+		if err != nil {
+			return err
+		}
+	}
+
+	// For binary formats without -o or -d: auto-generate filename
+	if outputFile == "" && (outputFormat == FormatPDF || outputFormat == FormatPNG) {
+		outputFile, err = generateOutputFilename(
+			info.Title, info.URL, outputFormat,
+			time.Now(), ".",
+		)
+		if err != nil {
+			return err
+		}
+		logger.Info("Auto-generated filename: %s", outputFile)
+	}
+
+	return processPageContent(page, outputFormat, outputFile)
+}
+
+func handleTabRangeCobra(cmd *cobra.Command, bm *BrowserManager, start, end int) error {
+	outputFormat := normalizeFormat(format)
+	validatedWaitFor := validateWaitFor(waitFor)
+	outDir := strings.TrimSpace(outputDir)
+	if outDir == "" {
+		outDir = "."
+	}
+
+	if err := validateFormat(outputFormat); err != nil {
+		return err
+	}
+
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	if err := validateDirectory(outDir); err != nil {
+		return err
+	}
+
+	pages, err := bm.GetTabsByRange(start, end)
+	if err != nil {
+		logger.Error("Failed to get tab range: %v", err)
+		logger.Info("Run 'snag --list-tabs' to see available tabs")
+		displayTabListOnError(bm)
+		return err
+	}
+
+	timestamp := time.Now()
+
+	logger.Info("Processing %d tabs from range [%d-%d]...", len(pages), start, end)
+
+	successCount := 0
+	failureCount := 0
+
+	for i, page := range pages {
+		tabNum := start + i
+		totalTabs := len(pages)
+		current := i + 1
+
+		info, err := page.Info()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to get tab info for tab [%d]: %v", current, totalTabs, tabNum, err)
+			failureCount++
+			continue
+		}
+
+		logger.Info("[%d/%d] Processing tab [%d]: %s", current, totalTabs, tabNum, info.URL)
+
+		if validatedWaitFor != "" {
+			err := waitForSelector(page, validatedWaitFor, time.Duration(timeout)*time.Second)
+			if err != nil {
+				logger.Error("[%d/%d] Wait failed for tab [%d]: %v", current, totalTabs, tabNum, err)
+				failureCount++
+				continue
+			}
+		}
+
+		outputPath, err := generateOutputFilename(
+			info.Title, info.URL, outputFormat,
+			timestamp, outDir,
+		)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to generate filename for tab [%d]: %v", current, totalTabs, tabNum, err)
+			failureCount++
+			continue
+		}
+
+		if err := processPageContent(page, outputFormat, outputPath); err != nil {
+			logger.Error("[%d/%d] Failed to process content for tab [%d]: %v", current, totalTabs, tabNum, err)
+			failureCount++
+			continue
+		}
+
+		successCount++
+	}
+
+	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
+
+	if failureCount > 0 {
+		return fmt.Errorf("batch processing completed with %d failures", failureCount)
+	}
+
+	return nil
+}
+
+func handleTabPatternBatchCobra(cmd *cobra.Command, pages []*rod.Page, pattern string) error {
+	outputFormat := normalizeFormat(format)
+	validatedWaitFor := validateWaitFor(waitFor)
+	outDir := strings.TrimSpace(outputDir)
+	if outDir == "" {
+		outDir = "."
+	}
+
+	if err := validateFormat(outputFormat); err != nil {
+		return err
+	}
+
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	if err := validateDirectory(outDir); err != nil {
+		return err
+	}
+
+	timestamp := time.Now()
+
+	logger.Info("Processing %d tabs matching pattern '%s'...", len(pages), pattern)
+
+	successCount := 0
+	failureCount := 0
+
+	for i, page := range pages {
+		totalTabs := len(pages)
+		current := i + 1
+
+		info, err := page.Info()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to get tab info: %v", current, totalTabs, err)
+			failureCount++
+			continue
+		}
+
+		logger.Info("[%d/%d] Processing: %s", current, totalTabs, info.URL)
+
+		if validatedWaitFor != "" {
+			err := waitForSelector(page, validatedWaitFor, time.Duration(timeout)*time.Second)
+			if err != nil {
+				logger.Error("[%d/%d] Wait failed: %v", current, totalTabs, err)
+				failureCount++
+				continue
+			}
+		}
+
+		outputPath, err := generateOutputFilename(
+			info.Title, info.URL, outputFormat,
+			timestamp, outDir,
+		)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to generate filename: %v", current, totalTabs, err)
+			failureCount++
+			continue
+		}
+
+		if err := processPageContent(page, outputFormat, outputPath); err != nil {
+			logger.Error("[%d/%d] Failed to process content: %v", current, totalTabs, err)
+			failureCount++
+			continue
+		}
+
+		successCount++
+	}
+
+	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
+
+	if failureCount > 0 {
+		return fmt.Errorf("batch processing completed with %d failures", failureCount)
+	}
+
+	return nil
+}
+
+func handleOpenURLsInBrowserCobra(cmd *cobra.Command, urls []string) error {
+	// Warn about ignored flags
+	if cmd.Flags().Changed("output") {
+		logger.Warning("--output ignored with --open-browser (no content fetching)")
+	}
+	if cmd.Flags().Changed("output-dir") {
+		logger.Warning("--output-dir ignored with --open-browser (no content fetching)")
+	}
+	if cmd.Flags().Changed("format") {
+		logger.Warning("--format ignored with --open-browser (no content fetching)")
+	}
+	if cmd.Flags().Changed("timeout") {
+		logger.Warning("--timeout ignored with --open-browser (no content fetching)")
+	}
+	if cmd.Flags().Changed("wait-for") {
+		logger.Warning("--wait-for ignored with --open-browser (no content fetching)")
+	}
+	if closeTab {
+		logger.Warning("--close-tab ignored with --open-browser (no content fetching)")
+	}
+
+	logger.Info("Opening %d URLs in browser...", len(urls))
+
+	validatedUserDataDir := ""
+	if cmd.Flags().Changed("user-data-dir") {
+		validatedDir, err := validateUserDataDir(userDataDir)
+		if err != nil {
+			return err
+		}
+		validatedUserDataDir = validatedDir
+	}
+
+	validatedUserAgent := validateUserAgent(userAgent)
+
+	bm := NewBrowserManager(BrowserOptions{
+		Port:          port,
+		OpenBrowser:   true,
+		ForceHeadless: false,
+		UserAgent:     validatedUserAgent,
+		UserDataDir:   validatedUserDataDir,
+	})
+
+	browserManager = bm
+
+	_, err := bm.Connect()
+	if err != nil {
+		browserManager = nil
+		return err
+	}
+
+	for i, urlStr := range urls {
+		current := i + 1
+		logger.Info("[%d/%d] Opening: %s", current, len(urls), urlStr)
+
+		validatedURL, err := validateURL(urlStr)
+		if err != nil {
+			logger.Warning("[%d/%d] Invalid URL - skipping: %s", current, len(urls), urlStr)
+			continue
+		}
+
+		page, err := bm.NewPage()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to create page: %v", current, len(urls), err)
+			continue
+		}
+
+		err = page.Timeout(time.Duration(timeout) * time.Second).Navigate(validatedURL)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to navigate: %v", current, len(urls), err)
+			continue
+		}
+
+		logger.Success("[%d/%d] Opened: %s", current, len(urls), validatedURL)
+	}
+
+	logger.Success("Browser will remain open with %d tabs", len(urls))
+	logger.Info("Use 'snag --list-tabs' to see opened tabs")
+	logger.Info("Use 'snag --tab <index>' to fetch content from a tab")
+
+	// Don't close browser - leave it running for user
+	return nil
+}
+
+func handleMultipleURLsCobra(cmd *cobra.Command, urls []string) error {
+	outputFile := strings.TrimSpace(output)
+	outDir := strings.TrimSpace(outputDir)
+
+	if outputFile != "" && len(urls) > 1 {
+		logger.Error("Cannot use --output with multiple URLs")
+		logger.Info("Use --output-dir for auto-generated filenames OR provide single URL")
+		return fmt.Errorf("--output incompatible with multiple URLs")
+	}
+
+	outputFormat := normalizeFormat(format)
+	if err := validateFormat(outputFormat); err != nil {
+		return err
+	}
+
+	if err := validateTimeout(timeout); err != nil {
+		return err
+	}
+
+	if err := validatePort(port); err != nil {
+		return err
+	}
+
+	if outputFile != "" {
+		if err := validateOutputPath(outputFile); err != nil {
+			return err
+		}
+	}
+
+	if cmd.Flags().Changed("output-dir") && outDir == "" {
+		outDir = "."
+	}
+
+	if outDir != "" {
+		if err := validateDirectory(outDir); err != nil {
+			return err
+		}
+	}
+
+	validatedUserDataDir := ""
+	if cmd.Flags().Changed("user-data-dir") {
+		validatedDir, err := validateUserDataDir(userDataDir)
+		if err != nil {
+			return err
+		}
+		validatedUserDataDir = validatedDir
+	}
+
+	var validatedURLs []string
+	for _, urlStr := range urls {
+		validatedURL, err := validateURL(urlStr)
+		if err != nil {
+			logger.Warning("Skipping invalid URL '%s': %v", urlStr, err)
+			continue
+		}
+		validatedURLs = append(validatedURLs, validatedURL)
+	}
+
+	if len(validatedURLs) == 0 {
+		logger.Error("No valid URLs to process")
+		return ErrNoValidURLs
+	}
+
+	logger.Info("Processing %d URL%s...", len(validatedURLs), plural(len(validatedURLs)))
+
+	bm := NewBrowserManager(BrowserOptions{
+		Port:          port,
+		ForceHeadless: forceHead,
+		UserDataDir:   validatedUserDataDir,
+	})
+	browserManager = bm
+
+	_, err := bm.Connect()
+	if err != nil {
+		browserManager = nil
+		return err
+	}
+	defer func() {
+		bm.Close()
+		browserManager = nil
+	}()
+
+	// Warn if --close-tab is used with --force-headless (tabs close automatically)
+	if closeTab && forceHead {
+		logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
+	}
+
+	validatedWaitFor := validateWaitFor(waitFor)
+
+	timestamp := time.Now()
+
+	successCount := 0
+	failureCount := 0
+
+	for i, validatedURL := range validatedURLs {
+		current := i + 1
+		total := len(validatedURLs)
+
+		logger.Info("[%d/%d] Fetching: %s", current, total, validatedURL)
+
+		page, err := bm.NewPage()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to create page: %v", current, total, err)
+			failureCount++
+			continue
+		}
+
+		fetcher := NewPageFetcher(page, timeout)
+		_, err = fetcher.Fetch(FetchOptions{
+			URL:     validatedURL,
+			Timeout:timeout,
+			WaitFor: validatedWaitFor,
+		})
+		if err != nil {
+			logger.Error("[%d/%d] Failed to fetch: %v", current, total, err)
+			bm.ClosePage(page)
+			failureCount++
+			continue
+		}
+
+		info, err := page.Info()
+		if err != nil {
+			logger.Error("[%d/%d] Failed to get page info: %v", current, total, err)
+			bm.ClosePage(page)
+			failureCount++
+			continue
+		}
+
+		outputPath, err := generateOutputFilename(
+			info.Title, validatedURL, outputFormat,
+			timestamp, outDir,
+		)
+		if err != nil {
+			logger.Error("[%d/%d] Failed to generate filename: %v", current, total, err)
+			bm.ClosePage(page)
+			failureCount++
+			continue
+		}
+
+		if err := processPageContent(page, outputFormat, outputPath); err != nil {
+			logger.Error("[%d/%d] Failed to save content: %v", current, total, err)
+			bm.ClosePage(page)
+			failureCount++
+			continue
+		}
+
+		if bm.launchedHeadless || closeTab {
+			bm.ClosePage(page)
+		}
+
+		successCount++
+	}
+
+	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
+
+	if failureCount > 0 {
+		return fmt.Errorf("batch processing completed with %d failures", failureCount)
+	}
+
+	return nil
+}
+
+func plural(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
 }

@@ -1446,18 +1446,17 @@ func TestBrowser_OutputDirPDF(t *testing.T) {
 // Phase 5: Multiple URL Support Tests
 // ============================================================================
 
-// TestCLI_MultipleURLs_FlagOrder tests that flags after URLs produces helpful error
+// TestCLI_MultipleURLs_FlagOrder tests that Cobra allows flags anywhere (improved UX)
 func TestCLI_MultipleURLs_FlagOrder(t *testing.T) {
-	stdout, stderr, err := runSnag("https://example.com", "--force-headless")
+	tmpDir := t.TempDir()
+	stdout, stderr, err := runSnag("https://example.com", "--force-headless", "-d", tmpDir)
 
-	// Should fail with flag order error
-	assertError(t, err)
-	assertExitCode(t, err, 1)
+	// Cobra allows flags anywhere (more flexible than urfave/cli)
+	// This should now succeed instead of failing
+	assertNoError(t, err)
 
 	output := stdout + stderr
-	assertContains(t, output, "Flags must come before URL arguments")
-	assertContains(t, output, "--force-headless")
-	assertContains(t, output, "snag --force-headless")
+	assertContains(t, output, "example.com")
 
 	_ = stdout
 }
