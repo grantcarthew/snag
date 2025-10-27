@@ -19,10 +19,9 @@ import (
 	"github.com/go-rod/rod/lib/proto"
 )
 
-// Timeout constants
 const (
-	ConnectTimeout   = 10 * time.Second // Browser connection timeout (existing or newly launched)
-	StabilizeTimeout = 3 * time.Second  // Page stabilization wait time
+	ConnectTimeout   = 10 * time.Second
+	StabilizeTimeout = 3 * time.Second
 )
 
 // BrowserManager handles browser lifecycle and connection
@@ -31,15 +30,14 @@ type BrowserManager struct {
 	launcher         *launcher.Launcher
 	port             int
 	wasLaunched      bool
-	launchedHeadless bool // True if we launched the browser in headless mode
+	launchedHeadless bool
 	userAgent        string
 	userDataDir      string
 	forceHeadless    bool
 	openBrowser      bool
-	browserName      string // Detected browser name (Chrome, Chromium, Edge, Brave, etc.)
+	browserName      string
 }
 
-// BrowserOptions contains options for browser management
 type BrowserOptions struct {
 	Port          int
 	ForceHeadless bool
@@ -48,18 +46,14 @@ type BrowserOptions struct {
 	UserDataDir   string
 }
 
-// TabInfo represents information about a browser tab
 type TabInfo struct {
-	Index int    // Tab index (1-based for display)
-	URL   string // Current URL of the tab
-	Title string // Page title
-	ID    string // Internal target ID (for rod)
+	Index int
+	URL   string
+	Title string
+	ID    string
 }
 
-// findBrowserPath locates the browser executable and detects its name
-// Returns the path or an error if not found
 func (bm *BrowserManager) findBrowserPath() (string, error) {
-	// Find browser executable
 	// SECURITY: We trust the system-installed browser binary found by launcher.LookPath().
 	// Binary integrity is the responsibility of the OS package manager. If an attacker
 	// can replace the browser binary, they already have system-level access.
@@ -68,7 +62,6 @@ func (bm *BrowserManager) findBrowserPath() (string, error) {
 		return "", ErrBrowserNotFound
 	}
 
-	// Detect browser name from path
 	bm.browserName = detectBrowserName(path)
 
 	logger.Debug("Found browser at: %s", path)
@@ -76,83 +69,63 @@ func (bm *BrowserManager) findBrowserPath() (string, error) {
 	return path, nil
 }
 
-// detectBrowserName extracts the browser name from the executable path
 func detectBrowserName(path string) string {
-	// Extract just the executable name to avoid false positives from directory/user names
 	base := filepath.Base(path)
-
-	// Remove common extensions for matching
 	baseName := strings.TrimSuffix(base, ".exe")
 	baseName = strings.TrimSuffix(baseName, ".app")
-
-	// Convert to lowercase for case-insensitive matching
 	lowerName := strings.ToLower(baseName)
 
-	// Check for specific browsers in order of specificity
-	// Note: Order matters - check specific names before generic ones
+	// Order matters - check specific names before generic ones
 	// (e.g., "chrome" before "chromium", "ungoogled-chromium" before "chromium")
 
-	// Ungoogled Chromium (check before regular Chromium)
 	if strings.Contains(lowerName, "ungoogled") {
 		return "Ungoogled-Chromium"
 	}
 
-	// Chrome (check before Chromium to avoid false matches)
 	if strings.Contains(lowerName, "chrome") && !strings.Contains(lowerName, "chromium") {
 		return "Chrome"
 	}
 
-	// Chromium
 	if strings.Contains(lowerName, "chromium") {
 		return "Chromium"
 	}
 
-	// Microsoft Edge
 	if strings.Contains(lowerName, "edge") || strings.Contains(lowerName, "msedge") {
 		return "Edge"
 	}
 
-	// Brave
 	if strings.Contains(lowerName, "brave") {
 		return "Brave"
 	}
 
-	// Opera
 	if strings.Contains(lowerName, "opera") {
 		return "Opera"
 	}
 
-	// Vivaldi
 	if strings.Contains(lowerName, "vivaldi") {
 		return "Vivaldi"
 	}
 
-	// Arc
 	if strings.Contains(lowerName, "arc") {
 		return "Arc"
 	}
 
-	// Yandex
 	if strings.Contains(lowerName, "yandex") {
 		return "Yandex"
 	}
 
-	// Thorium
 	if strings.Contains(lowerName, "thorium") {
 		return "Thorium"
 	}
 
-	// Slimjet
 	if strings.Contains(lowerName, "slimjet") {
 		return "Slimjet"
 	}
 
-	// Cent Browser
 	if strings.Contains(lowerName, "cent") {
 		return "Cent"
 	}
 
-	// Fallback: Capitalize first letter of base name
 	if len(baseName) > 0 {
 		return strings.ToUpper(baseName[:1]) + baseName[1:]
 	}
@@ -160,7 +133,6 @@ func detectBrowserName(path string) string {
 	return "Browser"
 }
 
-// NewBrowserManager creates a new browser manager
 func NewBrowserManager(opts BrowserOptions) *BrowserManager {
 	return &BrowserManager{
 		port:          opts.Port,
@@ -171,9 +143,7 @@ func NewBrowserManager(opts BrowserOptions) *BrowserManager {
 	}
 }
 
-// Connect attempts to connect to an existing browser or launch a new one
 func (bm *BrowserManager) Connect() (*rod.Browser, error) {
-	// Strategy 1: Try to connect to existing browser instance (unless forced)
 	if !bm.forceHeadless && !bm.openBrowser {
 		logger.Verbose("Checking for existing browser instance on port %d...", bm.port)
 		if browser, err := bm.connectToExisting(); err == nil {
@@ -185,7 +155,6 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 		logger.Verbose("No existing browser instance found")
 	}
 
-	// Strategy 2: Launch new browser instance
 	// Priority: forceHeadless takes precedence over openBrowser
 	headless := bm.forceHeadless || !bm.openBrowser
 
@@ -212,12 +181,9 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 	return browser, nil
 }
 
-// connectToExisting attempts to connect to an existing browser instance
 func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
-	// Query the browser for its WebSocket debugger URL
 	baseURL := fmt.Sprintf("http://127.0.0.1:%d", bm.port)
 
-	// Use launcher's ResolveURL to get the WebSocket URL from the HTTP endpoint
 	wsURL, err := launcher.ResolveURL(baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrBrowserConnection, err)
@@ -237,28 +203,23 @@ func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
 	return browser.CancelTimeout(), nil
 }
 
-// launchBrowser launches a new browser instance
 func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
-	// Find browser executable and detect its name
 	path, err := bm.findBrowserPath()
 	if err != nil {
 		return nil, err
 	}
 
-	// Create launcher with options
 	l := launcher.New().
 		Bin(path).
 		Headless(headless).
-		Leakless(headless). // Only kill browser on exit if headless; visible browsers persist
+		Leakless(headless).
 		Set("disable-blink-features", "AutomationControlled")
 
-	// Set custom user agent if provided
 	if bm.userAgent != "" {
 		l = l.Set("user-agent", bm.userAgent)
 		logger.Verbose("Using custom user agent: %s", bm.userAgent)
 	}
 
-	// Set custom user data directory if provided
 	if bm.userDataDir != "" {
 		l = l.Set("user-data-dir", bm.userDataDir)
 		logger.Verbose("Using custom user data directory: %s", bm.userDataDir)
@@ -267,7 +228,6 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 	// Always set remote debugging port explicitly (don't rely on launcher's default)
 	l = l.Set("remote-debugging-port", fmt.Sprintf("%d", bm.port))
 
-	// Launch browser
 	controlURL, err := l.Launch()
 	if err != nil {
 		return nil, fmt.Errorf("failed to launch browser: %w", err)
@@ -292,64 +252,49 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 // OpenBrowserOnly opens a browser without navigating to any page
 // The browser is left running with CDP debugging enabled, and snag exits
 func (bm *BrowserManager) OpenBrowserOnly() error {
-	// Check if a browser is already running on this port
 	logger.Verbose("Checking for existing browser instance on port %d...", bm.port)
 	if _, err := bm.connectToExisting(); err == nil {
-		// Browser is already running - nothing to do
-		// Don't call Close() - that would close the browser itself
-		// Just let the connection be garbage collected
 		logger.Success("Browser already running on port %d", bm.port)
 		logger.Info("You can connect to it using: snag <url>")
 		return nil
 	}
 
-	// Find browser executable and detect its name
 	path, err := bm.findBrowserPath()
 	if err != nil {
 		return err
 	}
 
-	// Create launcher with options
 	// Leakless(false) allows the browser to persist after this process exits
 	l := launcher.New().
 		Bin(path).
-		Leakless(false). // Browser persists after snag exits
-		Headless(false). // Always visible
+		Leakless(false).
+		Headless(false).
 		Set("disable-blink-features", "AutomationControlled").
 		Set("remote-debugging-port", fmt.Sprintf("%d", bm.port))
 
-	// Launch browser and let it run independently
 	controlURL, err := l.Launch()
 	if err != nil {
 		return fmt.Errorf("failed to launch browser: %w", err)
 	}
 
-	// Connect to browser briefly to open a visible tab, then disconnect
 	browser := rod.New().ControlURL(controlURL).Timeout(ConnectTimeout)
 	if err := browser.Connect(); err != nil {
 		return fmt.Errorf("%w: %w", ErrBrowserConnection, err)
 	}
 
-	// Create a new page so the browser window is visible
 	_, err = browser.Page(proto.TargetCreateTarget{URL: "about:blank"})
 	if err != nil {
 		browser.Close()
 		return fmt.Errorf("failed to create page: %w", err)
 	}
 
-	// Disconnect from browser but leave it running
-	// Don't call Close() - we want the browser to persist
-
 	logger.Success("Browser opened on port %d", bm.port)
 	logger.Info("Browser is running with remote debugging enabled")
 	logger.Info("You can now connect to it using: snag <url>")
 
-	// Don't store launcher or browser - let it run independently
-	// Don't call cleanup - the browser stays running after we exit
 	return nil
 }
 
-// NewPage creates a new page in the browser
 func (bm *BrowserManager) NewPage() (*rod.Page, error) {
 	if bm.browser == nil {
 		return nil, fmt.Errorf("browser not connected")
@@ -364,21 +309,18 @@ func (bm *BrowserManager) NewPage() (*rod.Page, error) {
 }
 
 // Close closes the browser if it was launched by us in headless mode
-// Cleanup is best-effort and does not return errors
 func (bm *BrowserManager) Close() {
 	if bm.browser == nil {
 		return
 	}
 
 	// Only close browser if we launched it AND it's headless
-	// Visible browsers are left running for user convenience (e.g., authenticated sessions)
 	if bm.wasLaunched && bm.launchedHeadless {
 		logger.Verbose("Closing headless browser...")
 		if err := bm.browser.Close(); err != nil {
 			logger.Warning("Failed to close browser: %v", err)
 		}
 
-		// Cleanup launcher
 		if bm.launcher != nil {
 			bm.launcher.Cleanup()
 		}
@@ -389,8 +331,6 @@ func (bm *BrowserManager) Close() {
 	}
 }
 
-// ClosePage closes a specific page
-// Cleanup is best-effort and does not return errors
 func (bm *BrowserManager) ClosePage(page *rod.Page) {
 	if page == nil {
 		return
@@ -402,12 +342,10 @@ func (bm *BrowserManager) ClosePage(page *rod.Page) {
 	}
 }
 
-// WasLaunched returns true if the browser was launched by this manager
 func (bm *BrowserManager) WasLaunched() bool {
 	return bm.wasLaunched
 }
 
-// pageWithInfo holds a page reference with its cached info for efficient sorting
 type pageWithInfo struct {
 	page  *rod.Page
 	url   string
@@ -433,7 +371,6 @@ func (bm *BrowserManager) getSortedPagesWithInfo() ([]pageWithInfo, error) {
 	for _, page := range pages {
 		info, err := page.Info()
 		if err != nil {
-			// Skip pages we can't get info for, but log a warning
 			logger.Warning("Failed to get info for page: %v", err)
 			continue
 		}
@@ -445,7 +382,6 @@ func (bm *BrowserManager) getSortedPagesWithInfo() ([]pageWithInfo, error) {
 		})
 	}
 
-	// Sort by URL (primary) → Title (secondary) → ID (tertiary)
 	sort.Slice(pagesWithInfo, func(i, j int) bool {
 		if pagesWithInfo[i].url != pagesWithInfo[j].url {
 			return pagesWithInfo[i].url < pagesWithInfo[j].url
@@ -468,11 +404,10 @@ func (bm *BrowserManager) ListTabs() ([]TabInfo, error) {
 		return nil, err
 	}
 
-	// Convert to TabInfo slice with 1-based indices
 	tabs := make([]TabInfo, len(pagesWithInfo))
 	for i, pwi := range pagesWithInfo {
 		tabs[i] = TabInfo{
-			Index: i + 1, // 1-based indexing for display
+			Index: i + 1,
 			URL:   pwi.url,
 			Title: pwi.title,
 			ID:    pwi.id,
@@ -491,15 +426,12 @@ func (bm *BrowserManager) GetTabByIndex(index int) (*rod.Page, error) {
 		return nil, err
 	}
 
-	// Validate index (1-based, so valid range is 1 to len(pagesWithInfo))
 	if index < 1 || index > len(pagesWithInfo) {
 		return nil, fmt.Errorf("%w: tab index %d (valid range: 1-%d)", ErrTabIndexInvalid, index, len(pagesWithInfo))
 	}
 
-	// Convert 1-based index to 0-based
 	arrayIndex := index - 1
 
-	// Log tab selection (info already cached, no extra network call)
 	logger.Verbose("Selected tab [%d] from sorted order: %s", index, pagesWithInfo[arrayIndex].url)
 
 	return pagesWithInfo[arrayIndex].page, nil
@@ -517,7 +449,6 @@ func (bm *BrowserManager) GetTabByPattern(pattern string) (*rod.Page, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Return first match only (backward compatibility)
 	return pages[0], nil
 }
 
@@ -542,7 +473,6 @@ func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) 
 		return nil, fmt.Errorf("%w: '%s' (no tabs open)", ErrNoTabMatch, pattern)
 	}
 
-	// Fetch page info once for all pages (avoid repeated network calls)
 	type pageCache struct {
 		page  *rod.Page
 		url   string
@@ -553,14 +483,13 @@ func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) 
 	for i, page := range pages {
 		info, err := page.Info()
 		if err != nil {
-			// Skip pages we can't get info for
 			logger.Warning("Failed to get info for page %d: %v", i+1, err)
 			continue
 		}
 		cached = append(cached, pageCache{
 			page:  page,
 			url:   info.URL,
-			index: i + 1, // 1-based for logging
+			index: i + 1,
 		})
 	}
 
@@ -570,7 +499,6 @@ func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) 
 
 	patternLower := strings.ToLower(pattern)
 
-	// Step 1: Try exact match (case-insensitive) - collect ALL exact matches
 	var exactMatches []*rod.Page
 	for _, pc := range cached {
 		if strings.EqualFold(pc.url, pattern) {
@@ -582,7 +510,6 @@ func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) 
 		return exactMatches, nil
 	}
 
-	// Step 2: Try contains/substring match (case-insensitive) - collect ALL substring matches
 	var substringMatches []*rod.Page
 	for _, pc := range cached {
 		if strings.Contains(strings.ToLower(pc.url), patternLower) {
@@ -594,10 +521,8 @@ func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) 
 		return substringMatches, nil
 	}
 
-	// Step 3: Try regex match (case-insensitive) - collect ALL regex matches
-	re, err := regexp.Compile("(?i)" + pattern) // (?i) = case-insensitive
+	re, err := regexp.Compile("(?i)" + pattern)
 	if err != nil {
-		// Invalid regex pattern - return specific error
 		return nil, fmt.Errorf("invalid regex pattern '%s': %w", pattern, err)
 	}
 
@@ -612,7 +537,6 @@ func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) 
 		return regexMatches, nil
 	}
 
-	// Step 4: No matches found
 	return nil, fmt.Errorf("%w: '%s'", ErrNoTabMatch, pattern)
 }
 
@@ -626,7 +550,6 @@ func (bm *BrowserManager) GetTabsByRange(start, end int) ([]*rod.Page, error) {
 		return nil, err
 	}
 
-	// Validate range
 	if start < 1 {
 		return nil, fmt.Errorf("tab range must start from 1 (got %d)", start)
 	}
@@ -634,7 +557,6 @@ func (bm *BrowserManager) GetTabsByRange(start, end int) ([]*rod.Page, error) {
 		return nil, fmt.Errorf("invalid range: start must be <= end (got %d-%d)", start, end)
 	}
 
-	// Validate that both start and end indices exist
 	if start > len(pagesWithInfo) {
 		return nil, fmt.Errorf("tab index %d out of range in range %d-%d (only %d tabs open)", start, start, end, len(pagesWithInfo))
 	}
@@ -642,10 +564,8 @@ func (bm *BrowserManager) GetTabsByRange(start, end int) ([]*rod.Page, error) {
 		return nil, fmt.Errorf("tab index %d out of range in range %d-%d (only %d tabs open)", end, start, end, len(pagesWithInfo))
 	}
 
-	// Extract the range of pages (convert from 1-based to 0-based indexing)
 	rangeWithInfo := pagesWithInfo[start-1 : end]
 
-	// Extract just the pages from the range
 	rangeTabs := make([]*rod.Page, len(rangeWithInfo))
 	for i, pwi := range rangeWithInfo {
 		rangeTabs[i] = pwi.page

@@ -20,7 +20,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// Config holds the application configuration
 type Config struct {
 	URL           string
 	OutputFile    string
@@ -36,9 +35,7 @@ type Config struct {
 	UserDataDir   string
 }
 
-// snag is the main function that orchestrates the web page fetching
 func snag(config *Config) error {
-	// Create browser manager
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          config.Port,
 		ForceHeadless: config.ForceHeadless,
@@ -47,10 +44,8 @@ func snag(config *Config) error {
 		UserDataDir:   config.UserDataDir,
 	})
 
-	// Assign to global for signal handler access
 	browserManager = bm
 
-	// Connect to browser
 	_, err := bm.Connect()
 	if err != nil {
 		if errors.Is(err, ErrBrowserNotFound) {
@@ -60,7 +55,7 @@ func snag(config *Config) error {
 				"brew install --cask google-chrome",
 			)
 		}
-		browserManager = nil // Clear global on error
+		browserManager = nil
 		return err
 	}
 
@@ -70,24 +65,20 @@ func snag(config *Config) error {
 			logger.Verbose("Cleanup: closing tab and browser if needed")
 		}
 		bm.Close()
-		browserManager = nil // Clear global after cleanup
+		browserManager = nil
 	}()
 
-	// Create new page
 	page, err := bm.NewPage()
 	if err != nil {
 		return err
 	}
 
-	// Ensure page cleanup if requested
 	if config.CloseTab {
 		defer bm.ClosePage(page)
 	}
 
-	// Create page fetcher
 	fetcher := NewPageFetcher(page, config.Timeout)
 
-	// Fetch the page (navigates and loads content)
 	_, err = fetcher.Fetch(FetchOptions{
 		URL:     config.URL,
 		Timeout: config.Timeout,
@@ -97,9 +88,7 @@ func snag(config *Config) error {
 		return err
 	}
 
-	// Handle --output-dir: Generate filename from page title
 	if config.OutputDir != "" {
-		// Get page info for title
 		info, err := page.Info()
 		if err != nil {
 			return fmt.Errorf("failed to get page info: %w", err)
@@ -117,7 +106,6 @@ func snag(config *Config) error {
 	// For binary formats without -o or -d: auto-generate filename in current directory
 	// Binary formats (PDF, PNG) should NEVER output to stdout (corrupts terminal)
 	if config.OutputFile == "" && (config.Format == FormatPDF || config.Format == FormatPNG) {
-		// Get page info for title
 		info, err := page.Info()
 		if err != nil {
 			return fmt.Errorf("failed to get page info: %w", err)
@@ -133,14 +121,11 @@ func snag(config *Config) error {
 		logger.Info("Auto-generated filename: %s", config.OutputFile)
 	}
 
-	// Process page content and output in requested format
 	return processPageContent(page, config.Format, config.OutputFile)
 }
 
 // processPageContent handles format conversion for all output types
-// Returns error if processing fails
 func processPageContent(page *rod.Page, format string, outputFile string) error {
-	// Create content converter for specified format
 	converter := NewContentConverter(format)
 
 	// Handle binary formats (PDF, PNG) that need the page object
@@ -148,7 +133,6 @@ func processPageContent(page *rod.Page, format string, outputFile string) error 
 		return converter.ProcessPage(page, outputFile)
 	}
 
-	// For text formats, extract HTML and process
 	html, err := page.HTML()
 	if err != nil {
 		return fmt.Errorf("failed to extract HTML: %w", err)
@@ -157,57 +141,42 @@ func processPageContent(page *rod.Page, format string, outputFile string) error 
 	return converter.Process(html, outputFile)
 }
 
-// generateOutputFilename creates an auto-generated filename for binary formats
-// Takes title, URL, format info and returns full path with conflict resolution
 func generateOutputFilename(title, url, format string,
 	timestamp time.Time, outputDir string) (string, error) {
-	// Generate filename
 	filename := GenerateFilename(title, format, timestamp, url)
 
-	// Resolve conflicts in directory
 	finalFilename, err := ResolveConflict(outputDir, filename)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve filename conflict: %w", err)
 	}
 
-	// Return full path
 	return filepath.Join(outputDir, finalFilename), nil
 }
 
-// connectToExistingBrowser creates a browser manager and connects to existing browser
-// Sets global browserManager for signal handling and returns the manager
 func connectToExistingBrowser(port int) (*BrowserManager, error) {
-	// Create browser manager in connect-only mode
 	bm := NewBrowserManager(BrowserOptions{
 		Port: port,
 	})
 
-	// Assign to global for signal handler access
 	browserManager = bm
 
-	// Connect to existing browser
 	browser, err := bm.connectToExisting()
 	if err != nil {
-		browserManager = nil // Clear global on error
+		browserManager = nil
 		logger.Error("No browser found. Try running 'snag --open-browser' first")
 		return nil, ErrNoBrowserRunning
 	}
 
-	// Assign browser to manager
 	bm.browser = browser
 
 	return bm, nil
 }
 
-// stripURLParams removes query parameters and hash fragments from a URL
-// Returns clean URL with only scheme, domain, and path
 func stripURLParams(url string) string {
-	// Find position of query params
 	if idx := strings.Index(url, "?"); idx != -1 {
 		url = url[:idx]
 	}
 
-	// Find position of hash fragment
 	if idx := strings.Index(url, "#"); idx != -1 {
 		url = url[:idx]
 	}
@@ -220,44 +189,32 @@ func stripURLParams(url string) string {
 // Verbose mode: "  [N] full-url - Title" with no truncation
 func formatTabLine(index int, title, url string, maxLength int, verbose bool) string {
 	if verbose {
-		// Verbose mode: show full URL and title, no truncation
 		if title == "" {
 			return fmt.Sprintf("  [%d] %s", index, url)
 		}
 		return fmt.Sprintf("  [%d] %s - %s", index, url, title)
 	}
 
-	// Normal mode: clean URL and apply truncation
 	cleanURL := stripURLParams(url)
 
-	// Calculate available space for URL and title
-	// Format: "  [NNN] URL (Title)"
-	// Prefix is approximately: "  " + "[" + index + "] " = ~8 chars for index < 1000
 	prefix := fmt.Sprintf("  [%d] ", index)
 	prefixLen := len(prefix)
 
-	// Maximum URL length: 80 chars
 	const maxURLLen = 80
 	displayURL := cleanURL
 	if len(displayURL) > maxURLLen {
-		// Truncate URL if too long
 		displayURL = cleanURL[:maxURLLen-3] + "..."
 	}
 
-	// Calculate space available for title (in parentheses)
-	// Total budget: maxLength, minus prefix, minus URL, minus space, minus parentheses
 	titleBudget := maxLength - prefixLen - len(displayURL)
 	if title != "" {
-		titleBudget -= 3 // Account for space and parentheses: " (" and ")"
+		titleBudget -= 3
 	}
 
-	// Format the line
 	if title == "" {
-		// No title: just show URL
 		return fmt.Sprintf("%s%s", prefix, displayURL)
 	}
 
-	// Truncate title if needed
 	if len(title) > titleBudget && titleBudget > 3 {
 		title = title[:titleBudget-3] + "..."
 	}
@@ -265,8 +222,6 @@ func formatTabLine(index int, title, url string, maxLength int, verbose bool) st
 	return fmt.Sprintf("%s%s (%s)", prefix, displayURL, title)
 }
 
-// displayTabList formats and displays a list of tabs to the specified writer
-// verbose controls whether to show full URLs with query params (true) or clean, truncated display (false)
 func displayTabList(tabs []TabInfo, w io.Writer, verbose bool) {
 	if len(tabs) == 0 {
 		fmt.Fprintf(w, "No tabs open in browser\n")
@@ -280,30 +235,25 @@ func displayTabList(tabs []TabInfo, w io.Writer, verbose bool) {
 	}
 }
 
-// displayTabListOnError displays available tabs to stderr as helpful error context
-// Always uses non-verbose mode (clean, truncated display)
 func displayTabListOnError(bm *BrowserManager) {
 	if tabs, listErr := bm.ListTabs(); listErr == nil {
 		fmt.Fprintln(os.Stderr, "")
-		displayTabList(tabs, os.Stderr, false) // Always non-verbose for error context
+		displayTabList(tabs, os.Stderr, false)
 		fmt.Fprintln(os.Stderr, "")
 	}
 }
 
-// handleAllTabs processes all open browser tabs with auto-generated filenames
 func handleAllTabs(c *cli.Context) error {
 	outputDir := strings.TrimSpace(c.String("output-dir"))
 
-	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := validateWaitFor(c.String("wait-for"))
 	closeTab := c.Bool("close-tab")
 	if outputDir == "" {
-		outputDir = "." // Default to current working directory
+		outputDir = "."
 	}
 
-	// Warn about ignored flags
 	if c.IsSet("user-agent") {
 		logger.Warning("--user-agent is ignored with --all-tabs (cannot change existing tabs' user agents)")
 	}
@@ -314,29 +264,24 @@ func handleAllTabs(c *cli.Context) error {
 		logger.Warning("--timeout is ignored without --wait-for when using --all-tabs")
 	}
 
-	// Validate format
 	if err := validateFormat(format); err != nil {
 		return err
 	}
 
-	// Validate timeout
 	if err := validateTimeout(timeout); err != nil {
 		return err
 	}
 
-	// Validate output directory
 	if err := validateDirectory(outputDir); err != nil {
 		return err
 	}
 
-	// Connect to existing browser with remote debugging enabled
 	bm, err := connectToExistingBrowser(c.Int("port"))
 	if err != nil {
 		return err
 	}
 	defer func() { browserManager = nil }()
 
-	// Get list of all tabs
 	tabs, err := bm.ListTabs()
 	if err != nil {
 		return err
@@ -347,20 +292,16 @@ func handleAllTabs(c *cli.Context) error {
 		return nil
 	}
 
-	// Create single timestamp for entire batch
 	timestamp := time.Now()
 
 	logger.Info("Processing %d tabs...", len(tabs))
 
-	// Track success/failure counts
 	successCount := 0
 	failureCount := 0
 
-	// Process each tab
 	for i, tab := range tabs {
 		tabNum := i + 1
 
-		// Skip non-fetchable URLs (chrome://, about:, devtools://, etc.)
 		if isNonFetchableURL(tab.URL) {
 			logger.Warning("[%d/%d] Skipping tab: %s (not fetchable)", tabNum, len(tabs), tab.URL)
 			continue
@@ -368,7 +309,6 @@ func handleAllTabs(c *cli.Context) error {
 
 		logger.Info("[%d/%d] Processing: %s", tabNum, len(tabs), tab.URL)
 
-		// Get page object for this tab
 		page, err := bm.GetTabByIndex(tabNum)
 		if err != nil {
 			logger.Error("[%d/%d] Failed to get tab: %v", tabNum, len(tabs), err)
@@ -376,7 +316,6 @@ func handleAllTabs(c *cli.Context) error {
 			continue
 		}
 
-		// Wait for selector if specified
 		if waitFor != "" {
 			err := waitForSelector(page, waitFor, time.Duration(timeout)*time.Second)
 			if err != nil {
@@ -386,7 +325,6 @@ func handleAllTabs(c *cli.Context) error {
 			}
 		}
 
-		// Generate output filename with conflict resolution
 		outputPath, err := generateOutputFilename(
 			tab.Title, tab.URL, format,
 			timestamp, outputDir,
@@ -397,11 +335,9 @@ func handleAllTabs(c *cli.Context) error {
 			continue
 		}
 
-		// Process page content and output in requested format
 		if err := processPageContent(page, format, outputPath); err != nil {
 			logger.Error("[%d/%d] Failed to process content: %v", tabNum, len(tabs), err)
 			failureCount++
-			// Still attempt to close tab if --close-tab is set
 			if closeTab {
 				if err := page.Close(); err != nil {
 					logger.Verbose("[%d/%d] Failed to close tab: %v", tabNum, len(tabs), err)
@@ -412,9 +348,7 @@ func handleAllTabs(c *cli.Context) error {
 
 		successCount++
 
-		// Close tab if --close-tab flag is set
 		if closeTab {
-			// Check if this is the last tab
 			if tabNum == len(tabs) {
 				logger.Info("Closing last tab, browser will close")
 			}
@@ -424,7 +358,6 @@ func handleAllTabs(c *cli.Context) error {
 		}
 	}
 
-	// Summary
 	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
 
 	if failureCount > 0 {
@@ -434,35 +367,27 @@ func handleAllTabs(c *cli.Context) error {
 	return nil
 }
 
-// handleListTabs lists all open tabs in the browser
 func handleListTabs(c *cli.Context) error {
-	// Connect to existing browser with remote debugging enabled
 	bm, err := connectToExistingBrowser(c.Int("port"))
 	if err != nil {
 		return err
 	}
 
-	// Get list of tabs
 	tabs, err := bm.ListTabs()
 	if err != nil {
 		return err
 	}
 
-	// Check verbose flag for full URL display
 	verbose := c.Bool("verbose")
 
-	// Display tabs to stdout
 	displayTabList(tabs, os.Stdout, verbose)
 
 	return nil
 }
 
-// handleTabRange processes a range of tabs with auto-generated filenames
 func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
-	// Trim string flags once at the source
 	outputDir := strings.TrimSpace(c.String("output-dir"))
 
-	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := validateWaitFor(c.String("wait-for"))
@@ -470,25 +395,20 @@ func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
 		outputDir = "." // Default to current working directory
 	}
 
-	// Validate format
 	if err := validateFormat(format); err != nil {
 		return err
 	}
 
-	// Validate timeout
 	if err := validateTimeout(timeout); err != nil {
 		return err
 	}
 
-	// Validate output directory
 	if err := validateDirectory(outputDir); err != nil {
 		return err
 	}
 
-	// Get tabs in range
 	pages, err := bm.GetTabsByRange(start, end)
 	if err != nil {
-		// Display available tabs on error
 		logger.Error("Failed to get tab range: %v", err)
 		logger.Info("Run 'snag --list-tabs' to see available tabs")
 		displayTabListOnError(bm)
@@ -500,17 +420,14 @@ func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
 
 	logger.Info("Processing %d tabs from range [%d-%d]...", len(pages), start, end)
 
-	// Track success/failure counts
 	successCount := 0
 	failureCount := 0
 
-	// Process each tab in range
 	for i, page := range pages {
-		tabNum := start + i // Actual tab number (1-based)
+		tabNum := start + i
 		totalTabs := len(pages)
-		current := i + 1 // Current position in range (1-based)
+		current := i + 1
 
-		// Get page info
 		info, err := page.Info()
 		if err != nil {
 			logger.Error("[%d/%d] Failed to get tab info for tab [%d]: %v", current, totalTabs, tabNum, err)
@@ -520,7 +437,6 @@ func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
 
 		logger.Info("[%d/%d] Processing tab [%d]: %s", current, totalTabs, tabNum, info.URL)
 
-		// Wait for selector if specified
 		if waitFor != "" {
 			err := waitForSelector(page, waitFor, time.Duration(timeout)*time.Second)
 			if err != nil {
@@ -530,7 +446,6 @@ func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
 			}
 		}
 
-		// Generate output filename with conflict resolution
 		outputPath, err := generateOutputFilename(
 			info.Title, info.URL, format,
 			timestamp, outputDir,
@@ -541,7 +456,6 @@ func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
 			continue
 		}
 
-		// Process page content and output in requested format
 		if err := processPageContent(page, format, outputPath); err != nil {
 			logger.Error("[%d/%d] Failed to process content for tab [%d]: %v", current, totalTabs, tabNum, err)
 			failureCount++
@@ -551,7 +465,6 @@ func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
 		successCount++
 	}
 
-	// Summary
 	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
 
 	if failureCount > 0 {
@@ -561,11 +474,9 @@ func handleTabRange(c *cli.Context, bm *BrowserManager, start, end int) error {
 	return nil
 }
 
-// handleTabPatternBatch processes multiple tabs matching a pattern with auto-generated filenames
 func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) error {
 	outputDir := strings.TrimSpace(c.String("output-dir"))
 
-	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := validateWaitFor(c.String("wait-for"))
@@ -573,17 +484,14 @@ func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) er
 		outputDir = "." // Default to current working directory
 	}
 
-	// Validate format
 	if err := validateFormat(format); err != nil {
 		return err
 	}
 
-	// Validate timeout
 	if err := validateTimeout(timeout); err != nil {
 		return err
 	}
 
-	// Validate output directory
 	if err := validateDirectory(outputDir); err != nil {
 		return err
 	}
@@ -593,16 +501,13 @@ func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) er
 
 	logger.Info("Processing %d tabs matching pattern '%s'...", len(pages), pattern)
 
-	// Track success/failure counts
 	successCount := 0
 	failureCount := 0
 
-	// Process each matched tab
 	for i, page := range pages {
 		totalTabs := len(pages)
-		current := i + 1 // Current position (1-based)
+		current := i + 1
 
-		// Get page info
 		info, err := page.Info()
 		if err != nil {
 			logger.Error("[%d/%d] Failed to get tab info: %v", current, totalTabs, err)
@@ -612,7 +517,6 @@ func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) er
 
 		logger.Info("[%d/%d] Processing: %s", current, totalTabs, info.URL)
 
-		// Wait for selector if specified
 		if waitFor != "" {
 			err := waitForSelector(page, waitFor, time.Duration(timeout)*time.Second)
 			if err != nil {
@@ -622,7 +526,6 @@ func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) er
 			}
 		}
 
-		// Generate output filename with conflict resolution
 		outputPath, err := generateOutputFilename(
 			info.Title, info.URL, format,
 			timestamp, outputDir,
@@ -633,7 +536,6 @@ func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) er
 			continue
 		}
 
-		// Process page content and output in requested format
 		if err := processPageContent(page, format, outputPath); err != nil {
 			logger.Error("[%d/%d] Failed to process content: %v", current, totalTabs, err)
 			failureCount++
@@ -643,7 +545,6 @@ func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) er
 		successCount++
 	}
 
-	// Summary
 	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
 
 	if failureCount > 0 {
@@ -653,16 +554,13 @@ func handleTabPatternBatch(c *cli.Context, pages []*rod.Page, pattern string) er
 	return nil
 }
 
-// handleTabFetch fetches content from an existing tab by index
 func handleTabFetch(c *cli.Context) error {
-	// Connect to existing browser first (needed for displaying tabs on error)
 	bm, err := connectToExistingBrowser(c.Int("port"))
 	if err != nil {
 		return err
 	}
 	defer func() { browserManager = nil }()
 
-	// Get the tab value
 	tabValue := strings.TrimSpace(c.String("tab"))
 	if tabValue == "" {
 		logger.Error("Tab pattern cannot be empty")
@@ -671,7 +569,6 @@ func handleTabFetch(c *cli.Context) error {
 		return fmt.Errorf("tab pattern cannot be empty")
 	}
 
-	// Warn about ignored flags
 	if c.IsSet("user-agent") {
 		logger.Warning("--user-agent is ignored with --tab (cannot change existing tab's user agent)")
 	}
@@ -682,37 +579,28 @@ func handleTabFetch(c *cli.Context) error {
 		logger.Warning("--timeout is ignored without --wait-for when using --tab")
 	}
 
-	// Check if tab value is a range (N-M format)
-	// Only treat as range if both parts are valid positive integers
 	if strings.Contains(tabValue, "-") {
 		parts := strings.SplitN(tabValue, "-", 2)
 		if len(parts) == 2 {
 			start, err1 := strconv.Atoi(strings.TrimSpace(parts[0]))
 			end, err2 := strconv.Atoi(strings.TrimSpace(parts[1]))
 
-			// If both parts parse as positive integers, it's a valid range
 			if err1 == nil && err2 == nil && start > 0 && end > 0 {
-				// Valid range detected - validate --output flag
 				if c.IsSet("output") {
 					logger.Error("Cannot use --output with multiple tabs. Use --output-dir instead")
 					return ErrOutputFlagConflict
 				}
 
-				// Process as range
 				return handleTabRange(c, bm, start, end)
 			}
-			// If one or both parts don't parse as integers, treat as pattern (fall through)
-			// This allows patterns like "my-url-pattern" to work correctly
 		}
 	}
 
-	// Determine if tab value is an integer index or a pattern
 	var page *rod.Page
 	var multipleMatches bool
 	var matchedPages []*rod.Page
 
 	if tabIndex, err := strconv.Atoi(tabValue); err == nil {
-		// Integer - use as tab index
 		logger.Verbose("Fetching from tab index: %d", tabIndex)
 		page, err = bm.GetTabByIndex(tabIndex)
 		if err != nil {
@@ -725,7 +613,6 @@ func handleTabFetch(c *cli.Context) error {
 		}
 		logger.Success("Connected to tab [%d] from sorted order (by URL)", tabIndex)
 	} else {
-		// Not an integer - treat as pattern
 		logger.Verbose("Fetching from tab matching pattern: %s", tabValue)
 		matchedPages, err = bm.GetTabsByPattern(tabValue)
 		if err != nil {
@@ -737,13 +624,10 @@ func handleTabFetch(c *cli.Context) error {
 			return err
 		}
 
-		// Check if we have single or multiple matches
 		if len(matchedPages) == 1 {
-			// Single match - use current single-page flow
 			page = matchedPages[0]
 			logger.Success("Connected to tab matching pattern: %s", tabValue)
 		} else {
-			// Multiple matches - validate --output flag and use batch processing
 			multipleMatches = true
 			if c.IsSet("output") {
 				logger.Error("Cannot use --output with multiple tabs. Use --output-dir instead")
@@ -754,37 +638,30 @@ func handleTabFetch(c *cli.Context) error {
 		}
 	}
 
-	// If multiple matches, use batch processing
 	if multipleMatches {
 		return handleTabPatternBatch(c, matchedPages, tabValue)
 	}
 
-	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := validateWaitFor(c.String("wait-for"))
 	outputFile := strings.TrimSpace(c.String("output"))
 
-	// Validate format
 	if err := validateFormat(format); err != nil {
 		return err
 	}
 
-	// Validate timeout
 	if err := validateTimeout(timeout); err != nil {
 		return err
 	}
 
-	// Validate output file path if provided
 	if outputFile != "" {
 		if err := validateOutputPath(outputFile); err != nil {
 			return err
 		}
-		// Check for extension mismatch and warn (non-blocking)
 		checkExtensionMismatch(outputFile, format)
 	}
 
-	// Get current page info
 	info, err := page.Info()
 	if err != nil {
 		return fmt.Errorf("failed to get page info: %w", err)
@@ -792,7 +669,6 @@ func handleTabFetch(c *cli.Context) error {
 
 	logger.Info("Fetching content from: %s", info.URL)
 
-	// Wait for selector if specified
 	if waitFor != "" {
 		err := waitForSelector(page, waitFor, time.Duration(timeout)*time.Second)
 		if err != nil {
@@ -813,7 +689,6 @@ func handleTabFetch(c *cli.Context) error {
 		logger.Info("Auto-generated filename: %s", outputFile)
 	}
 
-	// Process page content and output in requested format
 	return processPageContent(page, format, outputFile)
 }
 
@@ -842,7 +717,6 @@ func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
 
 	logger.Info("Opening %d URLs in browser...", len(urls))
 
-	// Validate and expand user-data-dir if provided
 	userDataDir := ""
 	if c.IsSet("user-data-dir") {
 		validatedDir, err := validateUserDataDir(c.String("user-data-dir"))
@@ -852,10 +726,8 @@ func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
 		userDataDir = validatedDir
 	}
 
-	// Validate and sanitize user-agent if provided
 	userAgent := validateUserAgent(c.String("user-agent"))
 
-	// Create browser manager in visible mode
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          c.Int("port"),
 		OpenBrowser:   true,
@@ -864,36 +736,30 @@ func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
 		UserDataDir:   userDataDir,
 	})
 
-	// Assign to global for signal handler access
 	browserManager = bm
 
-	// Connect to browser
 	_, err := bm.Connect()
 	if err != nil {
 		browserManager = nil
 		return err
 	}
 
-	// Open each URL in a new tab
 	for i, urlStr := range urls {
 		current := i + 1
 		logger.Info("[%d/%d] Opening: %s", current, len(urls), urlStr)
 
-		// Validate URL
 		validatedURL, err := validateURL(urlStr)
 		if err != nil {
 			logger.Warning("[%d/%d] Invalid URL - skipping: %s", current, len(urls), urlStr)
 			continue
 		}
 
-		// Create new page
 		page, err := bm.NewPage()
 		if err != nil {
 			logger.Error("[%d/%d] Failed to create page: %v", current, len(urls), err)
 			continue
 		}
 
-		// Navigate to URL (with timeout)
 		timeout := c.Int("timeout")
 		err = page.Timeout(time.Duration(timeout) * time.Second).Navigate(validatedURL)
 		if err != nil {
@@ -915,13 +781,11 @@ func handleOpenURLsInBrowser(c *cli.Context, urls []string) error {
 // handleMultipleURLs processes multiple URLs with batch fetching
 // Follows the same pattern as handleAllTabs but for URL arguments
 func handleMultipleURLs(c *cli.Context, urls []string) error {
-	// Validate conflicting flags for multiple URLs
 	if strings.TrimSpace(c.String("output")) != "" {
 		logger.Error("Cannot use --output with multiple content sources. Use --output-dir instead")
 		return ErrOutputFlagConflict
 	}
 
-	// Extract configuration from flags
 	format := normalizeFormat(c.String("format"))
 	timeout := c.Int("timeout")
 	waitFor := validateWaitFor(c.String("wait-for"))
@@ -930,17 +794,14 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 		outputDir = "." // Default to current working directory
 	}
 
-	// Validate format
 	if err := validateFormat(format); err != nil {
 		return err
 	}
 
-	// Validate timeout
 	if err := validateTimeout(timeout); err != nil {
 		return err
 	}
 
-	// Validate output directory
 	if err := validateDirectory(outputDir); err != nil {
 		return err
 	}
@@ -950,7 +811,6 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 		logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
 	}
 
-	// Validate and expand user-data-dir if provided
 	userDataDir := ""
 	if c.IsSet("user-data-dir") {
 		validatedDir, err := validateUserDataDir(c.String("user-data-dir"))
@@ -960,10 +820,8 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 		userDataDir = validatedDir
 	}
 
-	// Validate and sanitize user-agent if provided
 	userAgent := validateUserAgent(c.String("user-agent"))
 
-	// Create browser manager
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          c.Int("port"),
 		ForceHeadless: c.Bool("force-headless"),
@@ -971,10 +829,8 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 		UserDataDir:   userDataDir,
 	})
 
-	// Assign to global for signal handler access
 	browserManager = bm
 
-	// Connect to browser
 	_, err := bm.Connect()
 	if err != nil {
 		browserManager = nil
@@ -992,18 +848,15 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 
 	logger.Info("Processing %d URLs...", len(urls))
 
-	// Track success/failure counts
 	successCount := 0
 	failureCount := 0
 
-	// Process each URL
 	for i, urlStr := range urls {
 		current := i + 1
 		total := len(urls)
 
 		logger.Info("[%d/%d] Fetching: %s", current, total, urlStr)
 
-		// Validate URL
 		validatedURL, err := validateURL(urlStr)
 		if err != nil {
 			logger.Error("[%d/%d] Invalid URL - skipping: %v", current, total, err)
@@ -1011,7 +864,6 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 			continue
 		}
 
-		// Create new page
 		page, err := bm.NewPage()
 		if err != nil {
 			logger.Error("[%d/%d] Failed to create page: %v", current, total, err)
@@ -1019,7 +871,6 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 			continue
 		}
 
-		// Fetch page content
 		fetcher := NewPageFetcher(page, timeout)
 		_, err = fetcher.Fetch(FetchOptions{
 			URL:     validatedURL,
@@ -1033,7 +884,6 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 			continue
 		}
 
-		// Get page info for filename generation
 		info, err := page.Info()
 		if err != nil {
 			logger.Error("[%d/%d] Failed to get page info: %v", current, total, err)
@@ -1042,7 +892,6 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 			continue
 		}
 
-		// Generate output filename with conflict resolution
 		outputPath, err := generateOutputFilename(
 			info.Title, validatedURL, format,
 			timestamp, outputDir,
@@ -1054,7 +903,6 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 			continue
 		}
 
-		// Process page content and output in requested format
 		if err := processPageContent(page, format, outputPath); err != nil {
 			logger.Error("[%d/%d] Failed to save content: %v", current, total, err)
 			bm.ClosePage(page)
@@ -1062,7 +910,6 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 			continue
 		}
 
-		// Close page in headless mode or if --close-tab is set
 		if bm.launchedHeadless || c.Bool("close-tab") {
 			bm.ClosePage(page)
 		}
@@ -1070,7 +917,6 @@ func handleMultipleURLs(c *cli.Context, urls []string) error {
 		successCount++
 	}
 
-	// Summary
 	logger.Success("Batch complete: %d succeeded, %d failed", successCount, failureCount)
 
 	if failureCount > 0 {

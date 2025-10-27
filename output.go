@@ -30,20 +30,15 @@ var (
 //   - Trim leading and trailing hyphens
 //   - Truncate to maxLen characters
 func SlugifyTitle(title string, maxLen int) string {
-	// Convert to lowercase
 	slug := strings.ToLower(title)
 
-	// Replace all non-alphanumeric characters with hyphen
 	// Keep only a-z, 0-9, and replace everything else with -
 	slug = slugNonAlphanumeric.ReplaceAllString(slug, "-")
 
-	// Collapse multiple consecutive hyphens
 	slug = slugMultipleHyphens.ReplaceAllString(slug, "-")
 
-	// Trim leading and trailing hyphens
 	slug = strings.Trim(slug, "-")
 
-	// Truncate to maxLen
 	if len(slug) > maxLen {
 		slug = slug[:maxLen]
 		// Trim trailing hyphen if truncation created one
