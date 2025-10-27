@@ -15,12 +15,13 @@ While the migration is functional (all 124 tests passing), some refactorings wer
 **Completed:**
 - ✅ Task 3.4: Fixed rootCmd declaration order (moved before init())
 - ✅ Task 1.1: Evaluated and rejected global state refactoring (appropriate for CLI)
+- ✅ Task 1.2: Replaced manual os.Args parsing with MarkFlagsMutuallyExclusive (breaking change)
 
 **Pending Review:** Remaining tasks need individual evaluation for necessity.
 
 ## Success Criteria
 
-- ⚠️ Critical issues (Priority 1): 1 complete (Task 3.4), 1 rejected as unnecessary (Task 1.1), 1 pending (Task 1.2)
+- ✅ Critical issues (Priority 1): All complete (Task 3.4 ✅, Task 1.1 ❌ Won't Do, Task 1.2 ✅)
 - ⏳ High-priority issues (Priority 2): Pending evaluation
 - ✅ All 124 tests continue to pass
 - ✅ No behavioral changes for users
@@ -121,87 +122,44 @@ The "avoid global state" advice applies to web servers, long-running services, a
 
 ### Task 1.2: Remove Manual os.Args Parsing for Log Level
 
-**Location:** `main.go:174-193`
+**Status:** ✅ Complete (2025-10-27)
 
-**Current Code:**
-```go
-lastLogFlag := ""
-lastLogIndex := -1
-for i, arg := range os.Args {
-	if arg == "--quiet" || arg == "-q" {
-		if i > lastLogIndex {
-			lastLogIndex = i
-			lastLogFlag = "quiet"
-		}
-	}
-	// ... more manual parsing
-}
-```
+**Location:** `main.go:171-182` (after changes)
 
 **Problem:**
-- Bypasses Cobra's flag parsing mechanism
-- Doesn't handle edge cases (e.g., `--quiet=true`, combined flags)
-- May not respect Cobra's flag precedence rules
-- Duplicates work that Cobra already does
+- Manual os.Args parsing bypassed Cobra's flag mechanism
+- Implemented "last flag wins" behavior, which is non-standard for conflicting flags
+- Didn't handle edge cases properly
 
-**Solution:** Use Cobra's `cmd.Flags().Changed()` mechanism.
+**Solution Implemented:**
+Used Cobra's `MarkFlagsMutuallyExclusive()` to enforce standard CLI behavior where conflicting logging flags produce an error.
 
-**Implementation Steps:**
+**Changes Made:**
 
-1. Add a custom flag priority tracker:
-   ```go
-   type LogLevel int
+1. **Code changes** (`main.go`):
+   - Removed manual os.Args parsing loop (30 lines → 10 lines)
+   - Added `rootCmd.MarkFlagsMutuallyExclusive("quiet", "verbose", "debug")` in init()
+   - Simplified log level determination using direct flag values
 
-   const (
-       LevelNormal LogLevel = iota
-       LevelQuiet
-       LevelVerbose
-       LevelDebug
-   )
+2. **Documentation updates**:
+   - `docs/arguments/quiet.md` - Updated to reflect mutually exclusive behavior
+   - `docs/arguments/verbose.md` - Updated to reflect mutually exclusive behavior
+   - `docs/arguments/debug.md` - Updated to reflect mutually exclusive behavior
+   - `docs/arguments/validation.md` - Updated multiple flag behavior section
+   - `docs/arguments/README.md` - Updated logging level summary table
 
-   func determineLogLevel(cmd *cobra.Command) LogLevel {
-       // Check which flags were explicitly set
-       quietSet := cmd.Flags().Changed("quiet")
-       verboseSet := cmd.Flags().Changed("verbose")
-       debugSet := cmd.Flags().Changed("debug")
-
-       // Priority: debug > verbose > quiet > normal
-       if debugSet && debug {
-           return LevelDebug
-       }
-       if verboseSet && verbose {
-           return LevelVerbose
-       }
-       if quietSet && quiet {
-           return LevelQuiet
-       }
-       return LevelNormal
-   }
-   ```
-
-2. Update `runCobra` to use new function:
-   ```go
-   func runCobra(cmd *cobra.Command, args []string) error {
-       level := determineLogLevel(cmd)
-       logger := NewLogger(level)
-       // ...
-   }
-   ```
-
-3. Add mutually exclusive flag group (Cobra 1.8+):
-   ```go
-   rootCmd.MarkFlagsMutuallyExclusive("quiet", "verbose", "debug")
-   ```
-
-**Testing:**
-- Test `--quiet`
-- Test `--verbose`
-- Test `--debug`
-- Test `--quiet --verbose` (should error or use last one)
-- Test `-q -v` (short forms)
+**Breaking Change:**
+- Previous: `snag --quiet --verbose url` used verbose (last flag wins)
+- Current: `snag --quiet --verbose url` returns error (mutually exclusive)
+- This matches standard CLI tool behavior (kubectl, docker, gh, etc.)
 
 **Files Modified:**
-- `main.go`
+- `main.go` (code changes)
+- `docs/arguments/quiet.md`
+- `docs/arguments/verbose.md`
+- `docs/arguments/debug.md`
+- `docs/arguments/validation.md`
+- `docs/arguments/README.md`
 
 ---
 

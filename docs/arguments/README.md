@@ -140,18 +140,18 @@ These determine the primary operation mode:
 | `--open-browser`                      | Open visible browser           |
 | `--open-browser` + `--force-headless` | ❌ ERROR                       |
 
-### Logging Level (Last Flag Wins)
+### Logging Level (Mutually Exclusive)
 
-| Combination             | Effective Level     |
+| Combination             | Result              |
 | ----------------------- | ------------------- |
 | No logging flags        | Normal              |
 | `--quiet`               | Quiet               |
 | `--verbose`             | Verbose             |
 | `--debug`               | Debug               |
-| `--quiet` + `--verbose` | Verbose (last wins) |
-| `--debug` + `--verbose` | Verbose (last wins) |
-| `--quiet` + `--debug`   | Debug (last wins)   |
-| `--verbose` + `--quiet` | Quiet (last wins)   |
+| `--quiet` + `--verbose` | ❌ ERROR            |
+| `--debug` + `--verbose` | ❌ ERROR            |
+| `--quiet` + `--debug`   | ❌ ERROR            |
+| `--verbose` + `--quiet` | ❌ ERROR            |
 
 ---
 
