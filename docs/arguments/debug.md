@@ -11,9 +11,10 @@
 
 **Multiple Flag Conflicts:**
 
-- Multiple `--debug` flags → Last flag honored (standard Unix behavior)
-- `--debug` + `--verbose` → Last flag wins
-- `--debug` + `--quiet` → Last flag wins
+- Multiple `--debug` flags → Last flag honored (standard behavior)
+- `--debug` + `--verbose` → Error: mutually exclusive
+- `--debug` + `--quiet` → Error: mutually exclusive
+- Only one logging level flag can be used at a time
 
 #### Behavior
 
@@ -39,16 +40,16 @@ snag https://example.com --debug
 
 #### Interaction Matrix
 
-**Logging Level Priority (Last Flag Wins):**
+**Logging Level Flags (Mutually Exclusive):**
 
-| Combination                 | Effective Level | Rationale                      |
-| --------------------------- | --------------- | ------------------------------ |
-| `--debug`                   | Debug           | Maximum logging                |
-| `--debug --verbose`         | Verbose         | Last flag wins (Unix standard) |
-| `--verbose --debug`         | Debug           | Last flag wins                 |
-| `--debug --quiet`           | Quiet           | Last flag wins                 |
-| `--quiet --debug`           | Debug           | Last flag wins                 |
-| `--debug --quiet --verbose` | Verbose         | Last flag wins                 |
+| Combination                 | Result          | Error Message                                                             |
+| --------------------------- | --------------- | ------------------------------------------------------------------------- |
+| `--debug`                   | Debug           | (Valid - debug mode)                                                      |
+| `--debug --verbose`         | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug verbose] were all set` |
+| `--verbose --debug`         | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug verbose] were all set` |
+| `--debug --quiet`           | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet] were all set` |
+| `--quiet --debug`           | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet] were all set` |
+| `--debug --quiet --verbose` | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet verbose] were all set` |
 
 **All Other Flags:**
 
@@ -72,13 +73,15 @@ snag https://example.com --debug -o page.md         # Debug + file output
 snag --url-file urls.txt --debug                    # Debug batch processing
 snag --tab 1 --debug                                # Debug tab fetch
 snag --list-tabs --debug                            # Debug tab listing
-snag https://example.com --verbose --debug          # Debug wins (last flag)
 ```
 
-**No Invalid Combinations:**
+**Invalid (Mutually Exclusive):**
 
-- Boolean flag, no invalid values
-- Works with everything
+```bash
+snag https://example.com --debug --verbose          # Error: mutually exclusive
+snag https://example.com --debug --quiet            # Error: mutually exclusive
+snag https://example.com --debug --verbose --quiet  # Error: mutually exclusive
+```
 
 #### Implementation Details
 
@@ -90,8 +93,8 @@ snag https://example.com --verbose --debug          # Debug wins (last flag)
 
 **Processing:**
 
-1. Check if `--debug` flag is present
-2. If multiple logging flags, last one wins
+1. Cobra validates that only one logging flag is present (mutually exclusive)
+2. Check if `--debug` flag is set
 3. Initialize logger with debug level
 4. All subsequent operations use debug logging
 5. CDP messages logged via rod's debug capabilities

@@ -134,8 +134,8 @@ func init() {
 	rootCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress all output except errors and content")
 	rootCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug output")
 
-	// Hide default values for boolean flags in help output
-	// Cobra doesn't show "(default: false)" by default, so we're good!
+	// Logging flags are mutually exclusive
+	rootCmd.MarkFlagsMutuallyExclusive("quiet", "verbose", "debug")
 
 	// Set custom help template
 	rootCmd.SetHelpTemplate(cobraHelpTemplate)
@@ -168,37 +168,15 @@ func main() {
 }
 
 func runCobra(cmd *cobra.Command, args []string) error {
-	// Determine logging level (same logic as original)
+	// Determine logging level using Cobra's flag values
+	// Note: MarkFlagsMutuallyExclusive ensures only one is set
 	level := LevelNormal
-
-	lastLogFlag := ""
-	lastLogIndex := -1
-	for i, arg := range os.Args {
-		if arg == "--quiet" || arg == "-q" {
-			if i > lastLogIndex {
-				lastLogIndex = i
-				lastLogFlag = "quiet"
-			}
-		} else if arg == "--verbose" {
-			if i > lastLogIndex {
-				lastLogIndex = i
-				lastLogFlag = "verbose"
-			}
-		} else if arg == "--debug" {
-			if i > lastLogIndex {
-				lastLogIndex = i
-				lastLogFlag = "debug"
-			}
-		}
-	}
-
-	switch lastLogFlag {
-	case "quiet":
-		level = LevelQuiet
-	case "debug":
+	if debug {
 		level = LevelDebug
-	case "verbose":
+	} else if verbose {
 		level = LevelVerbose
+	} else if quiet {
+		level = LevelQuiet
 	}
 
 	logger = NewLogger(level)
