@@ -19,7 +19,7 @@
 **Technology Stack:**
 
 - Language: Go 1.25.3
-- CLI Framework: github.com/urfave/cli/v2 v2.27.7
+- CLI Framework: github.com/spf13/cobra v1.10.1
 - Browser Control: github.com/go-rod/rod v0.116.2 (Chrome DevTools Protocol)
 - HTML to Markdown: github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
 - HTML to Text: github.com/k3a/html2text v1.2.1
