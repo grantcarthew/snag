@@ -771,7 +771,7 @@ This design makes snag perfect for shell pipelines and AI agent integration.
 
 ### Technology
 
-- **Language**: Go 1.21+
+- **Language**: Go 1.25.3
 - **Browser Control**: Chrome DevTools Protocol via [go-rod/rod](https://github.com/go-rod/rod)
 - **HTML Conversion**: [html-to-markdown/v2](https://github.com/JohannesKaufmann/html-to-markdown)
 - **CLI Framework**: [cobra](https://github.com/spf13/cobra)

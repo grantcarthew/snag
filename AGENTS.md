@@ -1,5 +1,7 @@
 # AGENTS.md
 
+> **A README for AI coding agents** - This document provides context and instructions for AI coding agents working on snag. For human contributors, see [README.md](README.md).
+
 ## Project Overview
 
 `snag` is a CLI tool that intelligently fetches web page content using Chrome/Chromium via the Chrome DevTools Protocol (CDP). Built for AI agents to consume web content efficiently.
@@ -18,7 +20,7 @@
 
 **Technology Stack:**
 
-- Language: Go 1.21+
+- Language: Go 1.25.3
 - CLI Framework: github.com/spf13/cobra v1.10.1
 - Browser Control: github.com/go-rod/rod v0.116.2 (Chrome DevTools Protocol)
 - HTML to Markdown: github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
@@ -112,7 +114,7 @@ rm -f snag snag-*
 **Go Conventions:**
 
 - Follow standard Go formatting: use `gofmt` or `goimports`
-- Use Go 1.21+ features and idioms
+- Use Go 1.25.3+ features and idioms
 - Keep functions focused and small
 - Use descriptive variable names
 
@@ -465,6 +467,9 @@ Third-party licenses in `LICENSES/` directory.
   - Resolved 7 critical contradictions across 21 argument files
   - Standardized 7 warning message inconsistencies
   - Updated validation.md and README.md compatibility matrices
+- ✅ Cobra help template improvements (commit: 50ba8b5)
+- ✅ Validation refactoring with flagChanged parameter (commit: 52a4d24)
+- ✅ Markdown converter instance reuse optimization (commit: edc37f9)
 
 **Known Limitations:**
 

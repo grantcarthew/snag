@@ -498,7 +498,7 @@ curl -L https://github.com/grantcarthew/snag/releases/latest/download/snag-linux
 
 **Build:**
 
-- Go 1.21+
+- Go 1.25.3+
 - Standard library
 
 **External:**
