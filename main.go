@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -50,6 +51,7 @@ const (
 var (
 	logger         *Logger
 	browserManager *BrowserManager
+	browserMutex   sync.Mutex // Protects browserManager access
 )
 
 var (
@@ -174,9 +176,11 @@ func main() {
 		sig := <-sigChan
 		fmt.Fprintf(os.Stderr, "\nReceived %v, cleaning up...\n", sig)
 
+		browserMutex.Lock()
 		if browserManager != nil {
 			browserManager.Close()
 		}
+		browserMutex.Unlock()
 
 		if sig == os.Interrupt {
 			os.Exit(ExitCodeInterrupt)
