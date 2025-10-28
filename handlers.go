@@ -20,21 +20,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Config struct {
-	URL           string
-	OutputFile    string
-	OutputDir     string
-	Format        string
-	Timeout       int
-	WaitFor       string
-	Port          int
-	CloseTab      bool
-	ForceHeadless bool
-	OpenBrowser   bool
-	UserAgent     string
-	UserDataDir   string
-}
-
 func snag(config *Config) error {
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          config.Port,
