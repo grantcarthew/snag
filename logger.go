@@ -45,15 +45,18 @@ func NewLogger(level LogLevel) *Logger {
 }
 
 func shouldUseColor() bool {
+	// Respect NO_COLOR environment variable
 	if os.Getenv("NO_COLOR") != "" {
 		return false
 	}
 
-	if fileInfo, err := os.Stderr.Stat(); err == nil {
-		return (fileInfo.Mode() & os.ModeCharDevice) != 0
+	// Check if stderr is a terminal (TTY)
+	fileInfo, err := os.Stderr.Stat()
+	if err != nil {
+		return false
 	}
 
-	return false
+	return (fileInfo.Mode() & os.ModeCharDevice) != 0
 }
 
 func (l *Logger) Success(format string, args ...interface{}) {
