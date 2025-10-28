@@ -34,6 +34,13 @@
    - Config now in logical location alongside other global types
    - Tests: ✅ All tests pass (build successful)
 
+4. **HIGH-2**: Error swallowing in detectAuth → **FIXED**
+   - Added debug logging when JavaScript evaluation fails in fetch.go:100-102
+   - Changed `if err == nil && ...` to `if err != nil { logger.Debug(...) } else if ...`
+   - Auth detection failures now visible in debug logs
+   - Maintains best-effort behavior (doesn't fail on eval errors)
+   - Tests: ✅ All tests pass (build successful)
+
 ### Won't Do ❌
 
 1. **HIGH-3**: handlers.go file size (908 lines) → **WON'T DO**
@@ -45,7 +52,7 @@
 
 **Remaining Issues**:
 - 🔴 Critical: 0 remaining (2 completed, 1 was false positive)
-- 🟡 High Priority: 3 remaining (1 completed, 1 marked Won't Do)
+- 🟡 High Priority: 2 remaining (2 completed, 1 marked Won't Do)
 - 🟢 Medium Priority: 12 remaining
 - 🔵 Low Priority: 8 remaining
 
@@ -286,9 +293,11 @@ func validateOutputPathEscape(outputDir, filename string) error {
 
 ---
 
-### 🟡 HIGH-2: Error Swallowing in fetch.go detectAuth
+### 🟡 HIGH-2: Error Swallowing in fetch.go detectAuth → **FIXED**
 
-**Location**: `fetch.go:96-112`
+**Location**: `fetch.go:96-112` (fixed at fetch.go:100-102)
+
+**Status**: Completed - Debug logging added for JavaScript evaluation failures
 
 **Issue**: JavaScript evaluation errors are silently ignored. If the `Eval()` call fails (e.g., due to page context issues, CSP restrictions), the function continues without any indication that auth detection failed.
 

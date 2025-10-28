@@ -97,7 +97,10 @@ func (pf *PageFetcher) detectAuth() error {
 		return window.performance?.getEntriesByType?.('navigation')?.[0]?.responseStatus || 0;
 	}`)
 
-	if err == nil && statusCode.Value.Int() > 0 {
+	if err != nil {
+		// Log but don't fail - this is best-effort auth detection
+		logger.Debug("Failed to get HTTP status via JavaScript: %v", err)
+	} else if statusCode.Value.Int() > 0 {
 		status := statusCode.Value.Int()
 		logger.Debug("HTTP status code: %d", status)
 
