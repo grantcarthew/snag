@@ -38,7 +38,7 @@ var (
 	ErrTabIndexInvalid = errors.New("tab index out of range")
 
 	// ErrTabURLConflict indicates both --tab flag and URL argument were provided
-	ErrTabURLConflict = errors.New("cannot use --tab with URL argument")
+	ErrTabURLConflict = errors.New("cannot use both --tab and URL arguments")
 
 	// ErrNoTabMatch indicates no tab matches the provided pattern
 	ErrNoTabMatch = errors.New("no tab matches pattern")

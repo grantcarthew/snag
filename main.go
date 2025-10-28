@@ -211,7 +211,7 @@ func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs 
 
 	// Check tab + URL conflicts
 	if cmd.Flags().Changed("tab") && hasURLs {
-		logger.Error("Cannot use --tab with URL argument (mutually exclusive content sources)")
+		logger.Error("Cannot use both --tab and URL arguments (mutually exclusive content sources)")
 		return ErrTabURLConflict
 	}
 
@@ -249,7 +249,7 @@ func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs 
 	outDir := strings.TrimSpace(outputDir)
 
 	if outputFile != "" && outDir != "" {
-		logger.Error("Cannot use --output and --output-dir together")
+		logger.Error("Cannot use both --output and --output-dir")
 		logger.Info("Use --output for specific filename OR --output-dir for auto-generated filename")
 		return fmt.Errorf("conflicting flags: --output and --output-dir")
 	}

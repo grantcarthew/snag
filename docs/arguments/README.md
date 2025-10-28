@@ -194,7 +194,7 @@ These determine the primary operation mode:
 
 **Conflict:**
 
-- `-o` + `-d`: ❌ ERROR: `"Cannot use --output and --output-dir together"`
+- `-o` + `-d`: ❌ ERROR: `"Cannot use both --output and --output-dir"`
 
 ### Group 3: Browser Mode
 
