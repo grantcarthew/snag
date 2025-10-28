@@ -89,6 +89,14 @@
    - Changes: main.go:110-157 (const instead of func), main.go:196 (direct use)
    - Tests: ✅ Build successful
 
+11. **MEDIUM-6**: shouldUseColor() early return → **FIXED**
+   - Refactored to use early return pattern for error handling
+   - Separated assignment from condition check for clarity
+   - Added comments explaining NO_COLOR and TTY checks
+   - More idiomatic Go - early return on error instead of nesting happy path
+   - Changes: logger.go:47-60
+   - Tests: ✅ Build successful
+
 ### Won't Do ❌
 
 1. **HIGH-3**: handlers.go file size (908 lines) → **WON'T DO**
@@ -106,7 +114,7 @@
 **Remaining Issues**:
 - 🔴 Critical: 0 remaining (2 completed, 1 was false positive)
 - 🟡 High Priority: 0 remaining (3 completed, 2 marked Won't Do)
-- 🟢 Medium Priority: 7 remaining (5 completed)
+- 🟢 Medium Priority: 6 remaining (6 completed)
 - 🔵 Low Priority: 8 remaining
 
 **Next Steps**: Continue with Medium Priority issues
