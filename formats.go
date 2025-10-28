@@ -26,6 +26,18 @@ const (
 	BytesPerKB      = 1024.0 // Bytes in a kilobyte
 )
 
+// markdownConverter is a reusable HTML-to-Markdown converter.
+// Created once at package initialization with all necessary plugins.
+// The converter is stateless and safe for concurrent use.
+var markdownConverter = converter.NewConverter(
+	converter.WithPlugins(
+		base.NewBasePlugin(),
+		commonmark.NewCommonmarkPlugin(),
+		table.NewTablePlugin(),
+		strikethrough.NewStrikethroughPlugin(),
+	),
+)
+
 // ContentConverter handles content format conversion and output
 type ContentConverter struct {
 	format string
@@ -72,17 +84,8 @@ func (cc *ContentConverter) Process(html string, outputFile string) error {
 }
 
 func (cc *ContentConverter) convertToMarkdown(html string) (string, error) {
-	// Create converter with table and strikethrough plugin support
-	conv := converter.NewConverter(
-		converter.WithPlugins(
-			base.NewBasePlugin(),
-			commonmark.NewCommonmarkPlugin(),
-			table.NewTablePlugin(),
-			strikethrough.NewStrikethroughPlugin(),
-		),
-	)
-
-	markdown, err := conv.ConvertString(html)
+	// Reuse package-level converter (stateless, thread-safe)
+	markdown, err := markdownConverter.ConvertString(html)
 	if err != nil {
 		return "", err
 	}

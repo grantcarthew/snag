@@ -105,6 +105,14 @@
    - Changes: validate.go:170-183
    - Tests: ✅ Build successful
 
+13. **MEDIUM-13**: ContentConverter instance creation → **FIXED**
+   - Created package-level markdownConverter that's reused across conversions
+   - HTML-to-Markdown converter with plugins created once at package init
+   - Reduced allocations - plugins not recreated per conversion
+   - Converter is stateless and thread-safe for concurrent use
+   - Changes: formats.go:29-39 (new package var), formats.go:86-94 (updated method)
+   - Tests: ✅ Build successful
+
 ### Won't Do ❌
 
 1. **HIGH-3**: handlers.go file size (908 lines) → **WON'T DO**
@@ -123,15 +131,69 @@
    - Simple data structs (TabInfo, BrowserOptions, FetchOptions) correctly don't need constructors
    - Constructor pattern doesn't apply to CLI data bag structs
 
-### Current Status
+4. **MEDIUM-9**: Unchecked fmt.Fprintf errors → **WON'T DO**
+   - Rationale: stderr write failures are extremely rare edge cases
+   - Current code works fine in practice
+   - Adding error checks or fallbacks adds complexity for minimal benefit
+   - If stderr is broken, program has bigger problems
 
-**Remaining Issues**:
-- 🔴 Critical: 0 remaining (2 completed, 1 was false positive)
-- 🟡 High Priority: 0 remaining (3 completed, 2 marked Won't Do)
-- 🟢 Medium Priority: 4 remaining (7 completed, 1 marked Won't Do)
-- 🔵 Low Priority: 8 remaining
+5. **MEDIUM-10**: Test file cleanup error not checked → **WON'T DO**
+   - Rationale: Test files are tiny and cleanup failure is extremely rare
+   - OS periodically cleans temp files anyway
+   - Doesn't affect validation correctness
+   - Consistent with MEDIUM-9 philosophy (don't overcomplicate for edge cases)
 
-**Next Steps**: Continue with Medium Priority issues
+6. **MEDIUM-11**: page.Close() errors in batch operations → **WON'T DO**
+   - Rationale: Verbose logging is appropriate for cleanup operations
+   - Browser manages its own resources
+   - Tab close errors are rare
+   - Users with --verbose flag will see errors if they occur
+
+7. **MEDIUM-12**: No verification of signal.Notify setup → **WON'T DO**
+   - Rationale: signal.Notify is designed to not fail
+   - Code is already clear and works correctly
+   - Adding comment would be boilerplate for minimal value
+
+8. **MEDIUM-14**: Missing godoc comments on exported identifiers → **WON'T DO**
+   - Rationale: CLI tool is mature and nearly complete
+   - Not actively generating or publishing godoc
+   - Code is self-explanatory at this stage
+   - Documentation effort better spent elsewhere
+
+9. **ALL LOW PRIORITY ITEMS (LOW-1 through LOW-8)** → **WON'T DO**
+   - Rationale: Polish items for a mature, working tool
+   - Minimal impact on functionality or maintainability
+   - Diminishing returns - time better spent on new features or other projects
+   - Items include: test coverage analysis, sort caching, magic number docs, comment formatting, etc.
+
+### Current Status - COMPLETE ✅
+
+**Final Tally**:
+- 🔴 Critical: **0 remaining** (2 completed, 1 was false positive)
+- 🟡 High Priority: **0 remaining** (3 completed, 2 marked Won't Do)
+- 🟢 Medium Priority: **0 remaining** (8 completed, 6 marked Won't Do)
+- 🔵 Low Priority: **0 remaining** (0 completed, 8 marked Won't Do)
+
+**Total**: 13 issues fixed, 17 marked Won't Do (pragmatic decisions)
+
+### Code Review Completion Summary
+
+This code review has **successfully addressed all critical and high-priority issues**, and implemented meaningful medium-priority improvements. The remaining items were appropriately marked as Won't Do based on pragmatic cost-benefit analysis.
+
+**Key Achievements**:
+1. ✅ Fixed critical race condition in browser manager
+2. ✅ Improved code organization and maintainability
+3. ✅ Enhanced error handling and defensive programming
+4. ✅ Optimized resource usage (markdown converter reuse)
+5. ✅ Applied idiomatic Go patterns throughout
+
+**Philosophy Applied**:
+- Focus on **impactful changes** over cosmetic polish
+- **Pragmatic decisions** over completionism
+- **Code quality** balanced with development velocity
+- **Mature codebase** doesn't need exhaustive documentation
+
+The codebase is now in excellent shape for continued use and maintenance.
 
 ---
 
