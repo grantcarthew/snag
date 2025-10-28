@@ -108,47 +108,28 @@ var (
 )
 
 // helpTemplate is the custom Cobra help template.
-// This template includes the AGENT USAGE section which provides AI agents with
-// quick reference for common workflows, integration behavior, and performance expectations.
 const helpTemplate = `USAGE:
   {{.UseLine}}{{if .HasAvailableSubCommands}}
   {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
 
 ALIASES:
-  {{.NameAndAliases}}{{end}}{{if .HasExample}}
-
-EXAMPLES:
-{{.Example}}{{end}}
+  {{.NameAndAliases}}{{end}}
 
 DESCRIPTION:
   snag fetches web page content using Chromium/Chrome automation.
   It can connect to existing browser sessions, launch headless browsers, or open
   visible browsers for authenticated sessions.
 
-  Output formats: Markdown, HTML, text, PDF, or PNG.
+  Output formats:  Markdown (md), HTML, text (txt), PDF, or PNG.
+  Filename format: yyyy-mm-dd-hhmmss-<title>-<n>.<ext>
 
   The perfect companion for AI agents to gain context from web pages.
+{{if .HasExample}}
+EXAMPLES:
+{{.Example}}{{end}}{{if .HasAvailableLocalFlags}}
 
-AGENT USAGE:
-  Common workflows:
-  • Single page: snag example.com
-  • Multiple pages: snag -d output/ url1 url2 url3
-  • Authenticated pages: snag --open-browser (authenticate), then snag -t <pattern>
-  • All browser tabs: snag --all-tabs -d output/
-
-  Integration:
-  • Content → stdout, logs → stderr (pipe-safe)
-  • Non-zero exit on errors
-  • Auto-names files with timestamps
-
-  Performance: 2-5 seconds per page. Tab reuse is faster.
-{{if .HasAvailableLocalFlags}}
-
-GLOBAL OPTIONS:
-{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
-
-GLOBAL OPTIONS:
-{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+OPTIONS:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
 
 ADDITIONAL HELP TOPICS:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
   {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
@@ -160,8 +141,41 @@ var rootCmd = &cobra.Command{
 	Use:     "snag [options] URL...",
 	Short:   "Intelligently fetch web page content using a browser engine",
 	Version: version,
-	Args:    cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
-	RunE:    runCobra,
+	Example: `  # Fetch a single page (Markdown to stdout)
+  snag example.com
+  snag https://github.com/grantcarthew/snag
+
+  # Different output formats
+  snag -f html example.com
+  snag -f text example.com > page.txt
+  snag -f pdf -o doc.pdf example.com
+
+  # Save to file
+  snag -o page.md example.com
+  snag -d output/ example.com          # Auto-generated filename
+
+  # Fetch multiple pages
+  snag example.com github.com          # Auto-generated filenames to pwd
+  snag -d output/ url1 url2 url3
+  snag --url-file urls.txt -d ./pages/
+
+  # Work with browser tabs (index and listed in alphabetical order)
+  snag --list-tabs                     # List all open tabs
+  snag -t 1                            # Fetch first tab
+  snag -t "github"                     # Match tab by URL pattern
+  snag -t 2-5 -d tabs/                 # Fetch tabs 2 through 5
+  snag --all-tabs -d output/           # Fetch all open tabs
+
+  # Authenticated sessions
+  snag --open-browser                  # Open browser, login manually
+  snag -t "dashboard" -o data.md       # Fetch authenticated page
+
+  # Advanced options
+  snag --wait-for ".content" example.com
+  snag --timeout 60 slow-site.com
+  snag --user-agent "Bot/1.0" example.com`,
+	Args: cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
+	RunE: runCobra,
 }
 
 func init() {
