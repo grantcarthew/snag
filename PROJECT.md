@@ -73,6 +73,14 @@
    - Changes: main.go:69-80 (new method), handlers.go:24 (updated call)
    - Tests: ✅ Build successful
 
+9. **MEDIUM-4**: validate.go mixed responsibilities → **FIXED**
+   - Moved loadURLsFromFile() from validate.go to handlers.go
+   - Function is used by handlers, so better fits in handlers.go
+   - Keeps validate.go focused on validation logic only
+   - Updated imports: added bufio to handlers.go, removed from validate.go
+   - Changes: handlers.go:916-984 (moved function), validate.go:406-474 (removed)
+   - Tests: ✅ Build successful
+
 ### Won't Do ❌
 
 1. **HIGH-3**: handlers.go file size (908 lines) → **WON'T DO**
@@ -90,7 +98,7 @@
 **Remaining Issues**:
 - 🔴 Critical: 0 remaining (2 completed, 1 was false positive)
 - 🟡 High Priority: 0 remaining (3 completed, 2 marked Won't Do)
-- 🟢 Medium Priority: 9 remaining (3 completed)
+- 🟢 Medium Priority: 8 remaining (4 completed)
 - 🔵 Low Priority: 8 remaining
 
 **Next Steps**: Continue with Medium Priority issues
