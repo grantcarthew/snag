@@ -228,7 +228,7 @@ Batch complete: 2 succeeded, 0 failed
 
 **Key Functions:**
 
-- `loadURLsFromFile(filename)` - Reads and validates URL file (validate.go:251-317)
+- `validate.go:loadURLsFromFile()` - Reads and validates URL file
 - File validation happens before CLI URL validation
 - Invalid URLs logged with line numbers for debugging
 

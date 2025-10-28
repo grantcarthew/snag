@@ -80,7 +80,7 @@ snag --help --version                               # Shows HELP (not version)
 **Location:**
 
 - Flag definition: Built into `github.com/spf13/cobra` framework
-- Version set in `main.go:20` via `version` variable
+- Version variable: `main.go` (package-level `version` variable)
 
 **Processing:**
 
