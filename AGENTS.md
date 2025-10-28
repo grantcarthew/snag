@@ -18,7 +18,7 @@
 
 **Technology Stack:**
 
-- Language: Go 1.25.3
+- Language: Go 1.21+
 - CLI Framework: github.com/spf13/cobra v1.10.1
 - Browser Control: github.com/go-rod/rod v0.116.2 (Chrome DevTools Protocol)
 - HTML to Markdown: github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
@@ -112,18 +112,18 @@ rm -f snag snag-*
 **Go Conventions:**
 
 - Follow standard Go formatting: use `gofmt` or `goimports`
-- Use Go 1.25.3+ features and idioms
+- Use Go 1.21+ features and idioms
 - Keep functions focused and small
 - Use descriptive variable names
 
 **Project-Specific Patterns:**
 
-- Flat project structure at root (main.go, browser.go, fetch.go, convert.go, logger.go, errors.go, validate.go)
+- Flat project structure at root (main.go, browser.go, fetch.go, formats.go, handlers.go, output.go, logger.go, errors.go, validate.go)
 - Custom logger for CLI output (logger.go)
 - Sentinel errors for internal logic (errors.go)
-- Exit codes: 0 (success), 1 (any error)
+- Exit codes: 0 (success), 1 (any error), 130 (SIGINT), 143 (SIGTERM)
 - Output routing (critical for piping):
-  - stdout: Content only (HTML/Markdown)
+  - stdout: Content only (HTML/Markdown/Text or binary formats)
   - stderr: All logs, warnings, errors, progress indicators
 
 **Naming Conventions:**
@@ -256,13 +256,15 @@ go test -v -cover                    # With coverage
 
 **File Structure:**
 
-- `main.go` - CLI (urfave/cli), flags, handlers
+- `main.go` - CLI (Cobra), flags, handlers
 - `browser.go` - Browser/tab management (rod)
 - `fetch.go` - Page fetching, CDP operations
-- `convert.go` - HTML to Markdown
+- `formats.go` - Content conversion (HTML to Markdown/Text, PDF, PNG)
 - `logger.go` - Custom logger (4 levels, stderr only)
 - `errors.go` - Sentinel errors
 - `validate.go` - Input validation
+- `output.go` - Filename generation and conflict resolution
+- `handlers.go` - CLI command handlers
 
 **Key Tab Code Locations:**
 
@@ -369,7 +371,7 @@ snag -t 2 --wait-for ".loaded"         # Wait for selector
 
 **Direct Dependencies:**
 
-- `github.com/urfave/cli/v2` v2.27.7 - CLI framework
+- `github.com/spf13/cobra` v1.10.1 - CLI framework
 - `github.com/go-rod/rod` v0.116.2 - Chrome DevTools Protocol
 - `github.com/JohannesKaufmann/html-to-markdown/v2` v2.4.0 - HTML to Markdown conversion
 - `github.com/k3a/html2text` v1.2.1 - HTML to plain text conversion

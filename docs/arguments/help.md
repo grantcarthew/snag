@@ -78,7 +78,7 @@ snag --help -o file.md --format pdf --verbose       # Help (everything ignored)
 
 **Location:**
 
-- Flag definition: Built into `github.com/urfave/cli/v2` framework
+- Flag definition: Built into `github.com/spf13/cobra` framework
 - Auto-generated help by CLI framework
 
 **Processing:**
