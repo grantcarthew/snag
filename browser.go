@@ -359,10 +359,11 @@ func (bm *BrowserManager) getSortedPagesWithInfo() ([]pageWithInfo, error) {
 
 	// Build list with cached info (single page.Info() call per page)
 	pagesWithInfo := make([]pageWithInfo, 0, len(pages))
-	for _, page := range pages {
+	for i, page := range pages {
 		info, err := page.Info()
 		if err != nil {
-			logger.Warning("Failed to get info for page: %v", err)
+			logger.Warning("Failed to get info for tab at position %d (will be excluded from list): %v", i+1, err)
+			logger.Debug("Tab page object: %+v", page)
 			continue
 		}
 		pagesWithInfo = append(pagesWithInfo, pageWithInfo{
@@ -371,6 +372,12 @@ func (bm *BrowserManager) getSortedPagesWithInfo() ([]pageWithInfo, error) {
 			title: info.Title,
 			id:    string(page.TargetID),
 		})
+	}
+
+	// Warn if some tabs were excluded
+	if len(pagesWithInfo) < len(pages) {
+		excluded := len(pages) - len(pagesWithInfo)
+		logger.Warning("Excluded %d tab(s) due to inaccessible page info", excluded)
 	}
 
 	sort.Slice(pagesWithInfo, func(i, j int) bool {
