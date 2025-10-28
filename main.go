@@ -48,6 +48,24 @@ const (
 	DefaultTimeout = 30 // Default timeout in seconds
 )
 
+// Config holds all configuration options for a snag operation.
+// These values are typically populated from CLI flags and validated
+// before being passed to handler functions.
+type Config struct {
+	URL           string
+	OutputFile    string
+	OutputDir     string
+	Format        string
+	Timeout       int
+	WaitFor       string
+	Port          int
+	CloseTab      bool
+	ForceHeadless bool
+	OpenBrowser   bool
+	UserAgent     string
+	UserDataDir   string
+}
+
 var (
 	logger         *Logger
 	browserManager *BrowserManager
