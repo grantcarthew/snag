@@ -82,7 +82,7 @@ snag https://example.com -d ""
 
 **Error messages:**
 
-- `-d` + `-o`: `"Cannot use --output and --output-dir together"`
+- `-d` + `-o`: `"Cannot use both --output and --output-dir"`
 
 **Content Source Interactions:**
 

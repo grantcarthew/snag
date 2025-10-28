@@ -97,7 +97,7 @@ snag https://example.com -o myfile --format markdown
 
 **Error message:**
 
-- `"Cannot use --output and --output-dir together"`
+- `"Cannot use both --output and --output-dir"`
 
 **Special Operation Modes:**
 
