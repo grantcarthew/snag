@@ -65,6 +65,14 @@
    - Changes: browser.go:362-381
    - Tests: ✅ Build successful
 
+8. **MEDIUM-3**: BrowserOptions and Config redundancy → **FIXED**
+   - Added BrowserOptions() helper method to Config struct
+   - Eliminates repetitive 5-field struct literal creation
+   - Updated snag() function to use config.BrowserOptions()
+   - Reduced code from 7 lines to 1 line at call site
+   - Changes: main.go:69-80 (new method), handlers.go:24 (updated call)
+   - Tests: ✅ Build successful
+
 ### Won't Do ❌
 
 1. **HIGH-3**: handlers.go file size (908 lines) → **WON'T DO**
@@ -82,7 +90,7 @@
 **Remaining Issues**:
 - 🔴 Critical: 0 remaining (2 completed, 1 was false positive)
 - 🟡 High Priority: 0 remaining (3 completed, 2 marked Won't Do)
-- 🟢 Medium Priority: 10 remaining (2 completed)
+- 🟢 Medium Priority: 9 remaining (3 completed)
 - 🔵 Low Priority: 8 remaining
 
 **Next Steps**: Continue with Medium Priority issues

@@ -66,6 +66,19 @@ type Config struct {
 	UserDataDir   string
 }
 
+// BrowserOptions creates a BrowserOptions from this Config.
+// This helper method extracts browser-related fields from the full configuration,
+// avoiding repetitive struct literal creation throughout the codebase.
+func (c *Config) BrowserOptions() BrowserOptions {
+	return BrowserOptions{
+		Port:          c.Port,
+		ForceHeadless: c.ForceHeadless,
+		OpenBrowser:   c.OpenBrowser,
+		UserAgent:     c.UserAgent,
+		UserDataDir:   c.UserDataDir,
+	}
+}
+
 var (
 	logger         *Logger
 	browserManager *BrowserManager
