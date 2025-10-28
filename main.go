@@ -458,15 +458,8 @@ func runCobra(cmd *cobra.Command, args []string) error {
 			validatedUserDataDir = validatedDir
 		}
 
-		validatedUserAgent := ""
-		if cmd.Flags().Changed("user-agent") {
-			validatedUserAgent = validateUserAgent(userAgent)
-		}
-
-		validatedWaitFor := ""
-		if cmd.Flags().Changed("wait-for") {
-			validatedWaitFor = validateWaitFor(waitFor)
-		}
+		validatedUserAgent := validateUserAgent(userAgent, cmd.Flags().Changed("user-agent"))
+		validatedWaitFor := validateWaitFor(waitFor, cmd.Flags().Changed("wait-for"))
 
 		config := &Config{
 			URL:           validatedURL,

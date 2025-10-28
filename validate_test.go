@@ -465,7 +465,7 @@ func TestValidateWaitFor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := validateWaitFor(tt.input)
+			result := validateWaitFor(tt.input, true)
 			if result != tt.expected {
 				t.Errorf("validateWaitFor(%q) = %q, expected %q", tt.input, result, tt.expected)
 			}
@@ -498,7 +498,7 @@ func TestValidateUserAgent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := validateUserAgent(tt.input)
+			result := validateUserAgent(tt.input, true)
 			if result != tt.expected {
 				t.Errorf("validateUserAgent(%q) = %q, expected %q", tt.input, result, tt.expected)
 			}
@@ -521,7 +521,7 @@ func TestValidateUserAgent_SecuritySanitization(t *testing.T) {
 
 	for _, tt := range maliciousInputs {
 		t.Run(tt.name, func(t *testing.T) {
-			result := validateUserAgent(tt.input)
+			result := validateUserAgent(tt.input, true)
 			// Result should not contain \n or \r
 			if strings.Contains(result, "\n") || strings.Contains(result, "\r") {
 				t.Errorf("validateUserAgent(%q) still contains newline/CR characters: %q", tt.input, result)

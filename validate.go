@@ -310,11 +310,14 @@ func validateOutputPathEscape(outputDir, filename string) error {
 
 // validateWaitFor validates the wait-for CSS selector string.
 // Returns the trimmed selector, or empty string with warning if input is empty.
-func validateWaitFor(selector string) string {
+// flagSet indicates whether the user explicitly provided the flag (prevents spurious warnings).
+func validateWaitFor(selector string, flagSet bool) string {
 	selector = strings.TrimSpace(selector)
 
 	if selector == "" {
-		logger.Warning("--wait-for is empty, ignoring")
+		if flagSet {
+			logger.Warning("--wait-for is empty, ignoring")
+		}
 		return ""
 	}
 
@@ -324,11 +327,14 @@ func validateWaitFor(selector string) string {
 // validateUserAgent validates and sanitizes the user agent string.
 // Returns the sanitized user agent, or empty string with warning if input is empty.
 // Sanitizes newlines for security (prevents HTTP header injection).
-func validateUserAgent(ua string) string {
+// flagSet indicates whether the user explicitly provided the flag (prevents spurious warnings).
+func validateUserAgent(ua string, flagSet bool) string {
 	ua = strings.TrimSpace(ua)
 
 	if ua == "" {
-		logger.Warning("--user-agent is empty, using default user agent")
+		if flagSet {
+			logger.Warning("--user-agent is empty, using default user agent")
+		}
 		return ""
 	}
 
