@@ -23,8 +23,9 @@ While the migration is functional (all 124 tests passing), some refactorings wer
 - ✅ Task 3.1: Extracted duplicate batch processing code (~92 lines eliminated)
 - ✅ Task 3.2: Replaced magic numbers with named constants (4 files updated)
 - ✅ Task 3.3: Comprehensive flag combination validation (~50 lines duplicate code eliminated)
+- ✅ Task 3.5: Moved help template to separate function (improved code organization)
 
-**Pending Review:** Remaining Phase 3 and Phase 4 tasks.
+**Pending Review:** Remaining Phase 3 (Tasks 3.6-3.7) and Phase 4 tasks.
 
 ## Success Criteria
 
@@ -823,80 +824,51 @@ Successfully replaced all magic numbers with named constants:
 
 ### Task 3.5: Move Help Template to Separate Function
 
-**Location:** `main.go:58-102`
+**Status:** ✅ Complete (2025-10-28)
 
-**Problem:** 45-line string literal reduces readability.
+**Location:** `main.go:77-126` (previously lines 78-122)
 
-**Solution:** Extract to function or variable.
+**Problem:** 45-line help template string literal defined as package-level variable reduced readability.
 
-**Implementation Steps:**
+**Solution Implemented:** Extracted to `getHelpTemplate()` function.
 
-1. Create function:
-   ```go
-   // getHelpTemplate returns the custom Cobra help template
-   func getHelpTemplate() string {
-       return `USAGE:
-     {{.UseLine}}{{if .HasAvailableSubCommands}}
-     {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+**Rationale for Keeping Custom Template:**
 
-   ALIASES:
-     {{.NameAndAliases}}{{end}}{{if .HasExample}}
+Custom template is **essential** - it includes the AGENT USAGE section (lines 100-112) which provides:
+- Common workflow patterns for AI agents
+- Integration behavior (stdout/stderr routing)
+- Performance expectations
+- Cannot be replicated with Cobra's default help template
 
-   EXAMPLES:
-   {{.Example}}{{end}}
+**Changes Made:**
 
-   DESCRIPTION:
-     snag fetches web page content using Chromium/Chrome automation.
-     It can connect to existing browser sessions, launch headless browsers, or open
-     visible browsers for authenticated sessions.
+1. **Replaced package-level variable with function** (main.go:77-126):
+   - Changed `var cobraHelpTemplate = ...` to `func getHelpTemplate() string`
+   - Added godoc comment explaining purpose of AGENT USAGE section
+   - Template content unchanged (preserves all formatting and sections)
 
-     Output formats: Markdown, HTML, text, PDF, or PNG.
+2. **Updated init() to call function** (main.go:165):
+   - Changed `rootCmd.SetHelpTemplate(cobraHelpTemplate)` to `rootCmd.SetHelpTemplate(getHelpTemplate())`
 
-     The perfect companion for AI agents to gain context from web pages.
+**Results:**
 
-   AGENT USAGE:
-     Common workflows:
-     • Single page: snag example.com
-     • Multiple pages: snag -d output/ url1 url2 url3
-     • Authenticated pages: snag --open-browser (authenticate), then snag -t <pattern>
-     • All browser tabs: snag --all-tabs -d output/
-
-     Integration:
-     • Content → stdout, logs → stderr (pipe-safe)
-     • Non-zero exit on errors
-     • Auto-names files with timestamps
-
-     Performance: 2-5 seconds per page. Tab reuse is faster.
-   {{if .HasAvailableLocalFlags}}
-
-   GLOBAL OPTIONS:
-   {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
-
-   GLOBAL OPTIONS:
-   {{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
-
-   ADDITIONAL HELP TOPICS:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
-     {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
-
-   Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
-   `
-   }
-   ```
-
-2. Use in init():
-   ```go
-   func init() {
-       rootCmd = &cobra.Command{...}
-       rootCmd.SetHelpTemplate(getHelpTemplate())
-       // ...
-   }
-   ```
+- ✅ Help template extracted to dedicated function
+- ✅ Improved code organization and readability
+- ✅ Added documentation explaining why custom template is needed
+- ✅ AGENT USAGE section preserved
+- ✅ Help output identical (verified with --help)
+- ✅ No behavioral changes
 
 **Testing:**
-- Verify --help output unchanged
+
+- ✅ Code compiles successfully
+- ✅ `./snag --help` output unchanged (all sections present)
+- ✅ AGENT USAGE section displays correctly
+- ✅ Flag documentation renders properly
 
 **Files Modified:**
-- `main.go`
+
+- `main.go` (replaced variable with function)
 
 ---
 
