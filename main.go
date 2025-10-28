@@ -187,6 +187,101 @@ func main() {
 	}
 }
 
+// validateFlagCombinations checks for invalid flag combinations early in execution.
+// This centralizes all flag conflict validation logic for maintainability.
+// Returns error for invalid combinations, nil if valid.
+func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs bool) error {
+	// --list-tabs overrides everything (handled separately in runCobra, no validation needed here)
+
+	// Group 1: Content Source Conflicts (Mutually Exclusive)
+	contentSources := 0
+	if hasURLs {
+		contentSources++
+	}
+	if cmd.Flags().Changed("tab") {
+		contentSources++
+	}
+	if allTabs {
+		contentSources++
+	}
+
+	// Check tab + URL conflicts
+	if cmd.Flags().Changed("tab") && hasURLs {
+		logger.Error("Cannot use --tab with URL argument (mutually exclusive content sources)")
+		return ErrTabURLConflict
+	}
+
+	// Check all-tabs + URL conflicts
+	if allTabs && hasURLs {
+		logger.Error("Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)")
+		return fmt.Errorf("conflicting flags: --all-tabs and URL arguments")
+	}
+
+	// Check tab + all-tabs conflicts
+	if cmd.Flags().Changed("tab") && allTabs {
+		logger.Error("Cannot use both --tab and --all-tabs (mutually exclusive content sources)")
+		return fmt.Errorf("conflicting flags: --tab and --all-tabs")
+	}
+
+	// Group 2: Browser Mode Conflicts
+	if openBrowser && forceHead {
+		logger.Error("Cannot use both --force-headless and --open-browser (conflicting modes)")
+		return fmt.Errorf("conflicting flags: --force-headless and --open-browser")
+	}
+
+	// Tab operations require existing browser (incompatible with --force-headless)
+	if forceHead && cmd.Flags().Changed("tab") {
+		logger.Error("Cannot use --force-headless with --tab (--tab requires existing browser connection)")
+		return fmt.Errorf("conflicting flags: --force-headless and --tab")
+	}
+
+	if forceHead && allTabs {
+		logger.Error("Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)")
+		return fmt.Errorf("conflicting flags: --force-headless and --all-tabs")
+	}
+
+	// Group 3: Output Conflicts
+	outputFile := strings.TrimSpace(output)
+	outDir := strings.TrimSpace(outputDir)
+
+	if outputFile != "" && outDir != "" {
+		logger.Error("Cannot use --output and --output-dir together")
+		logger.Info("Use --output for specific filename OR --output-dir for auto-generated filename")
+		return fmt.Errorf("conflicting flags: --output and --output-dir")
+	}
+
+	// Multiple URLs cannot use --output
+	if hasMultipleURLs && outputFile != "" {
+		logger.Error("Cannot use --output with multiple URLs")
+		logger.Info("Use --output-dir for auto-generated filenames OR provide single URL")
+		return fmt.Errorf("--output incompatible with multiple URLs")
+	}
+
+	// --all-tabs cannot use --output
+	if allTabs && outputFile != "" {
+		logger.Error("Cannot use --output with --all-tabs (multiple outputs). Use --output-dir instead")
+		return ErrOutputFlagConflict
+	}
+
+	// Group 4: Warnings (Non-fatal conflicts)
+
+	// --close-tab is redundant in headless mode
+	if closeTab && forceHead {
+		logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
+	}
+
+	// Tab operations with --open-browser (no fetching)
+	if openBrowser && cmd.Flags().Changed("tab") {
+		logger.Warning("--tab ignored with --open-browser (no content fetching)")
+	}
+
+	if openBrowser && allTabs {
+		logger.Warning("--all-tabs ignored with --open-browser (no content fetching)")
+	}
+
+	return nil
+}
+
 func runCobra(cmd *cobra.Command, args []string) error {
 	// Determine logging level using Cobra's flag values
 	// Note: MarkFlagsMutuallyExclusive ensures only one is set
@@ -225,7 +320,7 @@ func runCobra(cmd *cobra.Command, args []string) error {
 
 	// Cobra handles flag parsing automatically - flags can appear anywhere
 
-	// Handle --list-tabs
+	// Handle --list-tabs (overrides all other options)
 	if listTabs {
 		if len(urls) > 0 {
 			logger.Verbose("--list-tabs overrides URL arguments (URLs will be ignored)")
@@ -233,50 +328,21 @@ func runCobra(cmd *cobra.Command, args []string) error {
 		return handleListTabs(cmd)
 	}
 
+	// Validate flag combinations early (before expensive operations)
+	hasURLs := len(urls) > 0
+	hasMultipleURLs := len(urls) > 1
+	if err := validateFlagCombinations(cmd, hasURLs, hasMultipleURLs); err != nil {
+		return err
+	}
+
 	// Handle --all-tabs
 	if allTabs {
-		if len(urls) > 0 {
-			logger.Error("Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)")
-			return fmt.Errorf("conflicting flags: --all-tabs and URL arguments")
-		}
-		if forceHead {
-			logger.Error("Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)")
-			return fmt.Errorf("conflicting flags: --force-headless and --all-tabs")
-		}
-		if outputFile != "" {
-			logger.Error("Cannot use --output with --all-tabs (multiple outputs). Use --output-dir instead")
-			return ErrOutputFlagConflict
-		}
-		if openBrowser {
-			logger.Warning("--all-tabs ignored with --open-browser (no content fetching)")
-		}
 		return handleAllTabs(cmd)
 	}
 
 	// Handle --tab
 	if cmd.Flags().Changed("tab") {
-		if len(urls) > 0 {
-			logger.Error("Cannot use --tab with URL argument (mutually exclusive content sources)")
-			return ErrTabURLConflict
-		}
-		if allTabs {
-			logger.Error("Cannot use both --tab and --all-tabs (mutually exclusive content sources)")
-			return fmt.Errorf("conflicting flags: --tab and --all-tabs")
-		}
-		if forceHead {
-			logger.Error("Cannot use --force-headless with --tab (--tab requires existing browser connection)")
-			return fmt.Errorf("conflicting flags: --force-headless and --tab")
-		}
-		if openBrowser {
-			logger.Warning("--tab ignored with --open-browser (no content fetching)")
-		}
 		return handleTabFetch(cmd)
-	}
-
-	// Check for conflicting browser modes
-	if openBrowser && forceHead {
-		logger.Error("Cannot use both --force-headless and --open-browser (conflicting modes)")
-		return fmt.Errorf("conflicting flags: --force-headless and --open-browser")
 	}
 
 	// Handle --open-browser without URLs
@@ -381,16 +447,6 @@ func runCobra(cmd *cobra.Command, args []string) error {
 		}
 
 		logger.Debug("Config: format=%s, timeout=%d, port=%d", config.Format, config.Timeout, config.Port)
-
-		if config.CloseTab && config.ForceHeadless {
-			logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
-		}
-
-		if config.OutputFile != "" && config.OutputDir != "" {
-			logger.Error("Cannot use --output and --output-dir together")
-			logger.Info("Use --output for specific filename OR --output-dir for auto-generated filename")
-			return fmt.Errorf("conflicting flags: --output and --output-dir")
-		}
 
 		if err := validateFormat(config.Format); err != nil {
 			return err

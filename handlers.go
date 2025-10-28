@@ -746,11 +746,7 @@ func handleMultipleURLs(cmd *cobra.Command, urls []string) error {
 	outputFile := strings.TrimSpace(output)
 	outDir := strings.TrimSpace(outputDir)
 
-	if outputFile != "" && len(urls) > 1 {
-		logger.Error("Cannot use --output with multiple URLs")
-		logger.Info("Use --output-dir for auto-generated filenames OR provide single URL")
-		return fmt.Errorf("--output incompatible with multiple URLs")
-	}
+	// Note: --output + multiple URLs conflict is validated in validateFlagCombinations()
 
 	outputFormat := normalizeFormat(format)
 	if err := validateFormat(outputFormat); err != nil {
