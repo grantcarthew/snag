@@ -107,11 +107,10 @@ var (
 	userDataDir string
 )
 
-// getHelpTemplate returns the custom Cobra help template.
+// helpTemplate is the custom Cobra help template.
 // This template includes the AGENT USAGE section which provides AI agents with
 // quick reference for common workflows, integration behavior, and performance expectations.
-func getHelpTemplate() string {
-	return `USAGE:
+const helpTemplate = `USAGE:
   {{.UseLine}}{{if .HasAvailableSubCommands}}
   {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
 
@@ -156,7 +155,6 @@ ADDITIONAL HELP TOPICS:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
 
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
-}
 
 var rootCmd = &cobra.Command{
 	Use:     "snag [options] URL...",
@@ -195,7 +193,7 @@ func init() {
 	rootCmd.MarkFlagsMutuallyExclusive("quiet", "verbose", "debug")
 
 	// Set custom help template
-	rootCmd.SetHelpTemplate(getHelpTemplate())
+	rootCmd.SetHelpTemplate(helpTemplate)
 }
 
 func main() {
