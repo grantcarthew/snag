@@ -21,13 +21,7 @@ import (
 )
 
 func snag(config *Config) error {
-	bm := NewBrowserManager(BrowserOptions{
-		Port:          config.Port,
-		ForceHeadless: config.ForceHeadless,
-		OpenBrowser:   config.OpenBrowser,
-		UserAgent:     config.UserAgent,
-		UserDataDir:   config.UserDataDir,
-	})
+	bm := NewBrowserManager(config.BrowserOptions())
 
 	browserMutex.Lock()
 	browserManager = bm
