@@ -28,6 +28,9 @@ type FetchOptions struct {
 }
 
 func NewPageFetcher(page *rod.Page, timeout int) *PageFetcher {
+	if page == nil {
+		logger.Warning("NewPageFetcher called with nil page")
+	}
 	return &PageFetcher{
 		page:    page,
 		timeout: time.Duration(timeout) * time.Second,
@@ -35,6 +38,10 @@ func NewPageFetcher(page *rod.Page, timeout int) *PageFetcher {
 }
 
 func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
+	if pf.page == nil {
+		return "", fmt.Errorf("cannot fetch: page is nil")
+	}
+
 	logger.Info("Fetching %s...", opts.URL)
 
 	logger.Verbose("Navigating to %s (timeout: %ds)...", opts.URL, opts.Timeout)
@@ -91,6 +98,10 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 }
 
 func (pf *PageFetcher) detectAuth() error {
+	if pf.page == nil {
+		return fmt.Errorf("cannot detect auth: page is nil")
+	}
+
 	// SECURITY: This JavaScript is hardcoded and safe. Never accept user-provided
 	// JavaScript for evaluation as it would create XSS vulnerabilities.
 	statusCode, err := pf.page.Eval(`() => {
@@ -142,6 +153,10 @@ func (pf *PageFetcher) detectAuth() error {
 }
 
 func (pf *PageFetcher) getURL() string {
+	if pf.page == nil {
+		logger.Warning("getURL called with nil page")
+		return ""
+	}
 	info, err := pf.page.Info()
 	if err != nil {
 		return ""
@@ -152,6 +167,10 @@ func (pf *PageFetcher) getURL() string {
 // waitForSelector waits for a CSS selector to appear and be visible on the page
 // This is a shared helper function to avoid code duplication between Fetch and tab operations
 func waitForSelector(page *rod.Page, selector string, timeout time.Duration) error {
+	if page == nil {
+		return fmt.Errorf("cannot wait for selector: page is nil")
+	}
+
 	logger.Verbose("Waiting for selector: %s", selector)
 
 	// Apply timeout to Element - it inherits to WaitVisible
