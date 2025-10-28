@@ -81,6 +81,14 @@
    - Changes: handlers.go:916-984 (moved function), validate.go:406-474 (removed)
    - Tests: ✅ Build successful
 
+10. **MEDIUM-5**: Help template in init() → **FIXED**
+   - Converted getHelpTemplate() function to helpTemplate constant
+   - Removed unnecessary function wrapper around string literal
+   - More idiomatic Go - package-level constant instead of function
+   - Easier to read and maintain at file scope
+   - Changes: main.go:110-157 (const instead of func), main.go:196 (direct use)
+   - Tests: ✅ Build successful
+
 ### Won't Do ❌
 
 1. **HIGH-3**: handlers.go file size (908 lines) → **WON'T DO**
@@ -98,7 +106,7 @@
 **Remaining Issues**:
 - 🔴 Critical: 0 remaining (2 completed, 1 was false positive)
 - 🟡 High Priority: 0 remaining (3 completed, 2 marked Won't Do)
-- 🟢 Medium Priority: 8 remaining (4 completed)
+- 🟢 Medium Priority: 7 remaining (5 completed)
 - 🔵 Low Priority: 8 remaining
 
 **Next Steps**: Continue with Medium Priority issues
