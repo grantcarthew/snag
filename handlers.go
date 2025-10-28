@@ -394,7 +394,7 @@ func handleTabFetch(cmd *cobra.Command) error {
 
 	// Validate early before expensive browser connection
 	outputFormat := normalizeFormat(format)
-	validatedWaitFor := validateWaitFor(waitFor)
+	validatedWaitFor := validateWaitFor(waitFor, cmd.Flags().Changed("wait-for"))
 	outputFile := strings.TrimSpace(output)
 
 	if err := validateFormat(outputFormat); err != nil {
@@ -577,7 +577,7 @@ func processBatchTabs(pages []*rod.Page, config *Config) error {
 
 func handleTabRange(cmd *cobra.Command, bm *BrowserManager, start, end int) error {
 	outputFormat := normalizeFormat(format)
-	validatedWaitFor := validateWaitFor(waitFor)
+	validatedWaitFor := validateWaitFor(waitFor, cmd.Flags().Changed("wait-for"))
 	outDir := strings.TrimSpace(outputDir)
 	if outDir == "" {
 		outDir = "."
@@ -617,7 +617,7 @@ func handleTabRange(cmd *cobra.Command, bm *BrowserManager, start, end int) erro
 
 func handleTabPatternBatch(cmd *cobra.Command, pages []*rod.Page, pattern string) error {
 	outputFormat := normalizeFormat(format)
-	validatedWaitFor := validateWaitFor(waitFor)
+	validatedWaitFor := validateWaitFor(waitFor, cmd.Flags().Changed("wait-for"))
 	outDir := strings.TrimSpace(outputDir)
 	if outDir == "" {
 		outDir = "."
@@ -695,7 +695,7 @@ func handleOpenURLsInBrowser(cmd *cobra.Command, urls []string) error {
 		validatedUserDataDir = validatedDir
 	}
 
-	validatedUserAgent := validateUserAgent(userAgent)
+	validatedUserAgent := validateUserAgent(userAgent, cmd.Flags().Changed("user-agent"))
 
 	bm := NewBrowserManager(BrowserOptions{
 		Port:          port,
@@ -832,7 +832,7 @@ func handleMultipleURLs(cmd *cobra.Command, urls []string) error {
 		logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
 	}
 
-	validatedWaitFor := validateWaitFor(waitFor)
+	validatedWaitFor := validateWaitFor(waitFor, cmd.Flags().Changed("wait-for"))
 
 	timestamp := time.Now()
 
