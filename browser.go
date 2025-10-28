@@ -69,63 +69,54 @@ func (bm *BrowserManager) findBrowserPath() (string, error) {
 	return path, nil
 }
 
+// browserDetectionRule defines a pattern-based browser detection rule.
+type browserDetectionRule struct {
+	pattern string // Pattern to search for in the browser executable name
+	name    string // Display name to return if pattern matches
+	exclude string // Optional: if set, skip this rule if exclude pattern is also found
+}
+
+// browserDetectionRules defines browser detection rules in priority order.
+// Earlier entries take precedence over later ones.
+// Order matters: check specific names before generic ones
+// (e.g., "ungoogled" before "chromium", "chrome" before "chromium")
+var browserDetectionRules = []browserDetectionRule{
+	{"ungoogled", "Ungoogled-Chromium", ""},
+	{"chrome", "Chrome", "chromium"}, // Chrome but not Chromium
+	{"chromium", "Chromium", ""},
+	{"msedge", "Edge", ""},
+	{"edge", "Edge", ""},
+	{"brave", "Brave", ""},
+	{"opera", "Opera", ""},
+	{"vivaldi", "Vivaldi", ""},
+	{"arc", "Arc", ""},
+	{"yandex", "Yandex", ""},
+	{"thorium", "Thorium", ""},
+	{"slimjet", "Slimjet", ""},
+	{"cent", "Cent", ""},
+}
+
+// detectBrowserName extracts a human-readable browser name from the executable path.
+// Uses table-driven pattern matching against known browser identifiers.
+// Falls back to capitalizing the base filename if no pattern matches.
 func detectBrowserName(path string) string {
 	base := filepath.Base(path)
 	baseName := strings.TrimSuffix(base, ".exe")
 	baseName = strings.TrimSuffix(baseName, ".app")
 	lowerName := strings.ToLower(baseName)
 
-	// Order matters - check specific names before generic ones
-	// (e.g., "chrome" before "chromium", "ungoogled-chromium" before "chromium")
-
-	if strings.Contains(lowerName, "ungoogled") {
-		return "Ungoogled-Chromium"
+	// Check patterns in priority order
+	for _, rule := range browserDetectionRules {
+		if strings.Contains(lowerName, rule.pattern) {
+			// If exclude pattern specified, skip if it's present
+			if rule.exclude != "" && strings.Contains(lowerName, rule.exclude) {
+				continue
+			}
+			return rule.name
+		}
 	}
 
-	if strings.Contains(lowerName, "chrome") && !strings.Contains(lowerName, "chromium") {
-		return "Chrome"
-	}
-
-	if strings.Contains(lowerName, "chromium") {
-		return "Chromium"
-	}
-
-	if strings.Contains(lowerName, "edge") || strings.Contains(lowerName, "msedge") {
-		return "Edge"
-	}
-
-	if strings.Contains(lowerName, "brave") {
-		return "Brave"
-	}
-
-	if strings.Contains(lowerName, "opera") {
-		return "Opera"
-	}
-
-	if strings.Contains(lowerName, "vivaldi") {
-		return "Vivaldi"
-	}
-
-	if strings.Contains(lowerName, "arc") {
-		return "Arc"
-	}
-
-	if strings.Contains(lowerName, "yandex") {
-		return "Yandex"
-	}
-
-	if strings.Contains(lowerName, "thorium") {
-		return "Thorium"
-	}
-
-	if strings.Contains(lowerName, "slimjet") {
-		return "Slimjet"
-	}
-
-	if strings.Contains(lowerName, "cent") {
-		return "Cent"
-	}
-
+	// Fallback: capitalize first letter of base name
 	if len(baseName) > 0 {
 		return strings.ToUpper(baseName[:1]) + baseName[1:]
 	}

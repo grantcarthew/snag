@@ -41,6 +41,22 @@
    - Maintains best-effort behavior (doesn't fail on eval errors)
    - Tests: ✅ All tests pass (build successful)
 
+5. **HIGH-5**: detectBrowserName() table-driven refactor → **FIXED**
+   - Refactored 13-case if-else chain to table-driven approach
+   - Added browserDetectionRule struct with pattern/name/exclude fields
+   - Moved detection rules to browserDetectionRules slice
+   - Improved maintainability - new browsers just need table entry
+   - Changes: browser.go:72-125
+   - Tests: ✅ All browser detection tests pass (45 test cases)
+
+6. **MEDIUM-1**: Nil page checks → **FIXED**
+   - Added defensive nil checks to all PageFetcher methods
+   - NewPageFetcher warns if constructed with nil page
+   - Fetch, detectAuth, getURL all check for nil before use
+   - waitForSelector helper also has nil check
+   - Changes: fetch.go:31-33, 41-43, 101-103, 156-159, 170-172
+   - Tests: ✅ Build successful
+
 ### Won't Do ❌
 
 1. **HIGH-3**: handlers.go file size (908 lines) → **WON'T DO**
@@ -57,11 +73,11 @@
 
 **Remaining Issues**:
 - 🔴 Critical: 0 remaining (2 completed, 1 was false positive)
-- 🟡 High Priority: 1 remaining (2 completed, 2 marked Won't Do)
-- 🟢 Medium Priority: 12 remaining
+- 🟡 High Priority: 0 remaining (3 completed, 2 marked Won't Do)
+- 🟢 Medium Priority: 11 remaining (1 completed)
 - 🔵 Low Priority: 8 remaining
 
-**Next Steps**: HIGH-5 (detectBrowserName refactoring)
+**Next Steps**: Continue with Medium Priority issues
 
 ---
 
