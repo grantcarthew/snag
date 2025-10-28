@@ -54,7 +54,7 @@ Certain flags override all others and exit immediately:
 
 ## Validation Order
 
-**Current implementation order (main.go:178-316):**
+**Current implementation order in `main.go:runCobra()`:**
 
 1. Cobra validates logging flags are mutually exclusive (`--quiet`, `--verbose`, `--debug`)
 2. Initialize logger with selected logging level
