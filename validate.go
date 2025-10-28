@@ -171,16 +171,15 @@ func normalizeFormat(format string) string {
 	format = strings.TrimSpace(format)
 	format = strings.ToLower(format)
 
-	aliases := map[string]string{
-		"markdown": FormatMarkdown, // "markdown" → "md"
-		"txt":      FormatText,     // "txt" → "text"
+	// Normalize common aliases
+	switch format {
+	case "markdown":
+		return FormatMarkdown
+	case "txt":
+		return FormatText
+	default:
+		return format
 	}
-
-	if normalized, ok := aliases[format]; ok {
-		return normalized
-	}
-
-	return format
 }
 
 // validateFormat checks if format is valid (md, html, text, pdf, or png)
