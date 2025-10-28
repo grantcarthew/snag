@@ -362,20 +362,19 @@ func validateUserDataDir(path string) (string, error) {
 		}
 	}
 
+	// Validate only if directory exists - let Chrome create it if it doesn't
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		logger.Error("User data directory does not exist: %s", path)
-		logger.ErrorWithSuggestion(
-			fmt.Sprintf("Directory '%s' not found", path),
-			fmt.Sprintf("mkdir -p %s && snag --user-data-dir %s <url>", path, path),
-		)
-		return "", fmt.Errorf("user data directory does not exist: %s", path)
+		// Directory doesn't exist - Chrome will create it
+		logger.Verbose("User data directory will be created by browser: %s", path)
+		return path, nil
 	}
 	if err != nil {
 		logger.Error("Error accessing user data directory: %s", path)
 		return "", fmt.Errorf("error accessing directory: %w", err)
 	}
 
+	// Directory exists - validate it's actually a directory
 	if !info.IsDir() {
 		logger.Error("Path is not a directory: %s", path)
 		logger.ErrorWithSuggestion(
@@ -385,6 +384,7 @@ func validateUserDataDir(path string) (string, error) {
 		return "", fmt.Errorf("path is not a directory: %s", path)
 	}
 
+	// Test write permissions on existing directory
 	testFile, err := os.CreateTemp(path, ".snag-permission-test-*")
 	if err != nil {
 		logger.Error("Permission denied accessing user data directory: %s", path)

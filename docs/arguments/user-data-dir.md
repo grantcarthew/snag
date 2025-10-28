@@ -26,9 +26,9 @@
 
 **Directory doesn't exist:**
 
-- Behavior: **Error**
-- Error message: "User data directory does not exist: {path}"
-- User must create directory before using it
+- Behavior: **Works normally** - Chrome/Chromium will create the directory automatically
+- Verbose message: "User data directory will be created by browser: {path}"
+- No need to create directory manually before using it
 
 **Path exists but is a file (not directory):**
 
@@ -223,9 +223,8 @@ snag --user-data-dir dir1 --user-data-dir dir2 https://example.com  # Uses dir2
 **Invalid:**
 
 ```bash
-snag --user-data-dir /nonexistent https://example.com      # ERROR: Directory doesn't exist
 snag --user-data-dir /etc/hosts https://example.com        # ERROR: Path is file, not directory
-snag --user-data-dir /root/profile https://example.com     # ERROR: Permission denied
+snag --user-data-dir /root/profile https://example.com     # ERROR: Permission denied (if exists)
 
 # Multi-instance errors (same profile on different ports)
 snag --open-browser --port 9222 --user-data-dir ~/.snag/profile1
@@ -262,18 +261,19 @@ snag --user-data-dir ~/.snag/profile --list-tabs           # Flag ignored (list-
 2. Trim whitespace using `strings.TrimSpace()`
 3. If empty after trim → Warn, use browser default
 4. Expand tilde (`~`) to home directory
-5. Validate directory exists, is directory, has permissions
-6. Pass to rod launcher as `--user-data-dir={path}` browser flag
-7. Browser loads/creates profile in specified directory
+5. If directory exists → Validate it's a directory and has permissions
+6. If directory doesn't exist → Allow it (Chrome will create)
+7. Pass to rod launcher as `--user-data-dir={path}` browser flag
+8. Browser loads/creates profile in specified directory
 
 **Validation order:**
 
 1. Trim whitespace
 2. Check if empty → Warn if empty
 3. Expand tilde
-4. Validate path exists
-5. Validate path is directory
-6. Check permissions (read/write access)
+4. Check if path exists:
+   - If doesn't exist → Return path (Chrome will create it)
+   - If exists → Validate it's a directory and check permissions
 
 **Browser default profiles:**
 
