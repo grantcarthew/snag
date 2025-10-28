@@ -64,7 +64,7 @@ func GenerateURLSlug(urlStr string) string {
 	}
 
 	// Apply slugification to hostname
-	return SlugifyTitle(hostname, 80)
+	return SlugifyTitle(hostname, MaxSlugLength)
 }
 
 // GetFileExtension returns the file extension for a given format.
@@ -94,7 +94,7 @@ func GenerateFilename(title string, format string, timestamp time.Time, urlStr s
 	timePrefix := timestamp.Format("2006-01-02-150405")
 
 	// Slugify title
-	titleSlug := SlugifyTitle(title, 80)
+	titleSlug := SlugifyTitle(title, MaxSlugLength)
 
 	// If title slug is empty, use URL hostname as fallback
 	if titleSlug == "" {

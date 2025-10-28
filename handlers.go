@@ -199,7 +199,7 @@ func formatTabLine(index int, title, url string, maxLength int, verbose bool) st
 	prefix := fmt.Sprintf("  [%d] ", index)
 	prefixLen := len(prefix)
 
-	const maxURLLen = 80
+	const maxURLLen = MaxDisplayURLLength
 	displayURL := cleanURL
 	if len(displayURL) > maxURLLen {
 		displayURL = cleanURL[:maxURLLen-3] + "..."
@@ -229,7 +229,7 @@ func displayTabList(tabs []TabInfo, w io.Writer, verbose bool) {
 
 	fmt.Fprintf(w, "Available tabs in browser (%d tabs, sorted by URL):\n", len(tabs))
 	for _, tab := range tabs {
-		line := formatTabLine(tab.Index, tab.Title, tab.URL, 120, verbose)
+		line := formatTabLine(tab.Index, tab.Title, tab.URL, MaxTabLineLength, verbose)
 		fmt.Fprintf(w, "%s\n", line)
 	}
 }
