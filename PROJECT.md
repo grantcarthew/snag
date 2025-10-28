@@ -57,6 +57,14 @@
    - Changes: fetch.go:31-33, 41-43, 101-103, 156-159, 170-172
    - Tests: ✅ Build successful
 
+7. **MEDIUM-2**: page.Info() error handling in browser.go → **FIXED**
+   - Improved error messages when page.Info() fails in getSortedPagesWithInfo()
+   - Now shows tab position when excluding tabs (e.g., "tab at position 3")
+   - Added debug logging for page object details
+   - Added summary warning showing total excluded tabs count
+   - Changes: browser.go:362-381
+   - Tests: ✅ Build successful
+
 ### Won't Do ❌
 
 1. **HIGH-3**: handlers.go file size (908 lines) → **WON'T DO**
@@ -74,7 +82,7 @@
 **Remaining Issues**:
 - 🔴 Critical: 0 remaining (2 completed, 1 was false positive)
 - 🟡 High Priority: 0 remaining (3 completed, 2 marked Won't Do)
-- 🟢 Medium Priority: 11 remaining (1 completed)
+- 🟢 Medium Priority: 10 remaining (2 completed)
 - 🔵 Low Priority: 8 remaining
 
 **Next Steps**: Continue with Medium Priority issues
