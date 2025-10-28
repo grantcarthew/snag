@@ -28,11 +28,24 @@
      - handlers.go - Protected all assignments and defer cleanups (10 locations)
    - Tests: ✅ `go test -race` passes (70 test cases, no races detected)
 
+3. **HIGH-4**: Config struct location → **FIXED**
+   - Moved Config struct from handlers.go:23-36 to main.go:51-67
+   - Added godoc comment explaining purpose
+   - Config now in logical location alongside other global types
+   - Tests: ✅ All tests pass (build successful)
+
+### Won't Do ❌
+
+1. **HIGH-3**: handlers.go file size (908 lines) → **WON'T DO**
+   - Rationale: CLI tool is almost complete, reorganization provides little benefit at this stage
+   - Current structure is functional and well-understood
+   - Refactoring into 5 files would create unnecessary churn for a mature codebase
+
 ### Current Status
 
 **Remaining Issues**:
 - 🔴 Critical: 0 remaining (2 completed, 1 was false positive)
-- 🟡 High Priority: 5 remaining
+- 🟡 High Priority: 3 remaining (1 completed, 1 marked Won't Do)
 - 🟢 Medium Priority: 12 remaining
 - 🔵 Low Priority: 8 remaining
 
@@ -428,9 +441,11 @@ if len(pagesWithInfo) < len(pages) {
 
 ## 2. Design and Architecture
 
-### 🟡 HIGH-3: handlers.go File Size (908 lines)
+### 🟡 HIGH-3: handlers.go File Size (908 lines) → **WON'T DO**
 
 **Location**: `handlers.go` (entire file)
+
+**Status**: Marked as Won't Do - CLI tool is almost complete, reorganization provides little benefit
 
 **Issue**: The file has grown to 908 lines, approaching the 1000-line threshold mentioned in design docs (design-record.md:898) for considering refactoring. Contains multiple handler functions with mixed responsibilities.
 
@@ -484,9 +499,11 @@ snag/
 
 ---
 
-### 🟡 HIGH-4: Config Struct Location
+### 🟡 HIGH-4: Config Struct Location → **FIXED**
 
-**Location**: `handlers.go:23-36`
+**Location**: `handlers.go:23-36` (moved to `main.go:51-67`)
+
+**Status**: Completed - Config struct moved to main.go with proper documentation
 
 **Issue**: The `Config` struct is defined in `handlers.go` but is used throughout the codebase. It should be in a more central location.
 
