@@ -179,9 +179,9 @@ snag --list-tabs --all-tabs                     # --list-tabs overrides, lists a
 
 **Location:**
 
-- Flag definition: `main.go` (CLI flag definitions)
-- Handler: `main.go` (to be implemented: `handleAllTabsFetch()`)
-- Tab listing: `browser.go:404-434` (`ListTabs()`)
+- Flag definition: `main.go:init()`
+- Handler: `handlers.go:handleAllTabs()`
+- Tab listing: `browser.go:ListTabs()`
 - Tab fetching: Reuse existing fetch logic per tab
 
 **How it works:**

@@ -215,9 +215,9 @@ Batch complete: 2 succeeded, 0 failed
 
 **Location:**
 
-- Flag definition: `main.go:78-81`
-- Handler logic: `main.go:200-207`
-- URL loading: `validate.go:251-317`
+- Flag definition: `main.go:init()`
+- Handler logic: `main.go:runCobra()`
+- URL loading: `validate.go:loadURLsFromFile()`
 
 **Processing Order:**
 

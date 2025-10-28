@@ -193,8 +193,8 @@ snag https://example.com -o myfile                   # ⚠️ No extension
 
 **Location:**
 
-- Flag definition: `main.go:64-67`
-- Handler logic: `main.go:208-235`
+- Flag definition: `main.go:init()`
+- Handler logic: `main.go:runCobra()`
 - Path validation: `validate.go` functions
 - File writing: Various handler functions
 

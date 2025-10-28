@@ -142,10 +142,10 @@ snag --wait-for "   "                                          # ⚠️  Warning
 
 **Location:**
 
-- Flag definition: `main.go:108-111`
-- Wait logic: `fetch.go:167-193` (`waitForSelector()` helper function)
-- Usage in fetch: `fetch.go:71-84`
-- Usage in tab handlers: `handlers.go` (various locations)
+- Flag definition: `main.go:init()`
+- Wait logic: `fetch.go:waitForSelector()`
+- Usage in fetch: `fetch.go:Fetch()`
+- Usage in tab handlers: `handlers.go` (various handler functions)
 
 **How it works:**
 

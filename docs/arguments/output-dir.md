@@ -164,10 +164,10 @@ snag --open-browser -d ./output                      # OK but -d ignored (nothin
 
 **Location:**
 
-- Flag definition: `main.go:68-71`
+- Flag definition: `main.go:init()`
 - Handler logic: Various handler functions
-- Path validation: `validate.go` functions
-- Filename generation: `output.go:generateOutputFilename()`
+- Path validation: `validate.go:validateDirectory()`
+- Filename generation: `output.go:GenerateFilename()`
 
 **Processing Flow:**
 

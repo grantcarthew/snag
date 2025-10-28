@@ -175,10 +175,10 @@ snag --open-browser --port 9223 --user-data-dir ~/.snag/profile1
 
 **Location:**
 
-- Flag definition: `main.go` (CLI framework)
-- Port validation: `validate.go` (range 1024-65535)
-- Connection logic: `browser.go` (BrowserManager.Connect methods)
-- Launch logic: `browser.go:240-283` (launchBrowser function)
+- Flag definition: `main.go:init()`
+- Port validation: `validate.go:validatePort()` (enforces range 1024-65535)
+- Connection logic: `browser.go:Connect()`
+- Launch logic: `browser.go:launchBrowser()`
 
 **How it works:**
 
@@ -188,7 +188,7 @@ snag --open-browser --port 9223 --user-data-dir ~/.snag/profile1
    - Try to connect to specified port only
    - If fails, attempt to launch browser on that port
 4. When launching:
-   - Set `--remote-debugging-port={port}` flag (browser.go:261)
+   - Set `--remote-debugging-port={port}` flag in `browser.go:launchBrowser()`
    - Launch browser with port configuration
 
 **Port-specific behavior:**

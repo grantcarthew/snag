@@ -129,9 +129,9 @@ snag --list-tabs
 
 **Location:**
 
-- Flag definition: `main.go` (CLI flag definitions)
-- Handler: `main.go:345-383` (`handleListTabs()`)
-- Browser connection: `browser.go:404-434` (`ListTabs()`)
+- Flag definition: `main.go:init()`
+- Handler: `handlers.go:handleListTabs()`
+- Browser connection: `browser.go:ListTabs()`
 
 **How it works:**
 
