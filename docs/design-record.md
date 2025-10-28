@@ -45,7 +45,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 | 5   | Config File               | No config file support (permanent choice)                       |
 | 6   | HTML→Markdown             | `html-to-markdown/v2` (embedded library)                        |
 | 7   | License Attribution       | `LICENSES/` directory                                           |
-| 8   | CLI Framework             | `urfave/cli/v2`                                                 |
+| 8   | CLI Framework             | `spf13/cobra v1.10.1`                                           |
 | 9   | CDP Library               | `rod`                                                           |
 | 10  | Browser Discovery         | rod's `launcher.LookPath()` (Chromium-based only)               |
 | 11  | Logging Strategy          | Custom logger (4 levels, colors, emojis)                        |
@@ -416,7 +416,7 @@ snag --format png <url>               # PNG screenshot capture (full page)
 
 **CLI Framework:**
 
-- `github.com/urfave/cli/v2` - Smaller binary size, simpler architecture, dynamic autocompletion
+- `github.com/spf13/cobra` - Mature ecosystem, robust flag handling, mutually exclusive flags support
 
 ### Chrome Discovery
 
@@ -564,7 +564,7 @@ $ snag https://example.com
 
 ### 1. CLI Arguments
 
-- **Decision**: Use 16 arguments with standard flag ordering: `snag [options] <url>`
+- **Decision**: Use 21 arguments with standard flag ordering: `snag [options] <url>`
 - **Rationale**:
   - Essential CLI features: `--version`, `--quiet`, `--user-agent`, `--format`
   - Standard flag-then-argument pattern keeps implementation simple
@@ -585,10 +585,11 @@ $ snag https://example.com
 ### 3. Argument Parsing
 
 - **Decision**: Standard flag ordering - options before URL: `snag [options] <url>`
+- **Note**: Cobra actually supports flexible flag positioning (flags can appear before or after positional args)
 - **Rationale**:
   - Simpler implementation and maintenance
   - Consistent with most CLI tools
-  - urfave/cli v2 doesn't natively support position-independent args
+  - Clean, predictable command structure
   - Avoiding additional parsing complexity was prioritized
 
 **See Also**: For complete validation order and cross-cutting rules, see [arguments/validation.md](arguments/validation.md)
@@ -647,21 +648,21 @@ $ snag https://example.com
 
 ### 8. CLI Framework Choice
 
-- **Decision**: Use `github.com/urfave/cli` for CLI framework
-- **Library**: urfave/cli v2 (MIT license)
-- **Rationale**:
-  - Smaller binary size compared to Cobra (important for single-binary tool)
-  - Simpler, less boilerplate code
-  - Better dynamic bash autocompletion (can autocomplete argument values)
-  - Supports subcommands (e.g., --list-tabs, --tab)
-  - Declarative, clean API
-  - Widely used (23.6k GitHub stars), well-maintained
-  - Less globals-heavy than Cobra's architectural pattern
+- **Decision**: Use `github.com/spf13/cobra` for CLI framework
+- **Library**: Cobra v1.10.1 (Apache 2.0 license)
+- **Implementation Note**: While urfave/cli was initially considered (see rationale below), Cobra was ultimately chosen during implementation for its mature ecosystem and robust flag handling
+- **Rationale for CLI Framework Selection**:
+  - Clean, declarative API for flag definitions
+  - Built-in support for mutually exclusive flags (`MarkFlagsMutuallyExclusive`)
+  - Flexible flag positioning (flags can appear before or after positional args)
+  - Well-maintained with strong community support
+  - Supports custom help templates for consistent UX
+  - Handles version command automatically
+  - Simpler than rolling custom flag parsing
 - **Alternatives Considered**:
-  - Cobra: More feature-rich but larger binaries, more dependencies
-  - Coral: Cobra fork with fewer dependencies but less mature (431 stars)
-  - Standard library flag package: Too basic, no subcommand support
-- **Reference**: `reference/urfave-cli/`
+  - urfave/cli v2: Initially considered for smaller binary size, but Cobra's mutually exclusive flag support and mature ecosystem won out
+  - Standard library flag package: Too basic, no subcommand support or advanced flag validation
+- **Reference**: `reference/cobra/`
 
 ### 9. CDP Library Choice
 
@@ -867,7 +868,7 @@ $ snag https://example.com
 - **Structure**:
   ```
   snag/
-  ├── main.go              # CLI entry point (urfave/cli setup)
+  ├── main.go              # CLI entry point (Cobra setup)
   ├── browser.go           # Browser management (rod)
   ├── fetch.go             # Page fetching logic
   ├── convert.go           # HTML to Markdown conversion

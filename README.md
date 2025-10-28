@@ -764,7 +764,7 @@ This design makes snag perfect for shell pipelines and AI agent integration.
 - **Language**: Go 1.21+
 - **Browser Control**: Chrome DevTools Protocol via [go-rod/rod](https://github.com/go-rod/rod)
 - **HTML Conversion**: [html-to-markdown/v2](https://github.com/JohannesKaufmann/html-to-markdown)
-- **CLI Framework**: [urfave/cli/v2](https://github.com/urfave/cli)
+- **CLI Framework**: [cobra](https://github.com/spf13/cobra)
 
 ## Contributing
 
@@ -792,7 +792,7 @@ Include:
 This project uses the following open-source libraries:
 
 - [go-rod/rod](https://github.com/go-rod/rod) - MIT License
-- [urfave/cli](https://github.com/urfave/cli) - MIT License
+- [cobra](https://github.com/spf13/cobra) - Apache 2.0 License
 - [html-to-markdown](https://github.com/JohannesKaufmann/html-to-markdown) - MIT License
 
 See the [LICENSES](LICENSES/) directory for full license texts.
