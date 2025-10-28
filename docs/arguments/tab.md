@@ -233,9 +233,9 @@ snag --list-tabs --tab 1                        # --list-tabs overrides, lists a
 
 **Location:**
 
-- Flag definition: `main.go` (CLI flag definitions)
-- Handler: `main.go:412-534` (`handleTabFetch()`)
-- Tab selection: `browser.go:434-463` (`GetTabByIndex()`), `browser.go:473-544` (`GetTabByPattern()`)
+- Flag definition: `main.go:init()`
+- Handler: `handlers.go:handleTabFetch()`
+- Tab selection: `browser.go:GetTabByIndex()`, `browser.go:GetTabByPattern()`
 - Pattern matching: Progressive fallthrough in `GetTabByPattern()`
 
 **How it works:**
@@ -310,7 +310,7 @@ func GetTabsByPattern(pattern string) ([]*Tab, error) {
 
 **Performance Optimization:**
 
-- Single-pass `page.Info()` caching (browser.go:487-507)
+- Single-pass `page.Info()` caching in `browser.go:GetTabsByPattern()`
 - Reduces network calls from 3N to N (3x improvement for 10 tabs)
 - Do not modify pattern matching without preserving this optimization
 

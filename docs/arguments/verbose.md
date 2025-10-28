@@ -103,8 +103,8 @@ snag https://example.com --verbose --quiet --debug  # Error: mutually exclusive
 
 **Location:**
 
-- Flag definition: `main.go` (CLI framework)
-- Logger initialization: `main.go:181-187`
+- Flag definition: `main.go:init()`
+- Logger initialization: `main.go:runCobra()`
 - Logging level: `logger.go`
 
 **Processing:**
