@@ -108,12 +108,11 @@ var (
 )
 
 // helpTemplate is the custom Cobra help template.
+// This is intentionally a static string with no template logic for maximum simplicity (KISS).
+// Since snag has no subcommands or aliases, and the flags/examples change rarely,
+// a plain string is easier to maintain than dynamic template code.
 const helpTemplate = `USAGE:
-  {{.UseLine}}{{if .HasAvailableSubCommands}}
-  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
-
-ALIASES:
-  {{.NameAndAliases}}{{end}}
+  snag [options] URL...
 
 DESCRIPTION:
   snag fetches web page content using Chromium/Chrome automation.
@@ -124,24 +123,9 @@ DESCRIPTION:
   Filename format: yyyy-mm-dd-hhmmss-<title>-<n>.<ext>
 
   The perfect companion for AI agents to gain context from web pages.
-{{if .HasExample}}
+
 EXAMPLES:
-{{.Example}}{{end}}{{if .HasAvailableLocalFlags}}
-
-OPTIONS:
-{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
-
-ADDITIONAL HELP TOPICS:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
-  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
-
-Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
-`
-
-var rootCmd = &cobra.Command{
-	Use:     "snag [options] URL...",
-	Short:   "Intelligently fetch web page content using a browser engine",
-	Version: version,
-	Example: `  # Fetch a single page (Markdown to stdout)
+  # Fetch a single page (Markdown to stdout)
   snag example.com
   snag https://github.com/grantcarthew/snag
 
@@ -173,29 +157,62 @@ var rootCmd = &cobra.Command{
   # Advanced options
   snag --wait-for ".content" example.com
   snag --timeout 60 slow-site.com
-  snag --user-agent "Bot/1.0" example.com`,
-	Args: cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
-	RunE: runCobra,
+  snag --user-agent "Bot/1.0" example.com
+
+OPTIONS:
+  -l, --list-tabs              List all open tabs in the browser
+  -t, --tab int|string         Fetch from existing tab by pattern (tab number or string)
+  -a, --all-tabs               Process all open browser tabs (saves with auto-generated filenames)
+      --url-file string        Read URLs from file (one per line, supports comments)
+
+  -f, --format string          Output format: md | html | text | pdf | png (default md)
+  -o, --output string          Save output to file instead of stdout
+  -d, --output-dir string      Save files with auto-generated names to directory
+
+  -b, --open-browser           Open browser visibly with remote debugging enabled (no URL required)
+  -c, --close-tab              Close the browser tab after fetching content
+      --force-headless         Force headless mode even if the browser is running
+  -p, --port int               Chromium/Chrome remote debugging port (default 9222)
+      --user-agent string      Custom user agent (bypass headless detection)
+      --user-data-dir string   Custom Chromium/Chrome user data directory (for session isolation)
+
+      --timeout int            Page load timeout in seconds (default 30)
+  -w, --wait-for string        Wait for CSS selector before extracting content
+
+      --debug                  Enable debug output
+  -q, --quiet                  Suppress all output except errors and content
+      --verbose                Enable verbose logging output
+
+  -h, --help                   help for snag
+  -v, --version                version for snag
+`
+
+var rootCmd = &cobra.Command{
+	Use:     "snag [options] URL...",
+	Short:   "Intelligently fetch web page content using a browser engine",
+	Version: version,
+	Args:    cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
+	RunE:    runCobra,
 }
 
 func init() {
 	// String flags
-	rootCmd.Flags().StringVar(&urlFile, "url-file", "", "Read URLs from FILE (one per line, supports comments)")
-	rootCmd.Flags().StringVarP(&output, "output", "o", "", "Save output to FILE instead of stdout")
-	rootCmd.Flags().StringVarP(&outputDir, "output-dir", "d", "", "Save files with auto-generated names to DIRECTORY")
-	rootCmd.Flags().StringVarP(&format, "format", "f", FormatMarkdown, "Output FORMAT: md | html | text | pdf | png")
-	rootCmd.Flags().StringVarP(&waitFor, "wait-for", "w", "", "Wait for CSS SELECTOR before extracting content")
-	rootCmd.Flags().StringVarP(&tab, "tab", "t", "", "Fetch from existing tab by PATTERN (tab number or string)")
-	rootCmd.Flags().StringVar(&userAgent, "user-agent", "", "Custom user agent STRING (bypass headless detection)")
-	rootCmd.Flags().StringVar(&userDataDir, "user-data-dir", "", "Custom Chromium/Chrome user data DIRECTORY (for session isolation)")
+	rootCmd.Flags().StringVar(&urlFile, "url-file", "", "Read URLs from file (one per line, supports comments)")
+	rootCmd.Flags().StringVarP(&output, "output", "o", "", "Save output to file instead of stdout")
+	rootCmd.Flags().StringVarP(&outputDir, "output-dir", "d", "", "Save files with auto-generated names to directory")
+	rootCmd.Flags().StringVarP(&format, "format", "f", FormatMarkdown, "Output format: md | html | text | pdf | png")
+	rootCmd.Flags().StringVarP(&waitFor, "wait-for", "w", "", "Wait for CSS selector before extracting content")
+	rootCmd.Flags().StringVarP(&tab, "tab", "t", "", "Fetch from existing tab by pattern (tab number or string)")
+	rootCmd.Flags().StringVar(&userAgent, "user-agent", "", "Custom user agent (bypass headless detection)")
+	rootCmd.Flags().StringVar(&userDataDir, "user-data-dir", "", "Custom Chromium/Chrome user data directory (for session isolation)")
 
 	// Int flags
-	rootCmd.Flags().IntVar(&timeout, "timeout", 30, "Page load timeout in SECONDS")
-	rootCmd.Flags().IntVarP(&port, "port", "p", 9222, "Chrome remote debugging PORT")
+	rootCmd.Flags().IntVar(&timeout, "timeout", 30, "Page load timeout in seconds")
+	rootCmd.Flags().IntVarP(&port, "port", "p", 9222, "Chromium/Chrome remote debugging port")
 
 	// Bool flags
 	rootCmd.Flags().BoolVarP(&closeTab, "close-tab", "c", false, "Close the browser tab after fetching content")
-	rootCmd.Flags().BoolVar(&forceHead, "force-headless", false, "Force headless mode even if Chrome is running")
+	rootCmd.Flags().BoolVar(&forceHead, "force-headless", false, "Force headless mode even if the browser is running")
 	rootCmd.Flags().BoolVarP(&openBrowser, "open-browser", "b", false, "Open browser visibly with remote debugging enabled (no URL required)")
 	rootCmd.Flags().BoolVarP(&listTabs, "list-tabs", "l", false, "List all open tabs in the browser")
 	rootCmd.Flags().BoolVarP(&allTabs, "all-tabs", "a", false, "Process all open browser tabs (saves with auto-generated filenames)")
