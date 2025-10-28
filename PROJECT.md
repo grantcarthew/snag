@@ -48,15 +48,20 @@
    - Current structure is functional and well-understood
    - Refactoring into 5 files would create unnecessary churn for a mature codebase
 
+2. **HIGH-1**: Path separator assumption in validateOutputPathEscape → **WON'T DO**
+   - Rationale: No Windows support planned, Unix/macOS only
+   - Current code works correctly for target platforms
+   - Additional cross-platform documentation not needed
+
 ### Current Status
 
 **Remaining Issues**:
 - 🔴 Critical: 0 remaining (2 completed, 1 was false positive)
-- 🟡 High Priority: 2 remaining (2 completed, 1 marked Won't Do)
+- 🟡 High Priority: 1 remaining (2 completed, 2 marked Won't Do)
 - 🟢 Medium Priority: 12 remaining
 - 🔵 Low Priority: 8 remaining
 
-**Next Steps**: Proceed to High Priority issues or await further direction
+**Next Steps**: HIGH-5 (detectBrowserName refactoring)
 
 ---
 
