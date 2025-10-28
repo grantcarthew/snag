@@ -22,8 +22,9 @@ While the migration is functional (all 124 tests passing), some refactorings wer
 - ✅ Task 2.4: Fixed inconsistent cleanup pattern (consistent deferred cleanup)
 - ✅ Task 3.1: Extracted duplicate batch processing code (~92 lines eliminated)
 - ✅ Task 3.2: Replaced magic numbers with named constants (4 files updated)
+- ✅ Task 3.3: Comprehensive flag combination validation (~50 lines duplicate code eliminated)
 
-**Pending Review:** Phase 3 (Code Quality) tasks remain.
+**Pending Review:** Remaining Phase 3 and Phase 4 tasks.
 
 ## Success Criteria
 
@@ -718,79 +719,57 @@ Successfully replaced all magic numbers with named constants:
 
 ### Task 3.3: Comprehensive Flag Combination Validation
 
+**Status:** ✅ Complete (2025-10-28)
+
 **Location:** `main.go:runCobra`
 
-**Problem:** Some invalid flag combinations caught, others only warned about.
+**Problem:** Some invalid flag combinations caught, others only warned about - validation logic was scattered throughout runCobra().
 
-**Solution:** Create comprehensive validation function.
+**Solution Implemented:** Created comprehensive `validateFlagCombinations()` function.
 
-**Implementation Steps:**
+**Changes Made:**
 
-1. Create validation function:
-   ```go
-   // validateFlagCombinations checks for invalid flag combinations
-   func validateFlagCombinations(cmd *cobra.Command) error {
-       // Conflicting browser modes
-       if openBrowser && forceHead {
-           return fmt.Errorf("cannot use both --force-headless and --open-browser")
-       }
+1. **Created `validateFlagCombinations()` function** (main.go:190-283):
+   - Organized into 4 logical groups:
+     - Group 1: Content Source Conflicts (--tab, --all-tabs, URLs)
+     - Group 2: Browser Mode Conflicts (--force-headless, --open-browser)
+     - Group 3: Output Conflicts (--output, --output-dir, multiple URLs)
+     - Group 4: Warnings (non-fatal conflicts)
+   - Takes parameters: `cmd *cobra.Command, hasURLs bool, hasMultipleURLs bool`
+   - Returns error for invalid combinations, nil if valid
 
-       // Content source conflicts
-       var contentSources []string
-       if cmd.Flags().Changed("tab") {
-           contentSources = append(contentSources, "--tab")
-       }
-       if allTabs {
-           contentSources = append(contentSources, "--all-tabs")
-       }
-       if listTabs {
-           contentSources = append(contentSources, "--list-tabs")
-       }
+2. **Refactored `runCobra()`** (main.go:331-336):
+   - Calls `validateFlagCombinations()` early (right after --list-tabs check)
+   - Removed duplicate validation code scattered throughout (~50 lines eliminated)
+   - Simplified handler entry points
 
-       if len(contentSources) > 1 {
-           return fmt.Errorf("cannot use multiple content sources: %s",
-               strings.Join(contentSources, ", "))
-       }
+3. **Updated `handleMultipleURLs()`** (handlers.go:749):
+   - Removed duplicate --output + multiple URLs check
+   - Added comment noting validation happens in `validateFlagCombinations()`
 
-       // Tab features require existing browser (not --force-headless)
-       if forceHead && (cmd.Flags().Changed("tab") || allTabs) {
-           return fmt.Errorf("cannot use --force-headless with tab features")
-       }
+**Results:**
 
-       // Output conflicts
-       if output != "" && outputDir != "" {
-           return fmt.Errorf("cannot use both --output and --output-dir")
-       }
-
-       // Multiple URL conflicts
-       if output != "" && (allTabs || cmd.Flags().Changed("tab")) {
-           return fmt.Errorf("cannot use --output with multiple content sources, use --output-dir")
-       }
-
-       return nil
-   }
-   ```
-
-2. Call early in `runCobra`:
-   ```go
-   func runCobra(cmd *cobra.Command, args []string) error {
-       // Validate flag combinations first
-       if err := validateFlagCombinations(cmd); err != nil {
-           return err
-       }
-
-       // ... rest of function
-   }
-   ```
-
-3. Remove duplicate validation checks from throughout the code
+- ✅ All flag conflicts centralized in single function
+- ✅ Validation happens early (before expensive operations)
+- ✅ ~50 lines of duplicate validation code eliminated
+- ✅ Single source of truth for flag conflict rules
+- ✅ All tests pass
+- ✅ No behavioral changes for users
 
 **Testing:**
-- Test all invalid flag combinations
-- Verify helpful error messages
+
+- ✅ --tab + URL conflict: Error message correct
+- ✅ --all-tabs + URL conflict: Error message correct
+- ✅ --force-headless + --open-browser: Error message correct
+- ✅ --output + --output-dir: Error message correct
+- ✅ --force-headless + --close-tab: Warning displays correctly
+- ✅ Multiple URLs + --output: Error message correct
+- ✅ All validation unit tests pass
 
 **Files Modified:**
-- `main.go`
+
+- `main.go` (added validateFlagCombinations(), refactored runCobra())
+- `handlers.go` (removed duplicate validation from handleMultipleURLs())
 
 ---
 
