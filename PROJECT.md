@@ -25,8 +25,9 @@ While the migration is functional (all 124 tests passing), some refactorings wer
 - ✅ Task 3.3: Comprehensive flag combination validation (~50 lines duplicate code eliminated)
 - ✅ Task 3.5: Moved help template to separate function (improved code organization)
 - ✅ Task 3.6: Standardized error message format (minimal - fixed "both" vs "with" inconsistencies)
+- ✅ Task 3.7: Evaluated and confirmed .Changed() usage already consistent (no work needed)
 
-**Pending Review:** Remaining Phase 3 (Task 3.7) and Phase 4 tasks.
+**Pending Review:** Phase 4 tasks (Documentation & Polish).
 
 ## Success Criteria
 
@@ -955,53 +956,50 @@ Error messages were reviewed and found to be mostly consistent within categories
 
 ### Task 3.7: Use cmd.Flags().Changed() Consistently
 
+**Status:** ❌ Won't Do - Already Consistent (2025-10-28)
+
 **Location:** Throughout `main.go` and `handlers.go`
 
-**Problem:** Some flags check `.Changed()`, others check value directly.
+**Problem:** Original concern was inconsistent use of `.Changed()` vs direct value checks.
 
-**Solution:** Establish consistent pattern.
+**Analysis Result:** Pattern is **already 100% consistent** - no work needed.
 
-**Implementation Steps:**
+**Current Pattern (Already Correct):**
 
-1. Document the pattern:
-   ```go
-   // Flag checking pattern:
-   // - Use cmd.Flags().Changed() when distinguishing between:
-   //   1. User explicitly set flag to default value
-   //   2. User didn't set flag at all (using default)
-   // - Direct value check when only caring about final value
-   ```
+1. **Boolean flags** → Direct value checks:
+   - `closeTab`, `forceHead`, `openBrowser`, `allTabs`, `listTabs`, `verbose`, `quiet`, `debug`
+   - Usage: `if closeTab {...}`, `if openBrowser && forceHead {...}`
+   - Rationale: No need to distinguish between default false and user-provided false
 
-2. Apply pattern consistently:
-   - **Configuration flags**: Use `.Changed()` (format, timeout, etc.)
-   - **Boolean mode flags**: Direct check is fine (closeTab, verbose, etc.)
-   - **Feature selection flags**: Use `.Changed()` (tab, output, etc.)
+2. **String/int flags** → Use `.Changed()`:
+   - `tab`, `format`, `output`, `output-dir`, `timeout`, `wait-for`, `user-agent`, `user-data-dir`, `port`
+   - Usage: `if cmd.Flags().Changed("tab") {...}`, `if cmd.Flags().Changed("format") {...}`
+   - Rationale: Need to distinguish between default value and user-provided value (e.g., for warnings)
 
-3. Update all flag checks:
-   ```go
-   // Configuration flags - use Changed()
-   if cmd.Flags().Changed("format") {
-       logger.Warning("--format ignored with --open-browser")
-   }
+**Verification Results:**
 
-   // Boolean mode flags - direct check OK
-   if closeTab {
-       logger.Warning("--close-tab ignored with --open-browser")
-   }
+✅ **All boolean flags use direct checks** (correct):
+- Examples: `if closeTab`, `if allTabs`, `if openBrowser && forceHead`
+- No `.Changed()` calls on boolean flags found
 
-   // Feature selection - use Changed()
-   if cmd.Flags().Changed("tab") {
-       // User explicitly used --tab flag
-   }
-   ```
+✅ **All string/int flags use `.Changed()`** (correct):
+- Examples: `if cmd.Flags().Changed("tab")`, `if cmd.Flags().Changed("format")`
+- Consistent across all 15+ usages in main.go
 
-**Testing:**
-- Verify warnings appear correctly
-- Test default values vs explicit values
+✅ **Mixed checks are correct**:
+- Example: `if cmd.Flags().Changed("tab") && allTabs`
+- Correctly uses `.Changed()` for string flag `tab` and direct check for boolean `allTabs`
 
-**Files Modified:**
-- `main.go`
-- `handlers.go`
+**Conclusion:**
+
+The existing pattern is semantically correct and consistently applied throughout the codebase. This task was identified during the initial migration review but upon closer inspection, the code already follows best practices. No changes needed.
+
+**Rationale for "Won't Do":**
+
+- Pattern is already consistent (100% compliance verified)
+- Code follows Go/Cobra best practices
+- Adding documentation comments would provide minimal value
+- No bugs or issues found with current approach
 
 ---
 
