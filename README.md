@@ -724,6 +724,16 @@ Solutions:
 - Check System Preferences > Security & Privacy
 - Allow the browser in privacy settings
 
+**macOS: Browser processes remain after closing window**
+
+On macOS, closing a Chrome/Chromium window doesn't quit the application - processes continue running in the background.
+
+This is normal macOS behavior. To fully quit:
+
+- Press **Cmd+Q** in the browser window
+- Right-click Chrome icon in Dock → Quit
+- Or: `pkill -f "Chrome.*remote-debugging-port"`
+
 ### Getting Help
 
 Still having issues?
