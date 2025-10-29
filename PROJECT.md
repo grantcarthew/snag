@@ -5,9 +5,11 @@ The following tasks will polish off the final stages of development for snag:
 - ✅ Remove the "auto-generated" from filename terminal messages, just "Filename:" will do.
 - ❓ Support terminal messages of "Fetching" when actually getting the content to stdout/file, and "Navigating" for just browser navigation. (Unknown - unable to reproduce issue)
 - ✅ Showing the Usage after some of the errors is annoying. This should be changed.
-- Same with list-tabs when "index out of range" and maybe other errors. Annoying.
+- ✅ Same with list-tabs when "index out of range" and maybe other errors. Annoying.
 
 ## Issues
+
+✅ **Fixed:** Browser connection messages
 
 In this test:
 
@@ -24,6 +26,8 @@ Use 'snag --tab <index>' to fetch content from a tab
 ```
 
 The browser was already open and it got used, but the terminal messages stated "Launching browser in visible mode... ✓ Chrome launched in visible mode"?
+
+**Resolution:** Now shows "✓ Connected to existing browser (visible mode)" when connecting to an existing browser.
 
 ---
 
