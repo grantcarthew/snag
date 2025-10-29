@@ -728,8 +728,6 @@ func handleOpenURLsInBrowser(cmd *cobra.Command, urls []string) error {
 	}
 
 	logger.Success("Browser will remain open with %d tabs", len(validatedURLs))
-	logger.Info("Use 'snag --list-tabs' to see opened tabs")
-	logger.Info("Use 'snag --tab <index>' to fetch content from a tab")
 
 	// Don't close browser - leave it running for user
 	return nil
