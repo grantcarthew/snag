@@ -2,7 +2,7 @@
 
 The following tasks will polish off the final stages of development for snag:
 
-- Remove the "auto-generated" from filename terminal messages, just "Filename:" will do.
+- ✅ Remove the "auto-generated" from filename terminal messages, just "Filename:" will do.
 - Support terminal messages of "Fetching" when actually getting the content to stdout/file, and "Navigating" for just browser navigation.
 - Showing the Usage after some of the errors is annoying. This should be changed.
 - Same with list-tabs when "index out of range" and maybe other errors. Annoying.
