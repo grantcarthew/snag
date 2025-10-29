@@ -1,78 +1,77 @@
-section,description,command,verify
-Basic Fetching,Markdown to stdout (default),./snag https://example.com,stdout
-Basic Fetching,HTML to stdout,./snag --format html https://example.com,stdout
-Basic Fetching,Text to stdout,./snag --format text https://example.com,stdout
-Basic Fetching,PDF auto-generated filename,./snag --format pdf https://example.com,ls
-Basic Fetching,PNG auto-generated filename,./snag --format png https://example.com,ls
-File Output,Markdown to file (-o),./snag -o output.md https://example.com,file:output.md
-File Output,HTML to file (-o),./snag -f html -o output.html https://example.com,file:output.html
-File Output,Text to file (-o),./snag -f text -o output.txt https://example.com,file:output.txt
-File Output,PDF to file (-o),./snag -f pdf -o output.pdf https://example.com,open:output.pdf
-File Output,PNG to file (-o),./snag -f png -o output.png https://example.com,open:output.png
-Directory Output,Markdown with auto-name (-d),./snag -d . https://example.com,ls
-Directory Output,HTML with auto-name (-d),./snag -f html -d . https://example.com,ls
-Directory Output,Text with auto-name (-d),./snag -f text -d . https://example.com,ls
-Directory Output,PDF with auto-name (-d),./snag -f pdf -d . https://example.com,ls
-Directory Output,PNG with auto-name (-d),./snag -f png -d . https://example.com,ls
-Advanced Fetching,Wait for element (-w),./snag -w h1 -o wait-short.md https://example.com,file:wait-short.md
-Advanced Fetching,Custom timeout,./snag --timeout 60 -o timeout-test.md https://example.com,file:timeout-test.md
-Advanced Fetching,Combined wait and timeout,./snag -w body --timeout 30 -o combined.md https://example.com,file:combined.md
-Advanced Fetching,Custom User Agent,./snag --user-agent "TestBot/1.0" -o ua-test.md https://example.com,file:ua-test.md
-Browser & Profile,Open browser only (no URL),./snag --open-browser,stdout
-Browser & Profile,Open browser with URL (no fetch),./snag --open-browser https://example.com,stdout
-Browser & Profile,Force headless browser,./snag --force-headless -o headless.md https://example.com,file:headless.md
-Browser & Profile,Custom port,./snag --port 9223 -o custom-port.md https://example.com,file:custom-port.md
-Browser & Profile,Close tab after fetching (-c),./snag -c -o closed.md https://example.com,file:closed.md
-Browser & Profile,Open browser with custom profile,./snag --open-browser --user-data-dir ./test-profile,stdout
-Browser & Profile,Fetch with custom profile,./snag --user-data-dir ./test-profile -o profile-test.md https://example.com,file:profile-test.md
-Tab Operations,List all open tabs (-l),./snag -l,stdout
-Tab Operations,Fetch from tab 1 (-t),./snag -t 1,stdout
-Tab Operations,Fetch from tab 1 as HTML,./snag -t 1 -f html,stdout
-Tab Operations,Fetch from tab 1 as PDF,./snag -t 1 -f pdf,ls
-Tab Operations,Fetch by pattern (substring),./snag -t example,stdout
-Tab Operations,Fetch by pattern (exact URL),./snag -t https://example.com,stdout
-Tab Operations,Fetch from tab range (1-2),./snag -t 1-2 -d .,ls
-Tab Operations,Fetch by pattern (multiple matches),./snag -t http -d .,ls
-Tab Operations,Tab to markdown file,./snag -t 1 -o tab1.md,file:tab1.md
-Tab Operations,Tab to HTML file,./snag -t 1 -f html -o tab1.html,file:tab1.html
-Tab Operations,Tab to PDF file,./snag -t 1 -f pdf -o tab1.pdf,open:tab1.pdf
-Tab Operations,Tab to directory (markdown),./snag -t 1 -d .,ls
-Tab Operations,All tabs to directory (-a),./snag -a -d .,ls
-Tab Operations,All tabs as HTML,./snag -a -f html -d .,ls
-Tab Operations,All tabs as PDF,./snag -a -f pdf -d .,ls
-Batch URL Operations,Two URLs inline,./snag --force-headless -d . https://example.com https://go.dev,ls
-Batch URL Operations,Three URLs inline as text,./snag --force-headless -d . -f text https://example.com https://go.dev https://httpbin.org/html,ls
-Batch URL Operations,Load from small URL file,./snag --force-headless -d . --url-file testdata/urls-small.txt,ls
-Batch URL Operations,Load from comprehensive URL file,./snag --force-headless -d . --url-file testdata/urls.txt,ls
-Batch URL Operations,URL file with invalid URLs,./snag --force-headless -d . --url-file testdata/urls-invalid.txt,ls
-Batch URL Operations,URL file + inline URLs,./snag --force-headless -d . --url-file testdata/urls-small.txt https://httpbin.org/html,ls
-Logging,Verbose output,./snag --verbose -o verbose.md https://example.com,file:verbose.md
-Logging,Quiet output (-q),./snag -q -o quiet.md https://example.com,file:quiet.md
-Logging,Debug output,./snag --debug -o debug.md https://example.com,file:debug.md
-Combined & Regression,Many flags together,./snag -f html -d . --verbose --timeout 45 -w body https://example.com,ls
-Combined & Regression,Tab with many options,./snag -t 1 -f pdf -d . --verbose --timeout 30,ls
-Combined & Regression,Regression: Text format pipes to stdout,./snag https://example.com,stdout
-Combined & Regression,Regression: Binary never pipes (PDF),./snag -f pdf https://example.com,ls
-Combined & Regression,Edge Case: Multiple same URL,./snag -d . https://example.com,ls
-Combined & Regression,Edge Case: Multiple same URL (creates -1),./snag -d . https://example.com,ls
-Warnings,Format with mismatched extension,./snag -f html -o mismatch.md https://example.com,file:mismatch.md
-Warnings,Timeout with --tab (no --wait-for),./snag --timeout 10 -t 1,stdout
-Warnings,Close tab in headless mode,./snag --force-headless --close-tab https://example.com,stdout
-Warnings,User Agent with --tab (ignored),./snag --user-agent "TestBot/1.0" -t 1,stdout
-Warnings,User Data Dir with --tab (ignored),./snag --user-data-dir ./test-profile -t 1,stdout
-Warnings,Empty User Agent (ignored),./snag --user-agent "" https://example.com,stdout
-Error Tests,Conflicting output flags (-o and -d),./snag -o test.md -d . https://example.com,error
-Error Tests,All-tabs with URL argument,./snag --all-tabs https://example.com,error
-Error Tests,Tab with URL argument,./snag -t 1 https://example.com,error
-Error Tests,Invalid format,./snag -f invalid https://example.com,error
-Error Tests,Invalid tab index,./snag -t 999,error
-Error Tests,Invalid URL,./snag not-a-url,error
-Error Tests,Flag after URL (wrong order),./snag https://example.com --force-headless,error
-Error Tests,--output with multiple URLs,./snag --force-headless -o output.md https://example.com https://go.dev,error
-Error Tests,URL file not found,./snag --url-file /nonexistent/file.txt,error
-Error Tests,Empty URL file,./snag --url-file testdata/empty-urls.txt,error
-Error Tests,All-tabs with --output flag,./snag --all-tabs -o all-tabs.md,error
-Error Tests,Tab range with --output flag,./snag -t 1-2 -o range.md,error
-Error Tests,Force-headless with --tab,./snag --force-headless -t 1,error
-Error Tests,Force-headless with --open-browser,./snag --force-headless --open-browser,error
-Error Tests,Error on non-existent profile dir,./snag --user-data-dir /nonexistent/path https://example.com,error
+section,description,command,verify,requires
+Basic Fetching,Markdown to stdout (default),./snag https://example.com,stdout,
+Basic Fetching,HTML to stdout,./snag --format html https://example.com,stdout,
+Basic Fetching,Text to stdout,./snag --format text https://example.com,stdout,
+Basic Fetching,PDF auto-generated filename,./snag --format pdf https://example.com,ls,
+Basic Fetching,PNG auto-generated filename,./snag --format png https://example.com,ls,
+File Output,Markdown to file (-o),./snag -o output.md https://example.com,file:output.md,
+File Output,HTML to file (-o),./snag -f html -o output.html https://example.com,file:output.html,
+File Output,Text to file (-o),./snag -f text -o output.txt https://example.com,file:output.txt,
+File Output,PDF to file (-o),./snag -f pdf -o output.pdf https://example.com,open:output.pdf,
+File Output,PNG to file (-o),./snag -f png -o output.png https://example.com,open:output.png,
+Directory Output,Markdown with auto-name (-d),./snag -d . https://example.com,ls,
+Directory Output,HTML with auto-name (-d),./snag -f html -d . https://example.com,ls,
+Directory Output,Text with auto-name (-d),./snag -f text -d . https://example.com,ls,
+Directory Output,PDF with auto-name (-d),./snag -f pdf -d . https://example.com,ls,
+Directory Output,PNG with auto-name (-d),./snag -f png -d . https://example.com,ls,
+Advanced Fetching,Wait for element (-w),./snag -w h1 -o wait-short.md https://example.com,file:wait-short.md,
+Advanced Fetching,Custom timeout,./snag --timeout 60 -o timeout-test.md https://example.com,file:timeout-test.md,
+Advanced Fetching,Combined wait and timeout,./snag -w body --timeout 30 -o combined.md https://example.com,file:combined.md,
+Advanced Fetching,Custom User Agent,./snag --user-agent "TestBot/1.0" -o ua-test.md https://example.com,file:ua-test.md,
+Browser & Profile,Open browser only (no URL),./snag --open-browser,stdout,browser
+Browser & Profile,Open browser with URL (no fetch),./snag --open-browser https://example.com,stdout,
+Browser & Profile,Force headless browser,./snag --force-headless -o headless.md https://example.com,file:headless.md,
+Browser & Profile,Custom port,./snag --port 9223 -o custom-port.md https://example.com,file:custom-port.md,
+Browser & Profile,Close tab after fetching (-c),./snag -c -o closed.md https://example.com,file:closed.md,
+Browser & Profile,Open browser with custom profile,./snag --open-browser --user-data-dir ./test-profile,stdout,
+Browser & Profile,Fetch with custom profile,./snag --user-data-dir ./test-profile -o profile-test.md https://example.com,file:profile-test.md,
+Tab Operations,List all open tabs (-l),./snag -l,stdout,tabs
+Tab Operations,Fetch from tab 1 (-t),./snag -t 1,stdout,tabs
+Tab Operations,Fetch from tab 1 as HTML,./snag -t 1 -f html,stdout,tabs
+Tab Operations,Fetch from tab 1 as PDF,./snag -t 1 -f pdf,ls,tabs
+Tab Operations,Fetch by pattern (substring),./snag -t example,stdout,tabs
+Tab Operations,Fetch by pattern (exact URL),./snag -t https://example.com,stdout,tabs
+Tab Operations,Fetch from tab range (1-2),./snag -t 1-2 -d .,ls,tabs
+Tab Operations,Fetch by pattern (multiple matches),./snag -t http -d .,ls,tabs
+Tab Operations,Tab to markdown file,./snag -t 1 -o tab1.md,file:tab1.md,tabs
+Tab Operations,Tab to HTML file,./snag -t 1 -f html -o tab1.html,file:tab1.html,tabs
+Tab Operations,Tab to PDF file,./snag -t 1 -f pdf -o tab1.pdf,open:tab1.pdf,tabs
+Tab Operations,Tab to directory (markdown),./snag -t 1 -d .,ls,tabs
+Tab Operations,All tabs to directory (-a),./snag -a -d .,ls,tabs
+Tab Operations,All tabs as HTML,./snag -a -f html -d .,ls,tabs
+Tab Operations,All tabs as PDF,./snag -a -f pdf -d .,ls,tabs
+Batch URL Operations,Two URLs inline,./snag --force-headless -d . https://example.com https://go.dev,ls,
+Batch URL Operations,Three URLs inline as text,./snag --force-headless -d . -f text https://example.com https://go.dev https://httpbin.org/html,ls,
+Batch URL Operations,Load from small URL file,./snag --force-headless -d . --url-file testdata/urls-small.txt,ls,
+Batch URL Operations,Load from comprehensive URL file,./snag --force-headless -d . --url-file testdata/urls.txt,ls,
+Batch URL Operations,URL file with invalid URLs,./snag --force-headless -d . --url-file testdata/urls-invalid.txt,ls,
+Batch URL Operations,URL file + inline URLs,./snag --force-headless -d . --url-file testdata/urls-small.txt https://httpbin.org/html,ls,
+Logging,Verbose output,./snag --verbose -o verbose.md https://example.com,file:verbose.md,
+Logging,Quiet output (-q),./snag -q -o quiet.md https://example.com,file:quiet.md,
+Logging,Debug output,./snag --debug -o debug.md https://example.com,file:debug.md,
+Combined & Regression,Many flags together,./snag -f html -d . --verbose --timeout 45 -w body https://example.com,ls,
+Combined & Regression,Tab with many options,./snag -t 1 -f pdf -d . --verbose --timeout 30,ls,tabs
+Combined & Regression,Regression: Text format pipes to stdout,./snag https://example.com,stdout,
+Combined & Regression,Regression: Binary never pipes (PDF),./snag -f pdf https://example.com,ls,
+Combined & Regression,Edge Case: Multiple same URL,./snag -d . https://example.com,ls,
+Combined & Regression,Edge Case: Multiple same URL (creates -1),./snag -d . https://example.com,ls,
+Warnings,Format with mismatched extension,./snag -f html -o mismatch.md https://example.com,file:mismatch.md,
+Warnings,Timeout with --tab (no --wait-for),./snag --timeout 10 -t 1,stdout,tabs
+Warnings,Close tab in headless mode,./snag --force-headless --close-tab https://example.com,stdout,
+Warnings,User Agent with --tab (ignored),./snag --user-agent "TestBot/1.0" -t 1,stdout,tabs
+Warnings,User Data Dir with --tab (ignored),./snag --user-data-dir ./test-profile -t 1,stdout,tabs
+Warnings,Empty User Agent (ignored),./snag --user-agent "" https://example.com,stdout,
+Error Tests,Conflicting output flags (-o and -d),./snag -o test.md -d . https://example.com,error,
+Error Tests,All-tabs with URL argument,./snag --all-tabs https://example.com,error,tabs
+Error Tests,Tab with URL argument,./snag -t 1 https://example.com,error,tabs
+Error Tests,Invalid format,./snag -f invalid https://example.com,error,
+Error Tests,Invalid tab index,./snag -t 999,error,tabs
+Error Tests,Invalid URL,./snag not-a-url,error,
+Error Tests,--output with multiple URLs,./snag --force-headless -o output.md https://example.com https://go.dev,error,
+Error Tests,URL file not found,./snag --url-file /nonexistent/file.txt,error,
+Error Tests,Empty URL file,./snag --url-file testdata/empty-urls.txt,error,
+Error Tests,All-tabs with --output flag,./snag --all-tabs -o all-tabs.md,error,tabs
+Error Tests,Tab range with --output flag,./snag -t 1-2 -o range.md,error,tabs
+Error Tests,Force-headless with --tab,./snag --force-headless -t 1,error,tabs
+Error Tests,Force-headless with --open-browser,./snag --force-headless --open-browser,error,
+Error Tests,Error on non-existent profile dir,./snag --user-data-dir /nonexistent/path https://example.com,error,
