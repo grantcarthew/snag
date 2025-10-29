@@ -101,7 +101,7 @@ func snag(config *Config) error {
 		if err != nil {
 			return err
 		}
-		logger.Info("Auto-generated filename: %s", config.OutputFile)
+		logger.Info("Filename: %s", config.OutputFile)
 	}
 
 	return processPageContent(page, config.Format, config.OutputFile)
@@ -512,7 +512,7 @@ func handleTabFetch(cmd *cobra.Command) error {
 		if err != nil {
 			return err
 		}
-		logger.Info("Auto-generated filename: %s", outputFile)
+		logger.Info("Filename: %s", outputFile)
 	}
 
 	return processPageContent(page, outputFormat, outputFile)
