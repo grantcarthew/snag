@@ -241,7 +241,7 @@ if [[ " ${selected_array[*]} " =~ " All " ]]; then
 else
     # Otherwise, filter by selected sections
     for line in "${csv_lines[@]}"; do
-        IFS=, read -r section description command verify requires <<< "${line}"
+        IFS=, read -r section description verify requires command <<< "${line}"
 
         # Check if this test's section is in selected sections
         if [[ " ${selected_array[*]} " =~ " ${section} " ]]; then
@@ -269,7 +269,7 @@ log_heading "Browser Setup"
 # Determine highest requirement from tests
 highest_requirement="none"
 for test_line in "${tests_to_run[@]}"; do
-    IFS=, read -r section description command verify requires <<< "${test_line}"
+    IFS=, read -r section description verify requires command <<< "${test_line}"
 
     if [[ "${requires}" == "tabs" ]]; then
         highest_requirement="tabs"
@@ -333,7 +333,7 @@ echo >&2
 
 for test_line in "${tests_to_run[@]}"; do
     # Parse CSV line - be careful with IFS
-    IFS=, read -r section description command verify requires <<< "${test_line}"
+    IFS=, read -r section description verify requires command <<< "${test_line}"
     ((test_count++))
 
     # Auto-cleanup if more than 20 files in test directory
@@ -346,7 +346,12 @@ for test_line in "${tests_to_run[@]}"; do
     fi
 
     # Quit browser if this test requires it
-    if [[ "${description}" == "Open browser only (no URL)" || "${description}" == "Error on non-existent profile dir" ]]; then
+    if [[ "${description}" == "Open browser only (no URL)" || \
+          "${description}" == "Error on non-existent profile dir" || \
+          "${description}" == "Custom User Agent" || \
+          "${description}" == "Force headless browser" || \
+          "${description}" == "Custom port" || \
+          "${description}" == "Open browser with custom profile" ]]; then
         log_message "Quitting browser for fresh test: ${description}..."
         quit_browser
         echo >&2
