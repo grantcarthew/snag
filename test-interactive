@@ -198,8 +198,9 @@ for test_line in "${tests_to_run[@]}"; do
 
     log_heading "Test ${test_count}/${#tests_to_run[@]}: ${description}"
     log_message "Section: ${section}"
-    log_message "Command: ${BLUE}${command}${RESET}"
+    log_line "─" 40
     echo >&2
+    log_message "${BLUE}${command}${RESET}"
 
     # Capture existing PDF/PNG files before running command
     declare -a files_before=()
@@ -214,6 +215,7 @@ for test_line in "${tests_to_run[@]}"; do
     set +e  # Keep it off! Don't use set -e
     sleep 0.1  # Brief pause to ensure stderr is fully captured
 
+    echo >&2
     echo >&2
     log_line "─" 40
 
