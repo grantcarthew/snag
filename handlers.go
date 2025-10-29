@@ -222,14 +222,6 @@ func displayTabList(tabs []TabInfo, w io.Writer, verbose bool) {
 	}
 }
 
-func displayTabListOnError(bm *BrowserManager) {
-	if tabs, listErr := bm.ListTabs(); listErr == nil {
-		fmt.Fprintln(os.Stderr, "")
-		displayTabList(tabs, os.Stderr, false)
-		fmt.Fprintln(os.Stderr, "")
-	}
-}
-
 // Handler functions for CLI commands
 
 func handleListTabs(cmd *cobra.Command) error {
@@ -452,7 +444,6 @@ func handleTabFetch(cmd *cobra.Command) error {
 			if errors.Is(err, ErrTabIndexInvalid) {
 				logger.Error("Tab index out of range")
 				logger.Info("Run 'snag --list-tabs' to see available tabs")
-				displayTabListOnError(bm)
 			}
 			return err
 		}
@@ -465,7 +456,6 @@ func handleTabFetch(cmd *cobra.Command) error {
 			if errors.Is(err, ErrNoTabMatch) {
 				logger.Error("No tab matches pattern '%s'", tabValue)
 				logger.Info("Run 'snag --list-tabs' to see available tabs")
-				displayTabListOnError(bm)
 			}
 			return err
 		}
@@ -599,7 +589,6 @@ func handleTabRange(cmd *cobra.Command, bm *BrowserManager, start, end int) erro
 	if err != nil {
 		logger.Error("Failed to get tab range: %v", err)
 		logger.Info("Run 'snag --list-tabs' to see available tabs")
-		displayTabListOnError(bm)
 		return err
 	}
 

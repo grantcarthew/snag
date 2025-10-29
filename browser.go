@@ -135,10 +135,15 @@ func NewBrowserManager(opts BrowserOptions) *BrowserManager {
 }
 
 func (bm *BrowserManager) Connect() (*rod.Browser, error) {
-	if !bm.forceHeadless && !bm.openBrowser {
+	// Always check for existing browser first (unless forcing headless mode)
+	if !bm.forceHeadless {
 		logger.Verbose("Checking for existing browser instance on port %d...", bm.port)
 		if browser, err := bm.connectToExisting(); err == nil {
-			logger.Success("Connected to existing browser instance")
+			if bm.openBrowser {
+				logger.Success("Connected to existing browser (visible mode)")
+			} else {
+				logger.Success("Connected to existing browser instance")
+			}
 			bm.browser = browser
 			bm.wasLaunched = false
 			return browser, nil
