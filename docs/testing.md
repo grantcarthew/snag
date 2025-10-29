@@ -31,11 +31,11 @@ Snag has a comprehensive test suite covering unit tests, integration tests, and 
 
 ### Test Categories
 
-| Category              | Description                                  | Test Files                                                                               |
-| --------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Category              | Description                                  | Test Files                                                                                                       |
+| --------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | **Unit Tests**        | Fast, isolated tests of individual functions | `output_test.go`, `validate_test.go`, `formats_test.go`, `logger_test.go`, `browser_test.go`, `handlers_test.go` |
-| **Integration Tests** | End-to-end tests with browser                | `cli_test.go`                                                                            |
-| **Interactive Tests** | Manual verification via script               | `test-interactive` + `test-interactive.csv`                                              |
+| **Integration Tests** | End-to-end tests with browser                | `cli_test.go`                                                                                                    |
+| **Interactive Tests** | Manual verification via script               | `test-interactive` + `test-interactive.csv`                                                                      |
 
 ---
 

@@ -486,6 +486,7 @@ snag -t "(github|gitlab)\.com"   # All github or gitlab tabs
 ```
 
 **Pattern matching behavior:**
+
 - Tries in order: exact URL match → contains match → regex match
 - **Single match**: Outputs to stdout (or to file with `-o`)
 - **Multiple matches**: Auto-saves all tabs with generated filenames (use `-d` for custom directory)

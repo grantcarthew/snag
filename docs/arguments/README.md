@@ -142,16 +142,16 @@ These determine the primary operation mode:
 
 ### Logging Level (Mutually Exclusive)
 
-| Combination             | Result              |
-| ----------------------- | ------------------- |
-| No logging flags        | Normal              |
-| `--quiet`               | Quiet               |
-| `--verbose`             | Verbose             |
-| `--debug`               | Debug               |
-| `--quiet` + `--verbose` | ❌ ERROR            |
-| `--debug` + `--verbose` | ❌ ERROR            |
-| `--quiet` + `--debug`   | ❌ ERROR            |
-| `--verbose` + `--quiet` | ❌ ERROR            |
+| Combination             | Result   |
+| ----------------------- | -------- |
+| No logging flags        | Normal   |
+| `--quiet`               | Quiet    |
+| `--verbose`             | Verbose  |
+| `--debug`               | Debug    |
+| `--quiet` + `--verbose` | ❌ ERROR |
+| `--debug` + `--verbose` | ❌ ERROR |
+| `--quiet` + `--debug`   | ❌ ERROR |
+| `--verbose` + `--quiet` | ❌ ERROR |
 
 ---
 

@@ -1240,6 +1240,7 @@ $ snag https://example.com
   - Success messages mention "from sorted order (by URL)" for clarity
   - Documentation clearly explains tab [1] ≠ first visual tab
 - **Examples**:
+
   ```bash
   # Visual browser order (left to right):
   #   - example.com
@@ -1254,6 +1255,7 @@ $ snag https://example.com
   snag --tab 1    # Fetches example.com (first alphabetically)
   snag --tab 1-2  # Fetches example.com and github.com
   ```
+
 - **Code Location**:
   - Sort function: `browser.go:409-451` (`getSortedPagesWithInfo()`)
   - Used by: `ListTabs()`, `GetTabByIndex()`, `GetTabsByRange()`
@@ -1291,6 +1293,7 @@ $ snag https://example.com
   - Provides escape hatch for cases where full URL is needed
   - Explicit opt-in for verbose output
 - **Examples**:
+
   ```
   Normal:
     [1] chrome://newtab (New Tab)
@@ -1300,8 +1303,9 @@ $ snag https://example.com
   Verbose:
     [1] https://www.ato.gov.au/about-ato/contact-us?gclsrc=aw.ds&gad_source=1&... - Contact us | Australian Taxation Office
   ```
+
 - **Truncation Strategy**:
-  - Layout breakdown: `  [NNN] ` (8 chars) + URL + ` (` + Title + `)`
+  - Layout breakdown: ` [NNN]` (8 chars) + URL + ` (` + Title + `)`
   - URL prioritized up to 80 chars (keeps most clean URLs complete)
   - Title gets remaining space after URL
   - Truncation indicator: `...` appended to truncated content
@@ -1335,6 +1339,7 @@ $ snag https://example.com
   - Can use `--output-dir` to specify save directory
   - Without output flags: Auto-saves to current directory with generated filenames
 - **Examples**:
+
   ```bash
   # Single match - outputs to stdout (unchanged)
   snag --tab "example.com"
@@ -1357,6 +1362,7 @@ $ snag https://example.com
   snag --tab "github" -o output.md
   # ERROR: Cannot use --output with multiple tabs. Use --output-dir instead
   ```
+
 - **Pattern Matching Changes**:
   - Pattern matching now collects ALL matches (not just first)
   - Progressive fallthrough still applies (exact → contains → regex)
