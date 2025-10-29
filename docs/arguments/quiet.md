@@ -41,14 +41,14 @@ snag https://example.com --quiet
 
 **Logging Level Flags (Mutually Exclusive):**
 
-| Combination                 | Result          | Error Message                                                             |
-| --------------------------- | --------------- | ------------------------------------------------------------------------- |
-| `--quiet`                   | Quiet           | (Valid - quiet mode)                                                      |
-| `--quiet --verbose`         | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [quiet verbose] were all set` |
-| `--verbose --quiet`         | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [quiet verbose] were all set` |
-| `--quiet --debug`           | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet] were all set` |
-| `--debug --quiet`           | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet] were all set` |
-| `--quiet --verbose --debug` | Error           | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet verbose] were all set` |
+| Combination                 | Result | Error Message                                                                                                           |
+| --------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `--quiet`                   | Quiet  | (Valid - quiet mode)                                                                                                    |
+| `--quiet --verbose`         | Error  | `if any flags in the group [quiet verbose debug] are set none of the others can be; [quiet verbose] were all set`       |
+| `--verbose --quiet`         | Error  | `if any flags in the group [quiet verbose debug] are set none of the others can be; [quiet verbose] were all set`       |
+| `--quiet --debug`           | Error  | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet] were all set`         |
+| `--debug --quiet`           | Error  | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet] were all set`         |
+| `--quiet --verbose --debug` | Error  | `if any flags in the group [quiet verbose debug] are set none of the others can be; [debug quiet verbose] were all set` |
 
 **All Other Flags:**
 

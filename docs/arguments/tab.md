@@ -118,16 +118,16 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 
 **Output Control:**
 
-| Combination                                 | Behavior       | Notes                                                                |
-| ------------------------------------------- | -------------- | -------------------------------------------------------------------- |
-| `--tab N` (single match) + `--output`       | Works normally | Fetch from tab, save to file                                         |
-| `--tab N-M` (range) + `--output`            | **Error**      | `"Cannot use --output with multiple tabs. Use --output-dir instead"` |
-| `--tab PATTERN` (multi-match) + `--output`  | **Error**      | `"Cannot use --output with multiple tabs. Use --output-dir instead"` |
-| `--tab` + `--output-dir`                    | Works normally | Fetch from tab(s), auto-generate filename(s)                         |
-| `--tab` + `--format` (all)                  | Works normally | All formats supported (md/html/text/pdf/png)                         |
-| `--tab N` (single match) + no output        | Works normally | Output to stdout                                                     |
-| `--tab N-M` (range) + no output             | Auto-save      | Auto-generates filenames in current directory                        |
-| `--tab PATTERN` (multi-match) + no output   | Auto-save      | Auto-generates filenames in current directory                        |
+| Combination                                | Behavior       | Notes                                                                |
+| ------------------------------------------ | -------------- | -------------------------------------------------------------------- |
+| `--tab N` (single match) + `--output`      | Works normally | Fetch from tab, save to file                                         |
+| `--tab N-M` (range) + `--output`           | **Error**      | `"Cannot use --output with multiple tabs. Use --output-dir instead"` |
+| `--tab PATTERN` (multi-match) + `--output` | **Error**      | `"Cannot use --output with multiple tabs. Use --output-dir instead"` |
+| `--tab` + `--output-dir`                   | Works normally | Fetch from tab(s), auto-generate filename(s)                         |
+| `--tab` + `--format` (all)                 | Works normally | All formats supported (md/html/text/pdf/png)                         |
+| `--tab N` (single match) + no output       | Works normally | Output to stdout                                                     |
+| `--tab N-M` (range) + no output            | Auto-save      | Auto-generates filenames in current directory                        |
+| `--tab PATTERN` (multi-match) + no output  | Auto-save      | Auto-generates filenames in current directory                        |
 
 **Timing & Selector:**
 
