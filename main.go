@@ -188,11 +188,12 @@ OPTIONS:
 `
 
 var rootCmd = &cobra.Command{
-	Use:     "snag [options] URL...",
-	Short:   "Intelligently fetch web page content using a browser engine",
-	Version: version,
-	Args:    cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
-	RunE:    runCobra,
+	Use:          "snag [options] URL...",
+	Short:        "Intelligently fetch web page content using a browser engine",
+	Version:      version,
+	Args:         cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
+	RunE:         runCobra,
+	SilenceUsage: true, // Don't show usage on errors
 }
 
 func init() {
@@ -250,7 +251,6 @@ func main() {
 
 	// Execute Cobra command
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(ExitCodeError)
 	}
 }
