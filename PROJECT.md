@@ -4,6 +4,8 @@ The issues listed here were noticed during the ./test-interactive test run.
 
 ---
 
+**FIXED**
+
 In the following example, the "Use 'snag... etc" messages are a little too much and need to be removed.
 
 ```txt
