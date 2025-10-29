@@ -25,12 +25,14 @@ func validateURL(urlStr string) (string, error) {
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		logger.Error("Invalid URL: %s", urlStr)
+		logger.Debug("URL parsing error: %v", err)
 		logger.ErrorWithSuggestion(
 			fmt.Sprintf("URL parsing failed: %v", err),
 			"snag https://example.com",
 		)
 		return "", ErrInvalidURL
 	}
+	logger.Debug("Parsed URL - scheme: %s, host: %s, path: %s", parsedURL.Scheme, parsedURL.Host, parsedURL.Path)
 
 	validSchemes := map[string]bool{
 		"http":  true,

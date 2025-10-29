@@ -31,6 +31,8 @@ The browser was already open and it got used, but the terminal messages stated "
 
 ---
 
+✅ **Fixed:** Missing warning for ignored --user-data-dir
+
 In this one:
 
 ```txt
@@ -42,6 +44,14 @@ You can connect to it using: snag <url>
 
 Shouldn't there be a warning that the profile can't be used?
 
+**Resolution:** Now shows "⚠ --user-data-dir ignored (browser already running with its own profile)" when connecting to an existing browser. Also warns for --user-agent in the same scenario.
+
 ## Review
 
-- Review the [DEBUG] messages in the source code, maybe add more?
+- ✅ Review the [DEBUG] messages in the source code, maybe add more?
+  - Added debug logging for browser connection flow (WebSocket URLs, connection status)
+  - Added debug logging for browser launch flow (control URL, connection status)
+  - Added debug logging for filename generation (slugification, conflict checking)
+  - Added debug logging for tab pattern matching (pattern type, match counts)
+  - Added debug logging for URL validation (parsing details, components)
+  - Existing coverage was already good for fetch and format conversion paths

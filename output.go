@@ -95,10 +95,12 @@ func GenerateFilename(title string, format string, timestamp time.Time, urlStr s
 
 	// Slugify title
 	titleSlug := SlugifyTitle(title, MaxSlugLength)
+	logger.Debug("Title '%s' slugified to '%s'", title, titleSlug)
 
 	// If title slug is empty, use URL hostname as fallback
 	if titleSlug == "" {
 		titleSlug = GenerateURLSlug(urlStr)
+		logger.Debug("Empty title slug, using URL slug: %s", titleSlug)
 	}
 
 	// Get file extension
@@ -106,6 +108,7 @@ func GenerateFilename(title string, format string, timestamp time.Time, urlStr s
 
 	// Combine: timestamp-titleslug.ext
 	filename := fmt.Sprintf("%s-%s%s", timePrefix, titleSlug, ext)
+	logger.Debug("Generated filename: %s", filename)
 
 	return filename
 }
@@ -117,9 +120,11 @@ func GenerateFilename(title string, format string, timestamp time.Time, urlStr s
 //   - file-1.md exists → file-2.md
 func ResolveConflict(dir, filename string) (string, error) {
 	fullPath := filepath.Join(dir, filename)
+	logger.Debug("Checking for conflicts: %s", fullPath)
 
 	// If file doesn't exist, return original filename
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		logger.Debug("No conflict, using original filename")
 		return filename, nil
 	} else if err != nil {
 		// Handle other errors (permission denied, etc.)
