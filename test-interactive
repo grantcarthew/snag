@@ -128,32 +128,32 @@ function setup_browser_tabs() {
 }
 
 function quit_browser() {
-    # Quit all Chromium-based browsers on macOS and Linux
+    # Force kill all Chromium-based browser processes
     local quit_count=0
 
     if [[ "$(uname)" == "Darwin" ]]; then
-        # macOS - use osascript to quit apps
-        local browsers=("Google Chrome" "Chromium" "Brave Browser" "Microsoft Edge")
-        for browser in "${browsers[@]}"; do
-            if osascript -e "quit app \"${browser}\"" 2>/dev/null; then
+        # macOS - force kill all browser processes
+        local processes=("Google Chrome" "Chromium" "Brave Browser" "Microsoft Edge")
+        for process in "${processes[@]}"; do
+            if pkill -9 -f "${process}" 2>/dev/null; then
                 ((quit_count++))
             fi
         done
     else
-        # Linux - kill browser processes
+        # Linux - force kill browser processes
         local processes=("chrome" "chromium" "chromium-browser" "brave" "microsoft-edge")
         for process in "${processes[@]}"; do
-            if pkill -f "${process}" 2>/dev/null; then
+            if pkill -9 -f "${process}" 2>/dev/null; then
                 ((quit_count++))
             fi
         done
     fi
 
     if [[ ${quit_count} -gt 0 ]]; then
-        sleep 1  # Give browser time to quit
-        log_success "Quit ${quit_count} browser(s)"
+        sleep 1  # Give processes time to terminate
+        log_success "Killed ${quit_count} browser process(es)"
     else
-        log_message "No browsers to quit"
+        log_message "No browser processes to kill"
     fi
 }
 
