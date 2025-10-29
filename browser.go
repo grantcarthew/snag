@@ -144,6 +144,12 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 			} else {
 				logger.Success("Connected to existing browser instance")
 			}
+			if bm.userDataDir != "" {
+				logger.Warning("--user-data-dir ignored (browser already running with its own profile)")
+			}
+			if bm.userAgent != "" {
+				logger.Warning("--user-agent ignored (browser already running with its own user agent)")
+			}
 			bm.browser = browser
 			bm.wasLaunched = false
 			return browser, nil
@@ -179,11 +185,13 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 
 func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
 	baseURL := fmt.Sprintf("http://127.0.0.1:%d", bm.port)
+	logger.Debug("Attempting connection to: %s", baseURL)
 
 	wsURL, err := launcher.ResolveURL(baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrBrowserConnection, err)
 	}
+	logger.Debug("Resolved WebSocket URL: %s", wsURL)
 
 	// Create browser instance and connect with timeout
 	// We need to assign the result because Timeout() creates a new instance
@@ -191,8 +199,10 @@ func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
 
 	// Try to connect
 	if err := browser.Connect(); err != nil {
+		logger.Debug("Connection failed: %v", err)
 		return nil, fmt.Errorf("%w: %w", ErrBrowserConnection, err)
 	}
+	logger.Debug("Successfully connected to browser")
 
 	// Return the browser but without timeout for future operations
 	// CancelTimeout() removes the timeout context from subsequent operations
@@ -228,6 +238,7 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to launch browser: %w", err)
 	}
+	logger.Debug("Browser launched with control URL: %s", controlURL)
 
 	bm.launcher = l
 
@@ -237,8 +248,10 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 
 	// Try to connect
 	if err := browser.Connect(); err != nil {
+		logger.Debug("Failed to connect to launched browser: %v", err)
 		return nil, fmt.Errorf("%w: %w", ErrBrowserConnection, err)
 	}
+	logger.Debug("Successfully connected to launched browser")
 
 	// Return the browser but without timeout for future operations
 	// CancelTimeout() removes the timeout context from subsequent operations
@@ -251,6 +264,12 @@ func (bm *BrowserManager) OpenBrowserOnly() error {
 	logger.Verbose("Checking for existing browser instance on port %d...", bm.port)
 	if _, err := bm.connectToExisting(); err == nil {
 		logger.Success("Browser already running on port %d", bm.port)
+		if bm.userDataDir != "" {
+			logger.Warning("--user-data-dir ignored (browser already running with its own profile)")
+		}
+		if bm.userAgent != "" {
+			logger.Warning("--user-agent ignored (browser already running with its own user agent)")
+		}
 		logger.Info("You can connect to it using: snag <url>")
 		return nil
 	}
@@ -500,6 +519,7 @@ func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) 
 		return nil, fmt.Errorf("%w: '%s' (no accessible tabs)", ErrNoTabMatch, pattern)
 	}
 
+	logger.Debug("Matching pattern '%s' against %d tabs", pattern, len(cached))
 	patternLower := strings.ToLower(pattern)
 
 	var exactMatches []*rod.Page
@@ -526,6 +546,7 @@ func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) 
 
 	re, err := regexp.Compile("(?i)" + pattern)
 	if err != nil {
+		logger.Debug("Pattern is not valid regex: %v", err)
 		return nil, fmt.Errorf("invalid regex pattern '%s': %w", pattern, err)
 	}
 
@@ -537,6 +558,7 @@ func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) 
 		}
 	}
 	if len(regexMatches) > 0 {
+		logger.Debug("Found %d regex matches for pattern '%s'", len(regexMatches), pattern)
 		return regexMatches, nil
 	}
 
