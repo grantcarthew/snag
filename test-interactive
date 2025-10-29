@@ -84,6 +84,79 @@ function ctrlc_trap() {
 }
 trap ctrlc_trap SIGINT
 
+# Browser state detection functions
+# -----------------------------------------------------------------------------
+function browser_is_running() {
+    # Returns 0 if browser is running and accessible, 1 otherwise
+    "${SNAG_BIN:-./snag}" --list-tabs >/dev/null 2>&1
+    return $?
+}
+
+function count_browser_tabs() {
+    # Returns the number of open browser tabs (0 if browser not running)
+    local count=0
+    if browser_is_running; then
+        # Count lines from --list-tabs, subtract header lines
+        count=$("${SNAG_BIN:-./snag}" --list-tabs 2>/dev/null | grep -c '^\s*\[')
+    fi
+    echo "${count}"
+}
+
+function setup_browser_tabs() {
+    # Load test URLs into browser tabs
+    local url_file="${1:-${SCRIPT_DIR}/testdata/test-urls-5.txt}"
+
+    log_message "Loading test URLs into browser tabs..."
+
+    if [[ ! -f "${url_file}" ]]; then
+        log_error "URL file not found: ${url_file}"
+        return 1
+    fi
+
+    # Read URLs and open them in browser
+    while IFS= read -r url; do
+        # Skip comments and empty lines
+        [[ "${url}" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${url// }" ]] && continue
+
+        log_message "  Loading: ${url}"
+        "${SNAG_BIN:-./snag}" --open-browser "${url}" >/dev/null 2>&1
+        sleep 0.5  # Brief pause between tabs
+    done < "${url_file}"
+
+    log_success "Test URLs loaded successfully"
+}
+
+function quit_browser() {
+    # Quit all Chromium-based browsers on macOS and Linux
+    local quit_count=0
+
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # macOS - use osascript to quit apps
+        local browsers=("Google Chrome" "Chromium" "Brave Browser" "Microsoft Edge")
+        for browser in "${browsers[@]}"; do
+            if osascript -e "quit app \"${browser}\"" 2>/dev/null; then
+                ((quit_count++))
+            fi
+        done
+    else
+        # Linux - kill browser processes
+        local processes=("chrome" "chromium" "chromium-browser" "brave" "microsoft-edge")
+        for process in "${processes[@]}"; do
+            if pkill -f "${process}" 2>/dev/null; then
+                ((quit_count++))
+            fi
+        done
+    fi
+
+    if [[ ${quit_count} -gt 0 ]]; then
+        sleep 1  # Give browser time to quit
+        log_success "Quit ${quit_count} browser(s)"
+    else
+        log_message "No browsers to quit"
+    fi
+}
+
 # Dependency checks
 # -----------------------------------------------------------------------------
 dependencies=(go fzf)
@@ -120,6 +193,13 @@ SNAG_BIN="${SCRIPT_DIR}/snag"
 
 # Copy snag binary to temp dir for easier commands
 cp "${SNAG_BIN}" "${TEST_DIR}/snag"
+
+# Copy testdata directory to temp dir (for --url-file tests)
+if [[ -d "${SCRIPT_DIR}/testdata" ]]; then
+    cp -r "${SCRIPT_DIR}/testdata" "${TEST_DIR}/"
+    log_message "Copied testdata directory to test environment"
+fi
+
 cd "${TEST_DIR}" || exit 1
 log_success "Working directory: ${TEST_DIR}"
 
@@ -161,7 +241,7 @@ if [[ " ${selected_array[*]} " =~ " All " ]]; then
 else
     # Otherwise, filter by selected sections
     for line in "${csv_lines[@]}"; do
-        IFS=, read -r section description command verify <<< "${line}"
+        IFS=, read -r section description command verify requires <<< "${line}"
 
         # Check if this test's section is in selected sections
         if [[ " ${selected_array[*]} " =~ " ${section} " ]]; then
@@ -182,6 +262,66 @@ if [[ ${DEBUG-} ]]; then
     echo >&2
 fi
 
+# Pre-test setup: Determine requirements and setup browser if needed
+# -----------------------------------------------------------------------------
+log_heading "Browser Setup"
+
+# Determine highest requirement from tests
+highest_requirement="none"
+for test_line in "${tests_to_run[@]}"; do
+    IFS=, read -r section description command verify requires <<< "${test_line}"
+
+    if [[ "${requires}" == "tabs" ]]; then
+        highest_requirement="tabs"
+        break  # tabs is highest, no need to continue
+    elif [[ "${requires}" == "browser" && "${highest_requirement}" == "none" ]]; then
+        highest_requirement="browser"
+    fi
+done
+
+# Detect current browser state
+browser_running=false
+tab_count=0
+if browser_is_running; then
+    browser_running=true
+    tab_count=$(count_browser_tabs)
+fi
+
+# Display browser status
+log_message "Current State:"
+log_message "  Browser running: $(${browser_running} && echo "Yes" || echo "No")"
+log_message "  Tab count: ${tab_count}"
+log_message "  Requirement: ${highest_requirement}"
+echo >&2
+
+# Execute setup based on requirements
+MIN_TABS=3  # Minimum tabs required for tab operations
+
+if [[ "${highest_requirement}" == "tabs" ]]; then
+    if ! ${browser_running} || [[ ${tab_count} -lt ${MIN_TABS} ]]; then
+        log_message "Action: Loading test URLs (browser needs tabs)..."
+        setup_browser_tabs "${SCRIPT_DIR}/testdata/test-urls-5.txt"
+
+        # Re-count tabs after setup
+        tab_count=$(count_browser_tabs)
+        log_success "Browser ready with ${tab_count} tabs"
+    else
+        log_success "Action: Ready (requirements met - ${tab_count} tabs available)"
+    fi
+elif [[ "${highest_requirement}" == "browser" ]]; then
+    if ! ${browser_running}; then
+        log_message "Action: Opening browser..."
+        "${SNAG_BIN}" --open-browser >/dev/null 2>&1
+        log_success "Browser opened"
+    else
+        log_success "Action: Ready (browser already running)"
+    fi
+else
+    log_success "Action: No browser setup required"
+fi
+
+echo >&2
+
 # Run tests
 test_count=0
 passed_count=0
@@ -193,20 +333,37 @@ echo >&2
 
 for test_line in "${tests_to_run[@]}"; do
     # Parse CSV line - be careful with IFS
-    IFS=, read -r section description command verify <<< "${test_line}"
+    IFS=, read -r section description command verify requires <<< "${test_line}"
     ((test_count++))
+
+    # Auto-cleanup if more than 20 files in test directory
+    file_count=$(find . -maxdepth 1 -type f ! -name "snag" | wc -l)
+    if [[ ${file_count} -gt 20 ]]; then
+        log_message "Cleaning up ${file_count} files from previous tests..."
+        find . -maxdepth 1 -type f ! -name "snag" -delete
+        log_success "Test directory cleaned"
+        echo >&2
+    fi
+
+    # Quit browser if this test requires it
+    if [[ "${description}" == "Open browser only (no URL)" || "${description}" == "Error on non-existent profile dir" ]]; then
+        log_message "Quitting browser for fresh test: ${description}..."
+        quit_browser
+        echo >&2
+    fi
 
     log_heading "Test ${test_count}/${#tests_to_run[@]}: ${description}"
     log_message "Section: ${section}"
+    log_message "Working directory: $(pwd)"
     log_line "─" 40
     echo >&2
     log_message "${BLUE}${command}${RESET}"
 
-    # Capture existing PDF/PNG files before running command
+    # Capture existing files before running command (for tracking new files)
     declare -a files_before=()
     while IFS= read -r -d '' file; do
         files_before+=("${file}")
-    done < <(find . -maxdepth 1 \( -name "*.pdf" -o -name "*.png" \) -print0 2>/dev/null)
+    done < <(find . -maxdepth 1 -type f ! -name "snag" -print0 2>/dev/null)
 
     # Run the command, capture stderr to extract filename later
     set +e  # Don't exit on error
@@ -276,66 +433,72 @@ for test_line in "${tests_to_run[@]}"; do
         "ls")
             if [[ ${exit_code} -eq 0 ]]; then
                 log_success "Command succeeded"
-                log_message "${BOLD}Directory contents:${RESET}"
-                ls -lht || log_warning "Could not list directory"
-                echo >&2
 
-                # Extract filename from stderr "Saved to FILENAME" line
-                saved_file=""
-                if [[ -f /tmp/snag-test-stderr.txt ]]; then
-                    saved_file=$(grep "Saved to" /tmp/snag-test-stderr.txt | sed -E 's/.*Saved to ([^ ]+).*/\1/' | head -1)
-                fi
+                # Find all NEW files created by this test
+                declare -a files_after=()
+                while IFS= read -r -d '' file; do
+                    files_after+=("${file}")
+                done < <(find . -maxdepth 1 -type f ! -name "snag" -print0 2>/dev/null)
 
-                if [[ -n "${saved_file}" && -f "${saved_file}" ]]; then
-                    # Determine file type by extension
-                    case "${saved_file}" in
-                        *.md|*.html|*.txt)
-                            # Text file - cat it
-                            log_message "${BOLD}File contents (${saved_file}):${RESET}"
-                            cat "${saved_file}" || log_warning "Could not read ${saved_file}"
-                            ;;
-                        *.pdf|*.png)
-                            # Binary file - open it
-                            log_message "Opening binary file: ${saved_file}"
-                            if command -v open >/dev/null 2>&1; then
-                                open "${saved_file}" 2>/dev/null || log_warning "Could not open ${saved_file}"
-                            elif command -v xdg-open >/dev/null 2>&1; then
-                                xdg-open "${saved_file}" 2>/dev/null || log_warning "Could not open ${saved_file}"
-                            else
-                                log_warning "No opener found (tried 'open' and 'xdg-open')"
-                            fi
-                            ;;
-                    esac
-                else
-                    # Fallback: Look for NEW PDF/PNG files and open them
-                    declare -a files_after=()
-                    while IFS= read -r -d '' file; do
-                        files_after+=("${file}")
-                    done < <(find . -maxdepth 1 \( -name "*.pdf" -o -name "*.png" \) -print0 2>/dev/null)
-
-                    # Open only NEW files
-                    for file in "${files_after[@]}"; do
-                        # Check if this file is new (not in files_before)
-                        is_new=true
-                        for old_file in "${files_before[@]}"; do
-                            if [[ "${file}" == "${old_file}" ]]; then
-                                is_new=false
-                                break
-                            fi
-                        done
-
-                        if [[ "${is_new}" == "true" ]]; then
-                            log_message "Opening new file: ${file}"
-                            if command -v open >/dev/null 2>&1; then
-                                open "${file}" 2>/dev/null || log_warning "Could not open ${file}"
-                            elif command -v xdg-open >/dev/null 2>&1; then
-                                xdg-open "${file}" 2>/dev/null || log_warning "Could not open ${file}"
-                            else
-                                log_warning "No opener found (tried 'open' and 'xdg-open')"
-                                break
-                            fi
+                declare -a new_files=()
+                for file in "${files_after[@]}"; do
+                    # Check if this file is new (not in files_before)
+                    is_new=true
+                    for old_file in "${files_before[@]}"; do
+                        if [[ "${file}" == "${old_file}" ]]; then
+                            is_new=false
+                            break
                         fi
                     done
+                    if [[ "${is_new}" == "true" ]]; then
+                        new_files+=("${file}")
+                    fi
+                done
+
+                # Display new files created
+                if [[ ${#new_files[@]} -gt 0 ]]; then
+                    log_message "${BOLD}Files created (${#new_files[@]}):${RESET}"
+                    for file in "${new_files[@]}"; do
+                        log_message "  - ${file}"
+                    done
+                    echo >&2
+
+                    # For single file: show content or open
+                    if [[ ${#new_files[@]} -eq 1 ]]; then
+                        file="${new_files[0]}"
+                        case "${file}" in
+                            *.md|*.html|*.txt)
+                                log_message "${BOLD}File contents:${RESET}"
+                                cat "${file}" || log_warning "Could not read ${file}"
+                                ;;
+                            *.pdf|*.png)
+                                log_message "Opening: ${file}"
+                                if command -v open >/dev/null 2>&1; then
+                                    open "${file}" 2>/dev/null || log_warning "Could not open ${file}"
+                                elif command -v xdg-open >/dev/null 2>&1; then
+                                    xdg-open "${file}" 2>/dev/null || log_warning "Could not open ${file}"
+                                else
+                                    log_warning "No opener found"
+                                fi
+                                ;;
+                        esac
+                    # For multiple files: open binary files only
+                    elif [[ ${#new_files[@]} -gt 1 ]]; then
+                        for file in "${new_files[@]}"; do
+                            case "${file}" in
+                                *.pdf|*.png)
+                                    log_message "Opening: ${file}"
+                                    if command -v open >/dev/null 2>&1; then
+                                        open "${file}" 2>/dev/null
+                                    elif command -v xdg-open >/dev/null 2>&1; then
+                                        xdg-open "${file}" 2>/dev/null
+                                    fi
+                                    ;;
+                            esac
+                        done
+                    fi
+                else
+                    log_warning "No new files created"
                 fi
 
                 ((passed_count++))
