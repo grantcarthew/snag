@@ -1,0 +1,17 @@
+# Test file with 5 URLs for tab testing
+# Created: 2025-10-29
+
+# Simple test site
+https://example.com
+
+# Go documentation
+https://go.dev
+
+# Project repository
+https://github.com/grantcarthew/snag
+
+# Mozilla Developer Network
+https://developer.mozilla.org
+
+# Testing site
+https://httpbin.org/html
