@@ -17,7 +17,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// version can be set via ldflags at build time
 var version = "dev"
 
 const (
@@ -28,7 +27,6 @@ const (
 	FormatPNG      = "png"
 )
 
-// Exit codes
 const (
 	ExitCodeSuccess   = 0
 	ExitCodeError     = 1
@@ -36,21 +34,16 @@ const (
 	ExitCodeSIGTERM   = 143 // 128 + SIGTERM (15)
 )
 
-// Display formatting
 const (
-	MaxDisplayURLLength = 80  // Maximum URL length in display output
-	MaxTabLineLength    = 120 // Maximum total line length for tab listings
-	MaxSlugLength       = 80  // Maximum length for filename slugs
+	MaxDisplayURLLength = 80
+	MaxTabLineLength    = 120
+	MaxSlugLength       = 80
 )
 
-// Default values
 const (
-	DefaultTimeout = 30 // Default timeout in seconds
+	DefaultTimeout = 30
 )
 
-// Config holds all configuration options for a snag operation.
-// These values are typically populated from CLI flags and validated
-// before being passed to handler functions.
 type Config struct {
 	URL           string
 	OutputFile    string
@@ -66,9 +59,6 @@ type Config struct {
 	UserDataDir   string
 }
 
-// BrowserOptions creates a BrowserOptions from this Config.
-// This helper method extracts browser-related fields from the full configuration,
-// avoiding repetitive struct literal creation throughout the codebase.
 func (c *Config) BrowserOptions() BrowserOptions {
 	return BrowserOptions{
 		Port:          c.Port,
@@ -82,11 +72,10 @@ func (c *Config) BrowserOptions() BrowserOptions {
 var (
 	logger         *Logger
 	browserManager *BrowserManager
-	browserMutex   sync.Mutex // Protects browserManager access
+	browserMutex   sync.Mutex
 )
 
 var (
-	// Flag variables
 	urlFile     string
 	output      string
 	outputDir   string
@@ -110,10 +99,6 @@ var (
 	userDataDir   string
 )
 
-// helpTemplate is the custom Cobra help template.
-// This is intentionally a static string with no template logic for maximum simplicity (KISS).
-// Since snag has no subcommands or aliases, and the flags/examples change rarely,
-// a plain string is easier to maintain than dynamic template code.
 const helpTemplate = `USAGE:
   snag [options] URL...
 
@@ -196,13 +181,12 @@ OPTIONS:
 var rootCmd = &cobra.Command{
 	Use:          "snag [options] URL...",
 	Short:        "Intelligently fetch web page content using a browser engine",
-	Args:         cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
+	Args:         cobra.ArbitraryArgs,
 	RunE:         runCobra,
-	SilenceUsage: true, // Don't show usage on errors
+	SilenceUsage: true,
 }
 
 func init() {
-	// String flags
 	rootCmd.Flags().StringVar(&urlFile, "url-file", "", "Read URLs from file (one per line, supports comments)")
 	rootCmd.Flags().StringVarP(&output, "output", "o", "", "Save output to file instead of stdout")
 	rootCmd.Flags().StringVarP(&outputDir, "output-dir", "d", "", "Save files with auto-generated names to directory")
@@ -212,11 +196,9 @@ func init() {
 	rootCmd.Flags().StringVar(&userAgent, "user-agent", "", "Custom user agent (bypass headless detection)")
 	rootCmd.Flags().StringVar(&userDataDir, "user-data-dir", "", "Custom Chromium/Chrome user data directory (for session isolation)")
 
-	// Int flags
 	rootCmd.Flags().IntVar(&timeout, "timeout", 30, "Page load timeout in seconds")
 	rootCmd.Flags().IntVarP(&port, "port", "p", 9222, "Chromium/Chrome remote debugging port")
 
-	// Bool flags
 	rootCmd.Flags().BoolVarP(&closeTab, "close-tab", "c", false, "Close the browser tab after fetching content")
 	rootCmd.Flags().BoolVar(&forceHead, "force-headless", false, "Force headless mode even if the browser is running")
 	rootCmd.Flags().BoolVarP(&openBrowser, "open-browser", "b", false, "Open browser visibly with remote debugging enabled (no URL required)")
@@ -229,15 +211,12 @@ func init() {
 	rootCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress all output except errors and content")
 	rootCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug output")
 
-	// Logging flags are mutually exclusive
 	rootCmd.MarkFlagsMutuallyExclusive("quiet", "verbose", "debug")
 
-	// Set custom help template
 	rootCmd.SetHelpTemplate(helpTemplate)
 }
 
 func main() {
-	// Setup signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
@@ -257,20 +236,12 @@ func main() {
 		os.Exit(ExitCodeSIGTERM)
 	}()
 
-	// Execute Cobra command
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(ExitCodeError)
 	}
 }
 
-// validateFlagCombinations checks for invalid flag combinations early in execution.
-// This centralizes all flag conflict validation logic for maintainability.
-// Returns error for invalid combinations, nil if valid.
 func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs bool) error {
-	// --list-tabs overrides everything (handled separately in runCobra, no validation needed here)
-	// --kill-browser validation handled inline in priority chain (before it executes)
-
-	// Group 1: Content Source Conflicts (Mutually Exclusive)
 	contentSources := 0
 	if hasURLs {
 		contentSources++
@@ -282,31 +253,26 @@ func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs 
 		contentSources++
 	}
 
-	// Check tab + URL conflicts
 	if cmd.Flags().Changed("tab") && hasURLs {
 		logger.Error("Cannot use both --tab and URL arguments (mutually exclusive content sources)")
 		return ErrTabURLConflict
 	}
 
-	// Check all-tabs + URL conflicts
 	if allTabs && hasURLs {
 		logger.Error("Cannot use both --all-tabs and URL arguments (mutually exclusive content sources)")
 		return fmt.Errorf("conflicting flags: --all-tabs and URL arguments")
 	}
 
-	// Check tab + all-tabs conflicts
 	if cmd.Flags().Changed("tab") && allTabs {
 		logger.Error("Cannot use both --tab and --all-tabs (mutually exclusive content sources)")
 		return fmt.Errorf("conflicting flags: --tab and --all-tabs")
 	}
 
-	// Group 2: Browser Mode Conflicts
 	if openBrowser && forceHead {
 		logger.Error("Cannot use both --force-headless and --open-browser (conflicting modes)")
 		return fmt.Errorf("conflicting flags: --force-headless and --open-browser")
 	}
 
-	// Tab operations require existing browser (incompatible with --force-headless)
 	if forceHead && cmd.Flags().Changed("tab") {
 		logger.Error("Cannot use --force-headless with --tab (--tab requires existing browser connection)")
 		return fmt.Errorf("conflicting flags: --force-headless and --tab")
@@ -317,7 +283,6 @@ func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs 
 		return fmt.Errorf("conflicting flags: --force-headless and --all-tabs")
 	}
 
-	// Group 3: Output Conflicts
 	outputFile := strings.TrimSpace(output)
 	outDir := strings.TrimSpace(outputDir)
 
@@ -327,27 +292,21 @@ func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs 
 		return fmt.Errorf("conflicting flags: --output and --output-dir")
 	}
 
-	// Multiple URLs cannot use --output
 	if hasMultipleURLs && outputFile != "" {
 		logger.Error("Cannot use --output with multiple URLs")
 		logger.Info("Use --output-dir for auto-generated filenames OR provide single URL")
 		return fmt.Errorf("--output incompatible with multiple URLs")
 	}
 
-	// --all-tabs cannot use --output
 	if allTabs && outputFile != "" {
 		logger.Error("Cannot use --output with --all-tabs (multiple outputs). Use --output-dir instead")
 		return ErrOutputFlagConflict
 	}
 
-	// Group 4: Warnings (Non-fatal conflicts)
-
-	// --close-tab is redundant in headless mode
 	if closeTab && forceHead {
 		logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
 	}
 
-	// Tab operations with --open-browser (no fetching)
 	if openBrowser && cmd.Flags().Changed("tab") {
 		logger.Warning("--tab ignored with --open-browser (no content fetching)")
 	}
@@ -360,8 +319,6 @@ func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs 
 }
 
 func runCobra(cmd *cobra.Command, args []string) error {
-	// Determine logging level using Cobra's flag values
-	// Note: MarkFlagsMutuallyExclusive ensures only one is set
 	level := LevelNormal
 	if debug {
 		level = LevelDebug
@@ -387,7 +344,6 @@ func runCobra(cmd *cobra.Command, args []string) error {
 		urls = append(urls, fileURLs...)
 	}
 
-	// Add command line URL arguments
 	for _, arg := range args {
 		trimmedArg := strings.TrimSpace(arg)
 		if trimmedArg != "" {
@@ -395,22 +351,16 @@ func runCobra(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Cobra handles flag parsing automatically - flags can appear anywhere
-
-	// Handle --doctor (priority: help > doctor > version > kill-browser > list-tabs > ...)
 	if doctor {
 		return handleDoctor(cmd)
 	}
 
-	// Handle --version (priority: help > doctor > version > kill-browser > list-tabs > ...)
 	if showVersion {
 		fmt.Printf("snag version %s\n", version)
 		return nil
 	}
 
-	// Handle --kill-browser (priority: help > doctor > version > kill-browser > list-tabs > ...)
 	if killBrowser {
-		// Validate conflicts - --kill-browser is a standalone utility command
 		if len(urls) > 0 {
 			logger.Error("Cannot use --kill-browser with URL arguments (conflicting operations)")
 			return fmt.Errorf("conflicting flags: --kill-browser and URL arguments")
@@ -438,7 +388,6 @@ func runCobra(cmd *cobra.Command, args []string) error {
 		return handleKillBrowser(cmd)
 	}
 
-	// Handle --list-tabs (overrides all other options)
 	if listTabs {
 		if len(urls) > 0 {
 			logger.Verbose("--list-tabs overrides URL arguments (URLs will be ignored)")
@@ -446,24 +395,20 @@ func runCobra(cmd *cobra.Command, args []string) error {
 		return handleListTabs(cmd)
 	}
 
-	// Validate flag combinations early (before expensive operations)
 	hasURLs := len(urls) > 0
 	hasMultipleURLs := len(urls) > 1
 	if err := validateFlagCombinations(cmd, hasURLs, hasMultipleURLs); err != nil {
 		return err
 	}
 
-	// Handle --all-tabs
 	if allTabs {
 		return handleAllTabs(cmd)
 	}
 
-	// Handle --tab
 	if cmd.Flags().Changed("tab") {
 		return handleTabFetch(cmd)
 	}
 
-	// Handle --open-browser without URLs
 	if openBrowser && len(urls) == 0 {
 		if cmd.Flags().Changed("format") {
 			logger.Warning("--format ignored with --open-browser (no content fetching)")
@@ -505,19 +450,16 @@ func runCobra(cmd *cobra.Command, args []string) error {
 		return bm.OpenBrowserOnly()
 	}
 
-	// Require at least one URL
 	if len(urls) == 0 {
 		logger.Error("No URLs provided")
 		logger.ErrorWithSuggestion("Provide URLs as arguments or use --url-file", "snag <url> or snag --url-file urls.txt")
 		return ErrNoValidURLs
 	}
 
-	// Handle --open-browser with URLs
 	if openBrowser && len(urls) > 0 {
 		return handleOpenURLsInBrowser(cmd, urls)
 	}
 
-	// Handle single URL
 	if len(urls) == 1 {
 		urlStr := urls[0]
 
@@ -593,6 +535,5 @@ func runCobra(cmd *cobra.Command, args []string) error {
 		return snag(config)
 	}
 
-	// Handle multiple URLs
 	return handleMultipleURLs(cmd, urls)
 }
