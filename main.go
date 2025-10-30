@@ -100,6 +100,7 @@ var (
 	listTabs    bool
 	tab         string
 	allTabs     bool
+	killBrowser bool
 	verbose     bool
 	quiet       bool
 	debug       bool
@@ -179,6 +180,8 @@ OPTIONS:
       --timeout int            Page load timeout in seconds (default 30)
   -w, --wait-for string        Wait for CSS selector before extracting content
 
+  -k, --kill-browser           Kill browser processes with remote debugging enabled
+
       --debug                  Enable debug output
   -q, --quiet                  Suppress all output except errors and content
       --verbose                Enable verbose logging output
@@ -217,6 +220,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&openBrowser, "open-browser", "b", false, "Open browser visibly with remote debugging enabled (no URL required)")
 	rootCmd.Flags().BoolVarP(&listTabs, "list-tabs", "l", false, "List all open tabs in the browser")
 	rootCmd.Flags().BoolVarP(&allTabs, "all-tabs", "a", false, "Process all open browser tabs (saves with auto-generated filenames)")
+	rootCmd.Flags().BoolVarP(&killBrowser, "kill-browser", "k", false, "Kill browser processes with remote debugging enabled")
 	rootCmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose logging output")
 	rootCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress all output except errors and content")
 	rootCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug output")
@@ -260,6 +264,7 @@ func main() {
 // Returns error for invalid combinations, nil if valid.
 func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs bool) error {
 	// --list-tabs overrides everything (handled separately in runCobra, no validation needed here)
+	// --kill-browser validation handled inline in priority chain (before it executes)
 
 	// Group 1: Content Source Conflicts (Mutually Exclusive)
 	contentSources := 0
@@ -387,6 +392,36 @@ func runCobra(cmd *cobra.Command, args []string) error {
 	}
 
 	// Cobra handles flag parsing automatically - flags can appear anywhere
+
+	// Handle --kill-browser (priority: help > version > kill-browser > list-tabs > ...)
+	if killBrowser {
+		// Validate conflicts - --kill-browser is a standalone utility command
+		if len(urls) > 0 {
+			logger.Error("Cannot use --kill-browser with URL arguments (conflicting operations)")
+			return fmt.Errorf("conflicting flags: --kill-browser and URL arguments")
+		}
+		if listTabs {
+			logger.Error("Cannot use --kill-browser with --list-tabs (conflicting operations)")
+			return fmt.Errorf("conflicting flags: --kill-browser and --list-tabs")
+		}
+		if allTabs {
+			logger.Error("Cannot use --kill-browser with --all-tabs (conflicting operations)")
+			return fmt.Errorf("conflicting flags: --kill-browser and --all-tabs")
+		}
+		if cmd.Flags().Changed("tab") {
+			logger.Error("Cannot use --kill-browser with --tab (conflicting operations)")
+			return fmt.Errorf("conflicting flags: --kill-browser and --tab")
+		}
+		if openBrowser {
+			logger.Error("Cannot use --kill-browser with --open-browser (conflicting operations)")
+			return fmt.Errorf("conflicting flags: --kill-browser and --open-browser")
+		}
+		if urlFile != "" {
+			logger.Error("Cannot use --kill-browser with --url-file (conflicting operations)")
+			return fmt.Errorf("conflicting flags: --kill-browser and --url-file")
+		}
+		return handleKillBrowser(cmd)
+	}
 
 	// Handle --list-tabs (overrides all other options)
 	if listTabs {

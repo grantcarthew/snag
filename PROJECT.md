@@ -184,48 +184,48 @@ No browser running on port 9222
 ### Phase 1: Core Implementation
 
 **Tasks:**
-1. Add `--kill-browser` (`-k`) flag definition to main.go
-2. Implement `KillAllBrowsers()` in browser.go
-   - Detect browser using `findBrowserPath()`
-   - Get executable name: `filepath.Base(browserPath)`
-   - Find processes: `ps aux | grep "$browserExe.*--remote-debugging-port" | grep -v grep`
-   - Parse PIDs from output
-   - Kill processes: `kill -9 <pid>` for each
-   - Return count of killed processes
-3. Implement `KillBrowserOnPort()` in browser.go
-   - Connect to port using rod: `rod.New().ControlURL("127.0.0.1:port").Connect()`
-   - If connection fails: return nil (nothing to kill, exit 0)
-   - Extract PID from browser metadata/connection
-   - Kill parent: `kill -9 <parent_pid>`
-   - Kill children: `pkill -9 -P <parent_pid>`
-   - Return PID of killed process
-4. Implement `handleKillBrowser()` in handlers.go
-   - Check if `--port` flag set
-   - Route to `KillBrowserOnPort()` or `KillAllBrowsers()`
-   - Format output messages (normal/verbose/quiet/debug)
-   - Handle errors with existing pattern
+1. ✅ Add `--kill-browser` (`-k`) flag definition to main.go (main.go:103, main.go:221)
+2. ✅ Update help template with --kill-browser in new section (main.go:183)
+3. ✅ Implement `KillBrowser(port int)` in browser.go (browser.go:616-628)
+   - Uses exit-early pattern: if port > 0, kill specific port; else kill all
+   - Implemented as single public method with two private helpers:
+     - `killBrowserOnPort(port int)` (browser.go:630-697)
+     - `killAllBrowsers()` (browser.go:699-777)
+   - Uses `lsof -ti :port` to find PID for specific port
+   - Uses `ps aux` to find all browsers with --remote-debugging-port
+   - Returns (int, error) - count of killed processes
+4. ✅ Implement `handleKillBrowser()` in handlers.go (handlers.go:974-993)
+   - Checks if `--port` flag changed using `cmd.Flags().Changed("port")`
+   - Routes to `bm.KillBrowser(port)` or `bm.KillBrowser(0)`
+   - All output/error handling done in browser methods (minimal handler)
+   - Follows existing handler pattern
 
 **Files modified:**
-- `main.go`: Flag definition, routing
-- `handlers.go`: Handler function
-- `browser.go`: Kill methods
+- ✅ `main.go`: Flag definition, help template
+- ✅ `handlers.go`: Handler function (handlers.go:974-993)
+- ✅ `browser.go`: Kill methods (browser.go:616-785)
 
 ### Phase 2: Integration & Validation
 
 **Tasks:**
-5. Add flag conflict validation in main.go
+5. ✅ Add flag conflict validation in main.go (main.go:398-422)
+   - Validates inline in priority chain (before execution)
    - Error if `--kill-browser` + URL arguments
    - Error if `--kill-browser` + `--tab`, `--all-tabs`, `--list-tabs`, `--open-browser`, `--url-file`
-   - Allow `--port`, `--verbose`, `--quiet`, `--debug`, `--help`, `--version`
-6. Add `--kill-browser` to flag priority chain
+   - Allows `--port`, `--verbose`, `--quiet`, `--debug`, `--help`, `--version`
+   - **Bug fix**: Moved validation from validateFlagCombinations (dead code) to priority chain
+6. ✅ Add `--kill-browser` to flag priority chain (main.go:396-424)
    - Priority: `help > version > kill-browser > list-tabs > open-browser > normal`
-   - Implement in main.go RunE function
-7. Add sentinel error to errors.go (if needed)
-   - Consider: `ErrKillBrowserFailed` or use existing errors
+   - Validates conflicts inline before executing
+   - Routes to handleKillBrowser(cmd)
+7. ✅ Sentinel errors reviewed (none needed)
+   - Reuses `ErrBrowserNotFound` appropriately
+   - All other errors are contextual `fmt.Errorf()` with proper wrapping
+   - Follows existing error handling patterns
 
 **Files modified:**
-- `main.go`: Validation, priority chain
-- `errors.go`: Sentinel errors (if needed)
+- ✅ `main.go`: Priority chain (main.go:396-424), validation inline, removed dead code from validateFlagCombinations (main.go:266-267)
+- ✅ `errors.go`: No changes needed (reuses existing sentinel errors)
 
 ### Phase 3: Testing
 
@@ -352,13 +352,17 @@ func handleKillBrowser(cmd *cobra.Command) error {
     port, _ := cmd.Flags().GetInt("port")
     portChanged := cmd.Flags().Changed("port")
 
+    bm := NewBrowserManager(BrowserOptions{Port: port})
+
     if portChanged {
         // Kill specific port
-        return bm.KillBrowserOnPort(port)
+        count, err := bm.KillBrowser(port)
+        // Handle output and errors
+        return err
     } else {
         // Kill all with remote debugging
-        count, err := bm.KillAllBrowsers()
-        // Handle output
+        count, err := bm.KillBrowser(0)
+        // Handle output and errors
         return err
     }
 }
@@ -366,12 +370,22 @@ func handleKillBrowser(cmd *cobra.Command) error {
 
 **browser.go:**
 ```go
-func (bm *BrowserManager) KillAllBrowsers() (int, error) {
-    // Implementation
+// Single public method with exit-early pattern
+func (bm *BrowserManager) KillBrowser(port int) (int, error) {
+    if port > 0 {
+        return bm.killBrowserOnPort(port)
+    }
+    return bm.killAllBrowsers()
 }
 
-func (bm *BrowserManager) KillBrowserOnPort(port int) error {
-    // Implementation
+// Private helper: kills browser on specific port using lsof
+func (bm *BrowserManager) killBrowserOnPort(port int) (int, error) {
+    // Implementation at browser.go:630-697
+}
+
+// Private helper: kills all browsers with --remote-debugging-port
+func (bm *BrowserManager) killAllBrowsers() (int, error) {
+    // Implementation at browser.go:699-777
 }
 ```
 
@@ -472,16 +486,19 @@ snag --kill-browser
 ## Success Criteria
 
 **Phase 1 - Core Implementation:**
-- [ ] `--kill-browser` (`-k`) flag defined in main.go
-- [ ] `KillAllBrowsers()` implemented in browser.go (filters by --remote-debugging-port)
-- [ ] `KillBrowserOnPort()` implemented in browser.go (connects via rod, kills parent + children)
-- [ ] `handleKillBrowser()` implemented in handlers.go
-- [ ] Basic error handling and output formatting
+- [x] `--kill-browser` (`-k`) flag defined in main.go (main.go:103, main.go:221)
+- [x] Help template updated with --kill-browser in new section (main.go:183)
+- [x] `KillBrowser(port int)` implemented in browser.go with exit-early pattern (browser.go:616-785)
+  - [x] `killAllBrowsers()` private helper (filters by --remote-debugging-port using ps aux)
+  - [x] `killBrowserOnPort(port int)` private helper (uses lsof to find PID, kills with kill -9)
+- [x] `handleKillBrowser()` implemented in handlers.go (handlers.go:974-993)
+- [x] Basic error handling and output formatting (all in browser methods, handler minimal)
 
 **Phase 2 - Integration & Validation:**
-- [ ] Flag conflict validation (errors on URL, --tab, --all-tabs, --list-tabs, --open-browser, --url-file)
-- [ ] Flag priority chain (help > version > kill-browser > list-tabs > open-browser > normal)
-- [ ] Sentinel errors added (if needed)
+- [x] Flag conflict validation (errors on URL, --tab, --all-tabs, --list-tabs, --open-browser, --url-file) (main.go:398-422)
+- [x] Flag priority chain (help > version > kill-browser > list-tabs > open-browser > normal) (main.go:396-424)
+- [x] Sentinel errors reviewed (none needed - reuses ErrBrowserNotFound, others are contextual)
+- [x] **Bug fix**: Fixed unreachable dead code (external review items #6 & #7) - validation moved from validateFlagCombinations to inline priority chain
 
 **Phase 3 - Testing:**
 - [ ] Manual testing completed on macOS (all 15 test cases)
@@ -545,3 +562,22 @@ Not in scope for initial implementation:
 - Exit 0 for "nothing to kill" enables idempotent scripting
 - Generic "browser" terminology in output (not browser-specific)
 - Follows existing snag patterns for errors, logging, and validation
+
+## External Code Review Findings
+
+**Addressed:**
+- ✅ **Items #6 & #7 (Unreachable validation code)**: Fixed - moved validation from validateFlagCombinations to inline priority chain
+  - Validation now executes before handleKillBrowser()
+  - Removed dead code from validateFlagCombinations
+
+**Known Limitations (Documented):**
+- **Items #1, #3 (lsof, ps aux not cross-platform)**: macOS/Linux only (documented in Platform Support section)
+  - Windows support deferred to Future Enhancements
+
+**Design Decisions (Accepted):**
+- **Items #2, #5 (kill -9 immediate vs graceful SIGTERM)**: Using immediate SIGKILL by design
+  - Rationale: Tool is for cleanup/troubleshooting stuck browsers, not graceful shutdown
+  - User intent is clear: force-kill debug browsers
+  - Adds complexity + delay for minimal benefit in this use case
+- **Item #4 (ps aux parsing brittle)**: Standard practice, low risk
+  - PID in fields[1] is stable across Unix-like systems

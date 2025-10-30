@@ -970,3 +970,24 @@ func loadURLsFromFile(filename string) ([]string, error) {
 	logger.Verbose("Loaded %d URLs from %s", len(urls), filename)
 	return urls, nil
 }
+
+// handleKillBrowser kills browser processes with remote debugging enabled.
+// If --port is specified, kills only the browser on that port.
+// Otherwise, kills all browsers with --remote-debugging-port flag.
+func handleKillBrowser(cmd *cobra.Command) error {
+	portChanged := cmd.Flags().Changed("port")
+
+	bm := NewBrowserManager(BrowserOptions{
+		Port: port,
+	})
+
+	var targetPort int
+	if portChanged {
+		targetPort = port
+	} else {
+		targetPort = 0
+	}
+
+	_, err := bm.KillBrowser(targetPort)
+	return err
+}
