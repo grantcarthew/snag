@@ -196,7 +196,8 @@ func (dr *DoctorReport) String() string {
 
 	buf.WriteString("snag Doctor Report\n")
 	buf.WriteString("==================\n")
-	buf.WriteString("https://github.com/grantcarthew/snag\n")
+	buf.WriteString("Repository:    https://github.com/grantcarthew/snag\n")
+	buf.WriteString("Report Issue:  https://github.com/grantcarthew/snag/issues/new\n")
 
 	// Version Information
 	buf.WriteString(dr.formatSection("Version Information"))
