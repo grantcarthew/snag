@@ -34,7 +34,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ## Design Decisions Summary
 
-**30 major design decisions documented below:**
+**31 major design decisions documented below:**
 
 | #   | Decision                  | Choice                                                          |
 | --- | ------------------------- | --------------------------------------------------------------- |
@@ -68,6 +68,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 | 28  | Tab Ordering              | Sort tabs by URL→Title→ID (predictable, stable ordering)        |
 | 29  | Tab List Display Format   | `[N] Title (domain/path)` with 120-char truncation, clean URLs  |
 | 30  | Pattern Multi-Match       | All matching tabs processed (not just first match)              |
+| 31  | Kill Browser Flag         | Force-kill browsers with remote debugging (`--kill-browser`)    |
 
 See detailed rationale in design decisions section below.
 
@@ -78,7 +79,7 @@ For complete argument validation rules, interaction matrices, error messages, an
 - **General**: [Validation Rules](arguments/validation.md) | [README](arguments/README.md)
 - **Content Sources**: [URL](arguments/url.md) | [URL File](arguments/url-file.md) | [Tab](arguments/tab.md) | [All Tabs](arguments/all-tabs.md)
 - **Output**: [Output](arguments/output.md) | [Output Dir](arguments/output-dir.md) | [Format](arguments/format.md)
-- **Browser**: [Open Browser](arguments/open-browser.md) | [Force Headless](arguments/force-headless.md) | [List Tabs](arguments/list-tabs.md) | [Close Tab](arguments/close-tab.md)
+- **Browser**: [Open Browser](arguments/open-browser.md) | [Force Headless](arguments/force-headless.md) | [List Tabs](arguments/list-tabs.md) | [Close Tab](arguments/close-tab.md) | [Kill Browser](arguments/kill-browser.md)
 - **Page Control**: [Wait For](arguments/wait-for.md) | [Timeout](arguments/timeout.md) | [Port](arguments/port.md)
 - **Request**: [User Agent](arguments/user-agent.md) | [User Data Dir](arguments/user-data-dir.md)
 - **Logging**: [Verbose](arguments/verbose.md) | [Quiet](arguments/quiet.md) | [Debug](arguments/debug.md)
@@ -1379,6 +1380,65 @@ $ snag https://example.com
   - Pattern matching: `browser.go` (GetTabsByPattern function - returns `[]*Tab`)
 
 **See Also**: For complete pattern matching specification, see [arguments/tab.md](arguments/tab.md)
+
+### 31. Kill Browser Flag
+
+- **Decision**: Add `--kill-browser` (`-k`) flag to forcefully terminate browser processes with remote debugging enabled
+- **Behavior**:
+  - **Without `--port`**: Kills all browsers with `--remote-debugging-port` flag (development browsers only)
+  - **With `--port`**: Kills only the browser on that specific port
+  - **Exit code 0**: Success (browsers killed OR nothing to kill - idempotent for scripting)
+  - **Exit code 1**: Errors (permission denied, no browser found, conflicting flags)
+- **Safety**:
+  - Only targets browsers with `--remote-debugging-port` flag
+  - Will NOT kill regular user browsing sessions
+  - Uses `lsof` for port-specific killing (more reliable than process scanning)
+  - Uses `ps aux` for killing all browsers with remote debugging
+- **Rationale**:
+  - **Cleanup**: Kill stuck browser processes after testing or development
+  - **Troubleshooting**: Force-kill browsers that won't close normally
+  - **Scripting**: Reset browser state in automated workflows (idempotent exit 0 enables reliable scripting)
+  - **Convenience**: No need to manually find PIDs or use `pkill` with complex patterns
+  - **Safety first**: Scope limited to development browsers only (won't affect regular browsing)
+- **Flag Priority**:
+  - Priority chain: `--help` > `--version` > `--kill-browser` > `--list-tabs` > `--open-browser`
+  - Acts like `--help`, `--version`, or `--list-tabs`: Overrides most other flags
+  - Errors on conflicting operations: URL arguments, tab operations, browser operations
+  - Silently ignores non-applicable flags: output, format, timing, browser config
+- **Platform Support**:
+  - Supported: macOS, Linux (uses `lsof`, `ps`, `grep`, `kill` commands)
+  - Not supported: Windows (requires `taskkill` approach, deferred to future enhancements)
+- **Implementation Strategy**:
+  - Exit-early pattern: Single public `KillBrowser(port int)` method with two private helpers
+  - `killBrowserOnPort(port int)`: Uses `lsof -ti :<port>` to find PID, kills with `kill -9`
+  - `killAllBrowsers()`: Uses `ps aux | grep "browser --remote-debugging-port"` to find PIDs
+  - Minimal handler: All output and error handling in browser methods
+  - Validation inline in priority chain (not in dead validateFlagCombinations code)
+- **Alternatives Considered**:
+  - **SIGTERM instead of SIGKILL**: Rejected - Tool is for cleanup/troubleshooting stuck browsers, immediate kill is user intent
+  - **Confirmation prompt**: Rejected - Adds complexity, can be added later with `--confirm` flag if needed
+  - **Process tree tracking**: Rejected - Added complexity for minimal benefit, `kill -9` sufficient
+- **Code Location**:
+  - Flag definition: `main.go:103`, `main.go:221`
+  - Priority chain: `main.go:396-424`
+  - Handler: `handlers.go:handleKillBrowser()` (handlers.go:974-993)
+  - Kill logic: `browser.go:KillBrowser()` (browser.go:616-785)
+- **Examples**:
+
+  ```bash
+  # Kill all browsers with remote debugging
+  snag --kill-browser
+  snag -k
+
+  # Kill only browser on specific port
+  snag --kill-browser --port 9223
+
+  # With logging
+  snag --kill-browser --verbose
+  snag --kill-browser --quiet
+  ```
+
+**See Also**: For complete flag specification, see [arguments/kill-browser.md](arguments/kill-browser.md)
 
 ## References
 

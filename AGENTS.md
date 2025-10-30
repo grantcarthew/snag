@@ -393,6 +393,7 @@ snag -t 2 --wait-for ".loaded"         # Wait for selector
 - Auth required: Use `--open-browser`, authenticate manually in visible browser
 - Empty output: Try `--format html` or `--wait-for <selector>`
 - Tab errors: Run `snag --list-tabs` first to see available tabs
+- Stuck browser processes: Use `--kill-browser` to force-kill debugging browsers
 
 **Debug logging:**
 

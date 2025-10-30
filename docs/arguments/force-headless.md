@@ -46,6 +46,7 @@
 | `--force-headless` + `--tab`          | **Error**                | `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"`           |
 | `--force-headless` + `--all-tabs`     | **Error**                | `"Cannot use --force-headless with --all-tabs (--all-tabs requires existing browser connection)"` |
 | `--force-headless` + `--list-tabs`    | `--list-tabs` overrides  | `--list-tabs` overrides all other options                                                         |
+| `--force-headless` + `--kill-browser` | **Flag ignored**         | No browser launch needed                                                                          |
 
 **Rationale for Tab Errors:**
 

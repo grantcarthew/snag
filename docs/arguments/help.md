@@ -55,7 +55,7 @@ snag -h
 1. `--help` detected → Display help
 2. Ignore all other flags completely
 3. Exit with code 0
-4. `--help` takes priority over `--version`
+4. `--help` takes priority over `--version` and `--kill-browser`
 
 #### Examples
 

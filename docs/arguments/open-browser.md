@@ -53,6 +53,7 @@
 **Browser Mode Conflicts:**
 
 - With `--force-headless`: **Error** - `"Cannot use both --force-headless and --open-browser (conflicting modes)"`
+- With `--kill-browser`: **Error** - `"Cannot use --kill-browser with --open-browser (conflicting operations)"`
 
 #### Interaction Matrix
 

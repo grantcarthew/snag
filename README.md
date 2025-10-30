@@ -623,6 +623,7 @@ snag --port 9223 https://example.com
 -c, --close-tab            Close the browser tab after fetching content
 --force-headless           Force headless mode even if Chromium is running
 -b, --open-browser         Open Chromium browser in visible state (no URL required)
+-k, --kill-browser         Kill browser processes with remote debugging enabled
 ```
 
 ### Logging/Debugging
@@ -662,6 +663,17 @@ Solutions:
 - Ensure Chromium/Chrome is launched with `--remote-debugging-port=9222`
 - Try different port: `snag --port 9223 https://example.com`
 - Kill existing Chromium/Chrome processes and let snag launch a new instance
+
+**"Stuck or lingering browser processes"**
+
+Browser processes with remote debugging enabled remain after snag exits.
+
+Solutions:
+
+- Kill all debugging browsers: `snag --kill-browser` or `snag -k`
+- Kill specific port only: `snag --kill-browser --port 9223`
+- Note: Only kills browsers with `--remote-debugging-port` enabled (development browsers), never regular browsing sessions
+- Safe for scripting: exits with code 0 even if no browsers found (idempotent)
 
 ### Authentication Issues
 

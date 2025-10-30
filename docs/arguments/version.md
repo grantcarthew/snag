@@ -49,7 +49,7 @@ snag -v
 
 1. `--help` detected → Display help (higher priority)
 2. Otherwise, `--version` detected → Display version
-3. Ignore all other flags
+3. Ignore all other flags (including `--kill-browser`)
 4. Exit with code 0
 
 #### Examples

@@ -86,6 +86,7 @@ Set a custom user agent string for browser requests. This flag allows you to cus
 | `--user-agent` + `--open-browser` (no URL) | **Warning + Ignored** | No navigation happening                          |
 | `--user-agent` + `--open-browser` + URL    | Works normally        | UA applied when opening URLs in tabs             |
 | `--user-agent` + `--user-data-dir`         | Works normally        | UA for this session; profile for persistent data |
+| `--user-agent` + `--kill-browser`          | **Flag ignored**      | No navigation performed                          |
 
 **Warning message for open-browser without URL:**
 

@@ -75,6 +75,7 @@ snag --list-tabs --verbose
 
 **Examples with Other Flags:**
 
+- `--verbose` + `--kill-browser` - Works normally (verbose logs showing PIDs and process details)
 - `--verbose` + `--user-data-dir` - Works normally (verbose logs with custom profile)
 - `--verbose` + `--user-agent` - Works normally (verbose logs with custom UA)
 - `--verbose` + all browser/output/timing flags - Works normally

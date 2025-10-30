@@ -99,6 +99,7 @@ snag https://example.com -d ""
 | Combination                                     | Behavior                  | Notes                                                                                                                     |
 | ----------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `-d ./dir` + `--list-tabs`                      | `--list-tabs` overrides   | `--list-tabs` overrides all other options                                                                                 |
+| `-d ./dir` + `--kill-browser`                   | **Flag ignored**          | No content to save                                                                                                        |
 | `-d ./dir` + `--open-browser` (no URL/url-file) | **Warning**, flag ignored | `"Warning: --output-dir ignored with --open-browser (no content fetching)"`                                               |
 | `-d ./dir` + `--open-browser` + `<url>`         | **Warning**, flag ignored | `"Warning: --output-dir ignored with --open-browser (no content fetching)"` - Opens browser, navigates to URL, exits snag |
 

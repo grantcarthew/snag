@@ -58,6 +58,7 @@ snag https://example.com --quiet
 
 **Examples with Other Flags:**
 
+- `--quiet` + `--kill-browser` - Works normally (silent on success, errors to stderr)
 - `--quiet` + `--user-data-dir` - Works normally (quiet mode with custom profile)
 - `--quiet` + `--user-agent` - Works normally (quiet mode with custom UA)
 - `--quiet` + all browser/output/timing flags - Works normally

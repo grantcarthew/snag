@@ -1,10 +1,18 @@
 # PROJECT: Kill Browser Feature
 
+**Status:** ✅ COMPLETE (2025-10-30)
+
 Add a `--kill-browser` (`-k`) flag to forcefully terminate browser processes with remote debugging enabled.
 
 ## Overview
 
 Provide a convenient way to kill browser processes launched by snag or lingering from previous runs. Targets only browsers with `--remote-debugging-port` enabled (development/debugging browsers), not regular user browsing sessions. Useful for cleanup, troubleshooting, and scripting.
+
+**Implementation complete across all 4 phases:**
+- ✅ Phase 1: Core implementation (flag, handlers, kill logic)
+- ✅ Phase 2: Integration & validation (priority chain, conflict detection)
+- ✅ Phase 3: Testing (manual, automated, regression - 126/126 tests passing)
+- ✅ Phase 4: Documentation (22 argument files, design record, README, AGENTS.md)
 
 ## Design Decisions
 
@@ -253,37 +261,36 @@ No browser running on port 9222
 ### Phase 4: Documentation
 
 **Tasks:**
-11. Create `docs/arguments/kill-browser.md`
-    - Follow existing argument documentation pattern
-    - Validation rules
-    - Interaction matrix
-    - Examples (valid, invalid, warnings)
-    - Implementation details
-    - Use cases
-12. Update `docs/design-record.md`
-    - Add kill-browser to arguments section
-    - Add design decision entry (DD-XX)
-    - Document rationale and implementation approach
-13. Update all argument documentation files
-    - Add `--kill-browser` row to interaction matrix in ALL 20+ `docs/arguments/*.md` files:
-      - `all-tabs.md`, `close-tab.md`, `debug.md`, `force-headless.md`, `format.md`
-      - `help.md`, `list-tabs.md`, `open-browser.md`, `output-dir.md`, `output.md`
-      - `port.md`, `quiet.md`, `tab.md`, `timeout.md`, `url-file.md`
-      - `user-agent.md`, `user-data-dir.md`, `verbose.md`, `version.md`, `wait-for.md`
-14. Update `README.md`
-    - Add "Killing Browser Processes" section to Troubleshooting or new "Browser Management" section
-    - Usage examples with warnings
-    - Exit code behavior
-15. Update `AGENTS.md`
-    - Add to troubleshooting examples
-    - Document usage in scripting scenarios
+11. ✅ Create `docs/arguments/kill-browser.md`
+    - Followed existing argument documentation pattern
+    - Validation rules, interaction matrix, examples
+    - Implementation details and use cases
+12. ✅ Update `docs/design-record.md`
+    - Added to arguments section (design decision #31)
+    - Documented rationale, implementation approach, alternatives considered
+13. ✅ Update all argument documentation files
+    - Added `--kill-browser` row to interaction matrix in ALL 22 `docs/arguments/*.md` files:
+      - ERROR flags: `all-tabs.md`, `list-tabs.md`, `open-browser.md`, `tab.md`, `url.md`, `url-file.md`
+      - Works WITH: `port.md`, `verbose.md`, `quiet.md`, `debug.md`
+      - IGNORED flags: `close-tab.md`, `format.md`, `force-headless.md`, `output-dir.md`, `output.md`
+      - IGNORED flags (cont): `timeout.md`, `user-agent.md`, `user-data-dir.md`, `wait-for.md`
+      - Priority mentions: `help.md`, `version.md`
+14. ✅ Update `README.md`
+    - Added `-k, --kill-browser` to Browser Control CLI reference section
+    - Added "Stuck or lingering browser processes" troubleshooting section
+    - Documented usage examples, safety notes, and idempotent behavior
+15. ✅ Update `AGENTS.md`
+    - Added to troubleshooting quick fixes section
+    - Documented scripting use case
+
+**Files created:**
+- ✅ `docs/arguments/kill-browser.md` (complete argument specification)
 
 **Files modified:**
-- `docs/arguments/kill-browser.md` (new)
-- `docs/design-record.md`
-- `docs/arguments/*.md` (20+ files)
-- `README.md`
-- `AGENTS.md`
+- ✅ `docs/design-record.md` (design decision #31)
+- ✅ `docs/arguments/*.md` (22 files updated with interaction rows)
+- ✅ `README.md` (CLI reference + troubleshooting)
+- ✅ `AGENTS.md` (troubleshooting quick fix)
 
 ## Implementation Details
 
@@ -508,11 +515,11 @@ snag --kill-browser
 - [x] Bug fixed: browser.Close() was killing browser before lsof could find PID
 
 **Phase 4 - Documentation:**
-- [ ] `docs/arguments/kill-browser.md` created
-- [ ] `docs/design-record.md` updated with design decision
-- [ ] ALL 20+ `docs/arguments/*.md` files updated with interaction rows
-- [ ] `README.md` updated with usage examples and warnings
-- [ ] `AGENTS.md` updated with troubleshooting examples
+- [x] `docs/arguments/kill-browser.md` created
+- [x] `docs/design-record.md` updated with design decision #31
+- [x] ALL 22 `docs/arguments/*.md` files updated with interaction rows
+- [x] `README.md` updated with usage examples and troubleshooting section
+- [x] `AGENTS.md` updated with troubleshooting examples
 
 ## Platform Support
 

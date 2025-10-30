@@ -101,6 +101,7 @@ snag --url-file urls.txt https://example.com https://go.dev
 | `--url-file` + `--tab`              | **Error**               | Mutually exclusive content sources                                                |
 | `--url-file` + `--all-tabs`         | **Error**               | Mutually exclusive content sources                                                |
 | `--url-file` + `--list-tabs`        | `--list-tabs` overrides | `--list-tabs` overrides all other options                                         |
+| `--url-file` + `--kill-browser`     | **Error**               | Conflicting operations                                                            |
 
 **Output Control:**
 

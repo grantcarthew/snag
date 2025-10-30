@@ -77,6 +77,7 @@
 | `--user-data-dir` + `--force-headless`        | Works normally | Launch headless with custom profile                        |
 | `--user-data-dir` + `--open-browser` (no URL) | Works normally | Open visible browser with custom profile                   |
 | `--user-data-dir` + `--open-browser` + URLs   | Works normally | Open visible browser with custom profile, navigate to URLs |
+| `--user-data-dir` + `--kill-browser`          | **Flag ignored** | No browser launch needed                                   |
 
 **Connecting to existing browser:**
 
