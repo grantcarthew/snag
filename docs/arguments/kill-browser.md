@@ -52,11 +52,18 @@
 
 1. `--help` (highest priority, overrides everything)
 2. `--version` (overrides everything below)
-3. `--kill-browser` (overrides everything below)
-4. `--list-tabs` (overrides everything below)
-5. All other flags (ignored or error when `--kill-browser` is present)
+3. `--doctor` (overrides everything below)
+4. `--kill-browser` (overrides everything below)
+5. `--list-tabs` (overrides everything below)
+6. All other flags (ignored or error when `--kill-browser` is present)
 
 #### Interaction Matrix
+
+**Higher Priority Flags (Override):**
+
+| Combination                     | Behavior             | Notes                      |
+| ------------------------------- | -------------------- | -------------------------- |
+| `--kill-browser` + `--doctor`   | `--doctor` overrides | Doctor has higher priority |
 
 **Flags That Work WITH `--kill-browser`:**
 

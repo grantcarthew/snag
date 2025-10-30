@@ -115,6 +115,7 @@ snag https://example.com --format html -o page.md
 
 | Combination                            | Behavior                  | Notes                                                                   |
 | -------------------------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| `--format` + `--doctor`                | **Flag ignored**          | Doctor overrides, diagnostics in fixed format                           |
 | `--format` + `--list-tabs`             | `--list-tabs` overrides   | `--list-tabs` overrides all other options                               |
 | `--format` + `--open-browser` (no URL) | **Warning**, flag ignored | `"Warning: --format ignored with --open-browser (no content fetching)"` |
 | `--format` + `--kill-browser`          | **Flag ignored**          | No content to save                                                      |

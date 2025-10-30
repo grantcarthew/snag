@@ -675,6 +675,35 @@ Solutions:
 - Note: Only kills browsers with `--remote-debugging-port` enabled (development browsers), never regular browsing sessions
 - Safe for scripting: exits with code 0 even if no browsers found (idempotent)
 
+### Diagnostic Information
+
+Get comprehensive diagnostic information about your snag environment:
+
+```bash
+# Run diagnostics
+snag --doctor
+
+# Check specific port
+snag --doctor --port 9223
+```
+
+This displays:
+
+- snag and Go versions (with update check)
+- Detected browser and version
+- Browser connection status and tab counts
+- Profile locations for all common browsers
+- Environment variables
+- Working directory
+
+**Use this when:**
+
+- Troubleshooting issues
+- Reporting bugs (include doctor output)
+- Checking if browser is running
+- Finding profile paths
+- Verifying snag installation
+
 ### Authentication Issues
 
 **"Authentication required" error**

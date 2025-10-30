@@ -402,6 +402,14 @@ snag --verbose <url>   # Verbose logs to stderr
 snag --debug <url>     # CDP message logs
 ```
 
+**Get diagnostic information:**
+
+```bash
+snag --doctor          # Comprehensive environment diagnostics
+```
+
+Include this output when reporting issues.
+
 ## Design Philosophy
 
 **Core Principles:**

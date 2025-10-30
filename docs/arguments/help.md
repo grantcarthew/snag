@@ -48,6 +48,8 @@ snag -h
 | `--help <url>`       | Display help, exit 0 | Help takes priority, URL ignored          |
 | `--help --version`   | Display help, exit 0 | Help takes priority over version          |
 | `--version --help`   | Display help, exit 0 | Help takes priority (regardless of order) |
+| `--help --doctor`    | Display help, exit 0 | Help takes priority over doctor           |
+| `--doctor --help`    | Display help, exit 0 | Help takes priority (regardless of order) |
 | `--help` + any flags | Display help, exit 0 | Help ignores all other flags              |
 
 **Priority Rules:**
@@ -55,7 +57,7 @@ snag -h
 1. `--help` detected → Display help
 2. Ignore all other flags completely
 3. Exit with code 0
-4. `--help` takes priority over `--version` and `--kill-browser`
+4. `--help` takes priority over `--version`, `--doctor`, and `--kill-browser`
 
 #### Examples
 

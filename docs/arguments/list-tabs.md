@@ -57,11 +57,12 @@ snag --list-tabs --verbose
 | `--list-tabs` + `--quiet`   | Works normally | Quiet mode (minimal output)                  |
 | `--list-tabs` + `--debug`   | Works normally | Debug/CDP logging during tab listing         |
 
-**Higher Priority Flags (ERROR):**
+**Higher Priority Flags (Override):**
 
-| Combination                      | Behavior  | Notes                                                          |
-| -------------------------------- | --------- | -------------------------------------------------------------- |
-| `--list-tabs` + `--kill-browser` | **Error** | `"Cannot use --kill-browser with --list-tabs (conflicting operations)"` |
+| Combination                      | Behavior               | Notes                                                                       |
+| -------------------------------- | ---------------------- | --------------------------------------------------------------------------- |
+| `--list-tabs` + `--doctor`       | `--doctor` overrides   | Doctor has higher priority                                                  |
+| `--list-tabs` + `--kill-browser` | **Error**              | `"Cannot use --kill-browser with --list-tabs (conflicting operations)"` |
 
 **All Other Flags Are SILENTLY IGNORED:**
 
