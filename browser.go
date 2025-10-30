@@ -8,9 +8,11 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -609,4 +611,175 @@ func (bm *BrowserManager) GetTabsByRange(start, end int) ([]*rod.Page, error) {
 
 	logger.Verbose("Selected %d tabs from sorted range [%d-%d]", len(rangeTabs), start, end)
 	return rangeTabs, nil
+}
+
+// KillBrowser kills browser processes with remote debugging enabled.
+// If port > 0, kills only the browser on that specific port.
+// If port is 0, kills all browsers with --remote-debugging-port flag enabled.
+// Returns count of killed processes and any error.
+func (bm *BrowserManager) KillBrowser(port int) (int, error) {
+	// Handle specific port case first (exit early)
+	if port > 0 {
+		return bm.killBrowserOnPort(port)
+	}
+
+	// Default case: kill all browsers with remote debugging
+	return bm.killAllBrowsers()
+}
+
+// killBrowserOnPort kills the browser running on a specific port.
+// Connects via rod to verify it's a browser, extracts PID, kills parent + children.
+// Returns 1 if killed, 0 if no browser found, error on failure.
+func (bm *BrowserManager) killBrowserOnPort(port int) (int, error) {
+	logger.Verbose("Checking port %d...", port)
+
+	// Try to connect to browser on specified port
+	baseURL := fmt.Sprintf("http://127.0.0.1:%d", port)
+	wsURL, err := launcher.ResolveURL(baseURL)
+	if err != nil {
+		// No browser on this port - not an error
+		logger.Info("No browser running on port %d", port)
+		return 0, nil
+	}
+
+	browser := rod.New().ControlURL(wsURL).Timeout(ConnectTimeout)
+	if err := browser.Connect(); err != nil {
+		// Connection failed - no browser on this port
+		logger.Info("No browser running on port %d", port)
+		return 0, nil
+	}
+
+	// Get browser version info which contains process info
+	version, err := browser.Version()
+	if err != nil {
+		browser.Close()
+		logger.Warning("Connected to port %d but failed to get browser info: %v", port, err)
+		return 0, fmt.Errorf("failed to get browser info on port %d: %w", port, err)
+	}
+
+	// Parse PID from WebSocket debugger URL
+	// Format: ws://127.0.0.1:9222/devtools/browser/<uuid>
+	// We need to find the browser process differently on macOS
+	browser.Close()
+
+	// Find browser process by port
+	cmd := exec.Command("lsof", "-ti", fmt.Sprintf(":%d", port))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		logger.Debug("lsof failed: %v, output: %s", err, string(output))
+		logger.Info("No browser running on port %d", port)
+		return 0, nil
+	}
+
+	pidStr := strings.TrimSpace(string(output))
+	if pidStr == "" {
+		logger.Info("No browser running on port %d", port)
+		return 0, nil
+	}
+
+	// Parse PID
+	pid, err := strconv.Atoi(pidStr)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse PID '%s': %w", pidStr, err)
+	}
+
+	logger.Verbose("Found browser process (PID %d) on port %d", pid, port)
+	logger.Debug("Browser version: %s", version.Product)
+
+	// Kill the process
+	killCmd := exec.Command("kill", "-9", fmt.Sprintf("%d", pid))
+	if err := killCmd.Run(); err != nil {
+		return 0, fmt.Errorf("failed to kill browser process (PID %d): %w", pid, err)
+	}
+
+	logger.Success("Killed browser process (PID %d)", pid)
+	return 1, nil
+}
+
+// killAllBrowsers kills all browser processes with --remote-debugging-port flag enabled.
+// Returns count of killed processes and any error.
+func (bm *BrowserManager) killAllBrowsers() (int, error) {
+	logger.Verbose("Killing all browser processes with remote debugging...")
+
+	// Detect browser path to get executable name
+	path, err := bm.findBrowserPath()
+	if err != nil {
+		return 0, err
+	}
+
+	// Get browser executable base name (e.g., "Google Chrome", "Chromium", "Brave Browser")
+	browserExe := filepath.Base(path)
+	// Strip .app extension on macOS
+	browserExe = strings.TrimSuffix(browserExe, ".app")
+
+	logger.Debug("Searching for processes matching: %s with --remote-debugging-port", browserExe)
+
+	// Find all processes with browser name AND --remote-debugging-port flag
+	// Use ps aux to get full command lines
+	cmd := exec.Command("ps", "aux")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return 0, fmt.Errorf("failed to list processes: %w", err)
+	}
+
+	lines := strings.Split(string(output), "\n")
+	var pids []string
+
+	// Parse ps output for matching processes
+	for _, line := range lines {
+		// Skip if doesn't contain browser name
+		if !strings.Contains(line, browserExe) {
+			continue
+		}
+		// Skip if doesn't contain remote debugging flag
+		if !strings.Contains(line, "--remote-debugging-port") {
+			continue
+		}
+		// Skip grep processes
+		if strings.Contains(line, "grep") {
+			continue
+		}
+
+		// Extract PID (second column in ps aux output)
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		pid := fields[1]
+		pids = append(pids, pid)
+		logger.Verbose("  Found PID %s: %s", pid, truncateCommandLine(line, 80))
+	}
+
+	if len(pids) == 0 {
+		logger.Info("No browser processes found")
+		return 0, nil
+	}
+
+	logger.Verbose("Killing %d process(es)...", len(pids))
+
+	// Kill each process
+	killedCount := 0
+	for _, pid := range pids {
+		killCmd := exec.Command("kill", "-9", pid)
+		if err := killCmd.Run(); err != nil {
+			logger.Warning("Failed to kill PID %s: %v", pid, err)
+			continue
+		}
+		killedCount++
+		logger.Debug("Killed PID %s", pid)
+	}
+
+	if killedCount > 0 {
+		logger.Success("Killed %d process(es)", killedCount)
+	}
+
+	return killedCount, nil
+}
+
+// truncateCommandLine truncates a command line for display
+func truncateCommandLine(line string, maxLen int) string {
+	if len(line) <= maxLen {
+		return line
+	}
+	return line[:maxLen] + "..."
 }
