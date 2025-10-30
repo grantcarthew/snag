@@ -189,97 +189,105 @@ func checkLatestVersion() string {
 	return version
 }
 
-// Print outputs the diagnostic report to stdout.
-func (dr *DoctorReport) Print() {
-	fmt.Printf("snag Doctor Report\n")
-	fmt.Printf("==================\n")
-	fmt.Printf("https://github.com/grantcarthew/snag\n")
+// String implements fmt.Stringer and generates the full diagnostic report.
+// This enables testing and future features like --report-issue.
+func (dr *DoctorReport) String() string {
+	var buf strings.Builder
+
+	buf.WriteString("snag Doctor Report\n")
+	buf.WriteString("==================\n")
+	buf.WriteString("https://github.com/grantcarthew/snag\n")
 
 	// Version Information
-	dr.printSection("Version Information")
-	dr.printItem("snag version", dr.SnagVersion)
+	buf.WriteString(dr.formatSection("Version Information"))
+	buf.WriteString(dr.formatItem("snag version", dr.SnagVersion))
 	if dr.LatestVersion != "" {
 		if dr.LatestVersion != dr.SnagVersion {
-			dr.printItem("Latest version", fmt.Sprintf("%s (update available)", dr.LatestVersion))
+			buf.WriteString(dr.formatItem("Latest version", fmt.Sprintf("%s (update available)", dr.LatestVersion)))
 		} else {
-			dr.printItem("Latest version", dr.LatestVersion)
+			buf.WriteString(dr.formatItem("Latest version", dr.LatestVersion))
 		}
 	}
-	dr.printItem("Go version", dr.GoVersion)
-	dr.printItem("OS/Arch", fmt.Sprintf("%s/%s", dr.OS, dr.Arch))
+	buf.WriteString(dr.formatItem("Go version", dr.GoVersion))
+	buf.WriteString(dr.formatItem("OS/Arch", fmt.Sprintf("%s/%s", dr.OS, dr.Arch)))
 
 	// Working Directory
-	dr.printSection("Working Directory")
-	fmt.Printf("  %s\n", dr.WorkingDir)
+	buf.WriteString(dr.formatSection("Working Directory"))
+	buf.WriteString(fmt.Sprintf("  %s\n", dr.WorkingDir))
 
 	// Browser Detection
-	dr.printSection("Browser Detection")
+	buf.WriteString(dr.formatSection("Browser Detection"))
 	if dr.BrowserError != nil {
-		dr.printCheck("Detected", "No Chromium-based browser found", false)
-		dr.printItem("Path", "(none)")
-		dr.printItem("Version", "(none)")
+		buf.WriteString(dr.formatCheck("Detected", "No Chromium-based browser found", false))
+		buf.WriteString(dr.formatItem("Path", "(none)"))
+		buf.WriteString(dr.formatItem("Version", "(none)"))
 	} else {
-		dr.printItem("Detected", dr.BrowserName)
-		dr.printItem("Path", dr.BrowserPath)
+		buf.WriteString(dr.formatItem("Detected", dr.BrowserName))
+		buf.WriteString(dr.formatItem("Path", dr.BrowserPath))
 		if dr.BrowserVersion != "" {
-			dr.printItem("Version", dr.BrowserVersion)
+			buf.WriteString(dr.formatItem("Version", dr.BrowserVersion))
 		} else {
-			dr.printItem("Version", "(unknown)")
+			buf.WriteString(dr.formatItem("Version", "(unknown)"))
 		}
 	}
 
 	// Profile Location
 	if dr.ProfilePath != "" {
-		dr.printSection("Profile Location")
-		dr.printCheck(dr.BrowserName, dr.ProfilePath, dr.ProfileExists)
+		buf.WriteString(dr.formatSection("Profile Location"))
+		buf.WriteString(dr.formatCheck(dr.BrowserName, dr.ProfilePath, dr.ProfileExists))
 	}
 
 	// Connection Status
-	dr.printSection("Connection Status")
+	buf.WriteString(dr.formatSection("Connection Status"))
 	if dr.DefaultPortStatus != nil {
-		dr.printPortStatus(dr.DefaultPortStatus)
+		buf.WriteString(dr.formatPortStatus(dr.DefaultPortStatus))
 	}
 	if dr.CustomPortStatus != nil {
-		dr.printPortStatus(dr.CustomPortStatus)
+		buf.WriteString(dr.formatPortStatus(dr.CustomPortStatus))
 	}
 
 	// Environment Variables
-	dr.printSection("Environment Variables")
+	buf.WriteString(dr.formatSection("Environment Variables"))
 	for k, v := range dr.EnvVars {
 		if v == "" {
 			v = "(not set)"
 		}
-		dr.printItem(k, v)
+		buf.WriteString(dr.formatItem(k, v))
 	}
+
+	return buf.String()
 }
 
-// printPortStatus prints a port status line with checkmark.
-func (dr *DoctorReport) printPortStatus(status *PortStatus) {
+// Print outputs the diagnostic report to stdout.
+func (dr *DoctorReport) Print() {
+	fmt.Print(dr.String())
+}
+
+// formatPortStatus returns a formatted port status line with checkmark.
+func (dr *DoctorReport) formatPortStatus(status *PortStatus) string {
 	label := fmt.Sprintf("Port %d", status.Port)
 	if status.Running {
 		value := fmt.Sprintf("Running (%d tabs open)", status.TabCount)
-		dr.printCheck(label, value, true)
-	} else {
-		dr.printCheck(label, "Not running", false)
+		return dr.formatCheck(label, value, true)
 	}
+	return dr.formatCheck(label, "Not running", false)
 }
 
-// printSection prints a section header with underline.
-func (dr *DoctorReport) printSection(title string) {
-	fmt.Printf("\n%s\n", title)
-	fmt.Printf("%s\n", strings.Repeat("─", len(title)))
+// formatSection returns a section header with underline.
+func (dr *DoctorReport) formatSection(title string) string {
+	return fmt.Sprintf("\n%s\n%s\n", title, strings.Repeat("─", len(title)))
 }
 
-// printItem prints a labeled item with consistent formatting.
-func (dr *DoctorReport) printItem(label, value string) {
-	fmt.Printf("  %-20s %s\n", label+":", value)
+// formatItem returns a labeled item with consistent formatting.
+func (dr *DoctorReport) formatItem(label, value string) string {
+	return fmt.Sprintf("  %-20s %s\n", label+":", value)
 }
 
-// printCheck prints a labeled item with a checkmark or X.
-func (dr *DoctorReport) printCheck(label, value string, ok bool) {
+// formatCheck returns a labeled item with a checkmark or X.
+func (dr *DoctorReport) formatCheck(label, value string, ok bool) string {
 	mark := "✗"
 	if ok {
 		mark = "✓"
 	}
-	fmt.Printf("  %-20s %s %s\n", label+":", mark, value)
+	return fmt.Sprintf("  %-20s %s %s\n", label+":", mark, value)
 }
