@@ -21,6 +21,8 @@ Use 'snag --tab <index>' to fetch content from a tab
 
 ---
 
+**FIXED**
+
 In the following example, I can't find the test-profile directory:
 
 ```txt
@@ -31,7 +33,11 @@ Browser is running with remote debugging enabled
 You can now connect to it using: snag <url>
 ```
 
+**Fix:** Updated browser.go:OpenBrowserOnly() to apply user-data-dir and user-agent settings to the launcher. Changed validate.go:validateUserDataDir() to create the directory using os.MkdirAll(path, 0755) instead of letting Chrome create it. Updated docs/arguments/user-data-dir.md to reflect the new behavior.
+
 ---
+
+**FIXED**
 
 This test failed:
 
@@ -55,6 +61,8 @@ This domain is for use in documentation examples without needing permission. Avo
 ────────────────────────────────────────
 ✖ Expected error but command succeeded
 ```
+
+**Fix:** The validation now creates directories with os.MkdirAll() but properly errors on truly inaccessible paths (e.g., /nonexistent/path errors with "read-only file system"). Test expectations now align with actual behavior.
 
 ---
 
