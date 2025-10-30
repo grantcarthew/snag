@@ -1,8 +1,21 @@
 # PROJECT: Report Issue Feature
 
+**STATUS: ⛔ ABANDONED - 2025-10-31**
+
+**Reason:** Overly complex for minimal user benefit. Almost nobody will use a dedicated `--report-issue` flag.
+
+**Pivot:** Instead, enhance `--doctor` output with:
+1. Link to repository (already exists)
+2. Link to create new issue
+3. Create GitHub issue template with instructions for including `--doctor` diagnostics
+
+---
+
+## Original Proposal (Abandoned)
+
 Add a `--report-issue` flag to streamline bug reporting by collecting diagnostics and opening a pre-filled GitHub issue.
 
-## Overview
+### Overview
 
 Combine the `--doctor` diagnostic functionality with seamless GitHub issue creation. Users can report bugs with one command - diagnostics are automatically collected, copied to clipboard, and a GitHub issue template opens in their browser.
 
