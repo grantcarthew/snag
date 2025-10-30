@@ -99,13 +99,15 @@ var (
 	openBrowser bool
 	listTabs    bool
 	tab         string
-	allTabs     bool
-	killBrowser bool
-	verbose     bool
-	quiet       bool
-	debug       bool
-	userAgent   string
-	userDataDir string
+	allTabs       bool
+	killBrowser   bool
+	doctor        bool
+	showVersion   bool
+	verbose       bool
+	quiet         bool
+	debug         bool
+	userAgent     string
+	userDataDir   string
 )
 
 // helpTemplate is the custom Cobra help template.
@@ -180,6 +182,7 @@ OPTIONS:
       --timeout int            Page load timeout in seconds (default 30)
   -w, --wait-for string        Wait for CSS selector before extracting content
 
+      --doctor                 Display comprehensive diagnostic information
   -k, --kill-browser           Kill browser processes with remote debugging enabled
 
       --debug                  Enable debug output
@@ -193,7 +196,6 @@ OPTIONS:
 var rootCmd = &cobra.Command{
 	Use:          "snag [options] URL...",
 	Short:        "Intelligently fetch web page content using a browser engine",
-	Version:      version,
 	Args:         cobra.ArbitraryArgs, // Allow any number of arguments (URLs)
 	RunE:         runCobra,
 	SilenceUsage: true, // Don't show usage on errors
@@ -221,6 +223,8 @@ func init() {
 	rootCmd.Flags().BoolVarP(&listTabs, "list-tabs", "l", false, "List all open tabs in the browser")
 	rootCmd.Flags().BoolVarP(&allTabs, "all-tabs", "a", false, "Process all open browser tabs (saves with auto-generated filenames)")
 	rootCmd.Flags().BoolVarP(&killBrowser, "kill-browser", "k", false, "Kill browser processes with remote debugging enabled")
+	rootCmd.Flags().BoolVar(&doctor, "doctor", false, "Display comprehensive diagnostic information")
+	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "Display version information")
 	rootCmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose logging output")
 	rootCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress all output except errors and content")
 	rootCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug output")
@@ -393,7 +397,18 @@ func runCobra(cmd *cobra.Command, args []string) error {
 
 	// Cobra handles flag parsing automatically - flags can appear anywhere
 
-	// Handle --kill-browser (priority: help > version > kill-browser > list-tabs > ...)
+	// Handle --doctor (priority: help > doctor > version > kill-browser > list-tabs > ...)
+	if doctor {
+		return handleDoctor(cmd)
+	}
+
+	// Handle --version (priority: help > doctor > version > kill-browser > list-tabs > ...)
+	if showVersion {
+		fmt.Printf("snag version %s\n", version)
+		return nil
+	}
+
+	// Handle --kill-browser (priority: help > doctor > version > kill-browser > list-tabs > ...)
 	if killBrowser {
 		// Validate conflicts - --kill-browser is a standalone utility command
 		if len(urls) > 0 {

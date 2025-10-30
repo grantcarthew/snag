@@ -59,6 +59,7 @@ snag https://example.com --debug
 
 **Examples with Other Flags:**
 
+- `--debug` + `--doctor` - Works normally (debug logs during diagnostic operations)
 - `--debug` + `--kill-browser` - Works normally (debug logs showing commands executed)
 - `--debug` + `--user-data-dir` - Works normally (debug logs with custom profile)
 - `--debug` + `--user-agent` - Works normally (debug logs with custom UA)

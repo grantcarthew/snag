@@ -8,9 +8,11 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -73,9 +75,11 @@ func (bm *BrowserManager) findBrowserPath() (string, error) {
 
 // browserDetectionRule defines a pattern-based browser detection rule.
 type browserDetectionRule struct {
-	pattern string // Pattern to search for in the browser executable name
-	name    string // Display name to return if pattern matches
-	exclude string // Optional: if set, skip this rule if exclude pattern is also found
+	pattern        string // Pattern to search for in the browser executable name
+	name           string // Display name to return if pattern matches
+	exclude        string // Optional: if set, skip this rule if exclude pattern is also found
+	profilePathMac string // Profile path subdirectory on macOS (relative to ~/Library/Application Support/)
+	profilePathLinux string // Profile path subdirectory on Linux (relative to ~/.config/)
 }
 
 // browserDetectionRules defines browser detection rules in priority order.
@@ -83,19 +87,19 @@ type browserDetectionRule struct {
 // Order matters: check specific names before generic ones
 // (e.g., "ungoogled" before "chromium", "chrome" before "chromium")
 var browserDetectionRules = []browserDetectionRule{
-	{"ungoogled", "Ungoogled-Chromium", ""},
-	{"chrome", "Chrome", "chromium"}, // Chrome but not Chromium
-	{"chromium", "Chromium", ""},
-	{"msedge", "Edge", ""},
-	{"edge", "Edge", ""},
-	{"brave", "Brave", ""},
-	{"opera", "Opera", ""},
-	{"vivaldi", "Vivaldi", ""},
-	{"arc", "Arc", ""},
-	{"yandex", "Yandex", ""},
-	{"thorium", "Thorium", ""},
-	{"slimjet", "Slimjet", ""},
-	{"cent", "Cent", ""},
+	{"ungoogled", "Ungoogled-Chromium", "", "Chromium", "chromium"},
+	{"chrome", "Chrome", "chromium", "Google/Chrome", "google-chrome"}, // Chrome but not Chromium
+	{"chromium", "Chromium", "", "Chromium", "chromium"},
+	{"msedge", "Edge", "", "Microsoft Edge", "microsoft-edge"},
+	{"edge", "Edge", "", "Microsoft Edge", "microsoft-edge"},
+	{"brave", "Brave", "", "BraveSoftware/Brave-Browser", "BraveSoftware/Brave-Browser"},
+	{"opera", "Opera", "", "com.operasoftware.Opera", "opera"},
+	{"vivaldi", "Vivaldi", "", "Vivaldi", "vivaldi"},
+	{"arc", "Arc", "", "Arc", ""},
+	{"yandex", "Yandex", "", "Yandex/YandexBrowser", "yandex-browser"},
+	{"thorium", "Thorium", "", "Thorium", "thorium"},
+	{"slimjet", "Slimjet", "", "Slimjet", "slimjet"},
+	{"cent", "Cent", "", "CentBrowser", "cent-browser"},
 }
 
 // detectBrowserName extracts a human-readable browser name from the executable path.
@@ -745,6 +749,77 @@ func (bm *BrowserManager) killAllBrowsers() (int, error) {
 	}
 
 	return killedCount, nil
+}
+
+// GetBrowserVersion returns the raw version string from the browser's --version flag.
+// Returns the raw output directly without parsing.
+func (bm *BrowserManager) GetBrowserVersion() (string, error) {
+	path, err := bm.findBrowserPath()
+	if err != nil {
+		return "", err
+	}
+
+	cmd := exec.Command(path, "--version")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get browser version: %w", err)
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
+
+// GetProfilePath returns the profile path for the detected browser and whether it exists.
+// Returns empty string if browser not found or profile path not known.
+func (bm *BrowserManager) GetProfilePath() (string, bool) {
+	path, err := bm.findBrowserPath()
+	if err != nil {
+		return "", false
+	}
+
+	// Find the rule that matches this browser
+	baseName := strings.ToLower(filepath.Base(path))
+	baseName = strings.TrimSuffix(baseName, ".exe")
+	baseName = strings.TrimSuffix(baseName, ".app")
+
+	var matchedRule *browserDetectionRule
+	for i := range browserDetectionRules {
+		if strings.Contains(baseName, browserDetectionRules[i].pattern) {
+			if browserDetectionRules[i].exclude != "" && strings.Contains(baseName, browserDetectionRules[i].exclude) {
+				continue
+			}
+			matchedRule = &browserDetectionRules[i]
+			break
+		}
+	}
+
+	if matchedRule == nil {
+		return "", false
+	}
+
+	// Get home directory
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", false
+	}
+
+	var profilePath string
+	if runtime.GOOS == "darwin" {
+		if matchedRule.profilePathMac == "" {
+			return "", false
+		}
+		profilePath = filepath.Join(home, "Library", "Application Support", matchedRule.profilePathMac)
+	} else {
+		if matchedRule.profilePathLinux == "" {
+			return "", false
+		}
+		profilePath = filepath.Join(home, ".config", matchedRule.profilePathLinux)
+	}
+
+	// Check if path exists
+	_, err = os.Stat(profilePath)
+	exists := err == nil
+
+	return profilePath, exists
 }
 
 // truncateCommandLine truncates a command line for display

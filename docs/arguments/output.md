@@ -104,6 +104,7 @@ snag https://example.com -o myfile --format markdown
 | Combination                                   | Behavior                  | Notes                                     |
 | --------------------------------------------- | ------------------------- | ----------------------------------------- |
 | `-o file.txt` + `--list-tabs`                 | `--list-tabs` overrides   | `--list-tabs` overrides all other options |
+| `-o file.md` + `--doctor`                     | **Flag ignored**          | Doctor overrides, diagnostics only        |
 | `-o file.md` + `--kill-browser`               | **Flag ignored**          | No content to save                        |
 | `-o file.md` + `--open-browser` (no URL)      | **Warning**, flag ignored | No content fetching                       |
 | `-o file.md` + `--tab <pattern>`              | Works normally            | Fetch from tab, save to file              |

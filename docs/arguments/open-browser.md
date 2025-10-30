@@ -68,6 +68,7 @@
 | `--open-browser` + `--tab`          | **Warning**                                          | `"Warning: --tab ignored with --open-browser (no content fetching)"` - Opens browser and exits      |
 | `--open-browser` + `--all-tabs`     | **Warning**                                          | `"Warning: --all-tabs ignored with --open-browser (no content fetching)"` - Opens browser and exits |
 | `--open-browser` + `--list-tabs`    | `--list-tabs` overrides                              | `--list-tabs` overrides all other options                                                           |
+| `--open-browser` + `--doctor`       | **Flag ignored**                                     | Doctor overrides, diagnostics only                                                                  |
 
 **Rationale:**
 

@@ -75,6 +75,7 @@ snag --list-tabs --verbose
 
 **Examples with Other Flags:**
 
+- `--verbose` + `--doctor` - Works normally (verbose logs during diagnostic operations)
 - `--verbose` + `--kill-browser` - Works normally (verbose logs showing PIDs and process details)
 - `--verbose` + `--user-data-dir` - Works normally (verbose logs with custom profile)
 - `--verbose` + `--user-agent` - Works normally (verbose logs with custom UA)

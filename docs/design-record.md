@@ -34,7 +34,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ## Design Decisions Summary
 
-**31 major design decisions documented below:**
+**32 major design decisions documented below:**
 
 | #   | Decision                  | Choice                                                          |
 | --- | ------------------------- | --------------------------------------------------------------- |
@@ -69,6 +69,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 | 29  | Tab List Display Format   | `[N] Title (domain/path)` with 120-char truncation, clean URLs  |
 | 30  | Pattern Multi-Match       | All matching tabs processed (not just first match)              |
 | 31  | Kill Browser Flag         | Force-kill browsers with remote debugging (`--kill-browser`)    |
+| 32  | Doctor Diagnostic Flag    | Diagnostic information with `--doctor` (help, troubleshooting)  |
 
 See detailed rationale in design decisions section below.
 
@@ -83,7 +84,7 @@ For complete argument validation rules, interaction matrices, error messages, an
 - **Page Control**: [Wait For](arguments/wait-for.md) | [Timeout](arguments/timeout.md) | [Port](arguments/port.md)
 - **Request**: [User Agent](arguments/user-agent.md) | [User Data Dir](arguments/user-data-dir.md)
 - **Logging**: [Verbose](arguments/verbose.md) | [Quiet](arguments/quiet.md) | [Debug](arguments/debug.md)
-- **Info**: [Help](arguments/help.md) | [Version](arguments/version.md)
+- **Info**: [Help](arguments/help.md) | [Version](arguments/version.md) | [Doctor](arguments/doctor.md)
 
 The design record documents **WHY** decisions were made; the argument specs document **HOW** they work.
 
@@ -1439,6 +1440,76 @@ $ snag https://example.com
   ```
 
 **See Also**: For complete flag specification, see [arguments/kill-browser.md](arguments/kill-browser.md)
+
+### 32. Doctor Diagnostic Flag
+
+- **Decision**: Add `--doctor` flag for comprehensive diagnostic output
+- **Behavior**:
+  - Displays diagnostic information about snag's environment and exits immediately
+  - Exit code 0 (always success, never fails)
+  - Priority: `--help` > `--version` > `--doctor` > `--kill-browser` > all other flags
+  - Works with `--port`, `--verbose`, `--quiet`, `--debug`
+  - Silently ignores all other flags
+- **Diagnostic Information Displayed**:
+  - **Version Information**: snag version (current + latest from GitHub), Go version, OS/Arch
+  - **Working Directory**: Current working directory
+  - **Browser Detection**: Detected browser name, path, version (raw `--version` output)
+  - **Connection Status**: Default port 9222 + custom port if `--port` specified, tab counts
+  - **Profile Location**: Browser profile path with existence check (✓/✗)
+  - **Environment Variables**: `CHROME_PATH`, `CHROMIUM_PATH`
+- **Rationale**:
+  - **User troubleshooting**: Single command to gather all relevant diagnostic info
+  - **Bug reporting**: Maintainers get essential debug info from users
+  - **Environment validation**: Quick check that browser is installed, detected, and running
+  - **Industry pattern**: Similar to `brew doctor`, `npm doctor`, `go doctor`, `flutter doctor`
+  - **Always succeeds**: Partial information still useful, never fails (exit 0)
+  - **Read-only**: Never modifies state, safe diagnostic operation
+- **Design Choices**:
+  - **Flag name**: `--doctor` (preferred over `--info`, `--diagnose`, `--system-info`)
+  - **Output destination**: stdout (enables redirection: `snag --doctor > diagnostics.txt`)
+  - **GitHub version check**: Included in doctor output (10s timeout), not in `--version`
+  - **No JSON output**: Human-readable format is grep-friendly, sufficient for current needs
+  - **Browser profile mapping**: Extended existing `browserDetectionRule` struct with OS-specific profile paths
+  - **Connection check**: 3-second timeout per port to avoid hanging
+  - **Output format**: Unicode/emoji formatting (✓/✗) with clear sections
+- **Implementation Strategy**:
+  - New file `doctor.go` with `DoctorReport` struct, `CollectDoctorInfo()`, `Print()` methods
+  - Extended `browser.go` with `GetBrowserVersion()` and `GetProfilePath()` methods
+  - Handler `handleDoctor()` in `handlers.go`
+  - Priority chain in `main.go` ensures correct flag precedence
+- **Use Cases**:
+  - **Troubleshooting**: "snag isn't working" → "Run `snag --doctor` and share output"
+  - **Environment validation**: Check browser installation, version, and connectivity
+  - **Update checking**: See if newer version available
+  - **Profile location**: Find where browser stores data
+  - **Bug reports**: Include doctor output for complete environmental context
+- **Future Enhancements**:
+  - Test fetch of known URL to validate full pipeline
+  - More detailed network/system diagnostics if needed
+  - Integration with `--report-issue` flag for auto-populating GitHub issues
+- **Code Location**:
+  - Flag definition: `main.go:102`, `main.go:220`
+  - Priority chain: `main.go:396-424`
+  - Handler: `handlers.go:handleDoctor()`
+  - Doctor logic: `doctor.go:DoctorReport`, `CollectDoctorInfo()`, `Print()`
+  - Browser extensions: `browser.go:GetBrowserVersion()`, `GetProfilePath()`
+- **Examples**:
+
+  ```bash
+  # Basic diagnostics
+  snag --doctor
+
+  # Check specific port
+  snag --doctor --port 9223
+
+  # With verbose logging
+  snag --doctor --verbose
+
+  # Redirect to file for bug report
+  snag --doctor > diagnostics.txt
+  ```
+
+**See Also**: For complete flag specification, see [arguments/doctor.md](arguments/doctor.md)
 
 ## References
 

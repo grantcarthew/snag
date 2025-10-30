@@ -41,6 +41,7 @@
 | `--close-tab` + `--tab`                   | Works normally            | Fetch from existing tab, then close it; if last tab, close browser                                                       |
 | `--close-tab` + `--all-tabs`              | Works normally            | Fetch from all tabs, close all tabs, close browser                                                                       |
 | `--close-tab` + `--list-tabs`             | `--list-tabs` overrides   | `--list-tabs` overrides all other options                                                                                |
+| `--close-tab` + `--doctor`                | **Flag ignored**          | Doctor overrides, diagnostics only                                                                                       |
 | `--close-tab` + `--open-browser` (no URL) | **Warning**               | `"Warning: --close-tab ignored with --open-browser (no content fetching)"`, browser stays open                           |
 | `--close-tab` + `--open-browser` + URL    | **Warning**, flag ignored | `"Warning: --close-tab ignored with --open-browser (no content fetching)"` - Opens browser, navigates to URL, exits snag |
 | `--close-tab` + `--kill-browser`          | **Flag ignored**          | No tabs to close                                                                                                         |

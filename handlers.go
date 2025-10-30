@@ -991,3 +991,17 @@ func handleKillBrowser(cmd *cobra.Command) error {
 	_, err := bm.KillBrowser(targetPort)
 	return err
 }
+
+// handleDoctor displays comprehensive diagnostic information.
+// This command overrides all other flags except --help.
+// Always returns nil (diagnostics always succeed).
+func handleDoctor(cmd *cobra.Command) error {
+	report, err := CollectDoctorInfo(port)
+	if err != nil {
+		// Even if collection fails partially, we still print what we have
+		logger.Verbose("Warning: Some diagnostic information could not be collected: %v", err)
+	}
+
+	report.Print()
+	return nil
+}

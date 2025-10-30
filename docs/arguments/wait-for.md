@@ -59,6 +59,7 @@
 | `--wait-for` + `--tab`        | **Works**               | Supports automation with persistent browser - wait for selector in existing tab |
 | `--wait-for` + `--all-tabs`   | **Works**               | Same selector applied to all tabs before fetching                               |
 | `--wait-for` + `--list-tabs`  | `--list-tabs` overrides | `--list-tabs` overrides all other options                                       |
+| `--wait-for` + `--doctor`     | **Flag ignored**        | Doctor overrides, diagnostics only                                              |
 | `--wait-for` + `--kill-browser` | **Flag ignored**        | No content to fetch                                                             |
 
 **Use case for tabs + wait-for:**

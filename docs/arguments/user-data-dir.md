@@ -113,6 +113,7 @@
 | `--user-data-dir` + `--tab`          | **Warning**, ignore flag | Connecting to existing browser                |
 | `--user-data-dir` + `--all-tabs`     | **Warning**, ignore flag | Connecting to existing browser                |
 | `--user-data-dir` + `--list-tabs`    | `--list-tabs` overrides  | `--list-tabs` overrides all other options     |
+| `--user-data-dir` + `--doctor`       | **Flag ignored**         | Doctor overrides, diagnostics only            |
 
 **Warning message for tab operations:**
 

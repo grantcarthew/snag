@@ -43,13 +43,15 @@ snag -v
 | `--version <url>`       | Display version, exit 0 | Version takes priority, URL ignored             |
 | `--version --help`      | Display help, exit 0    | **Help takes priority**                         |
 | `--help --version`      | Display help, exit 0    | **Help takes priority**                         |
+| `--version --doctor`    | Display version, exit 0 | Version takes priority over doctor              |
+| `--doctor --version`    | Display version, exit 0 | Version takes priority (regardless of order)    |
 | `--version` + any flags | Display version, exit 0 | Version ignores all other flags (except --help) |
 
 **Priority Rules:**
 
 1. `--help` detected → Display help (higher priority)
 2. Otherwise, `--version` detected → Display version
-3. Ignore all other flags (including `--kill-browser`)
+3. Ignore all other flags (including `--doctor` and `--kill-browser`)
 4. Exit with code 0
 
 #### Examples

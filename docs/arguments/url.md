@@ -69,6 +69,7 @@ snag -d output/ https://example.com https://google.com
 | `<url>` + `--tab`        | **Error**               | Mutually exclusive content sources        |
 | `<url>` + `--all-tabs`   | **Error**               | Mutually exclusive content sources        |
 | `<url>` + `--list-tabs`  | `--list-tabs` overrides | `--list-tabs` overrides all other options |
+| `<url>` + `--doctor`     | **Flag ignored**        | Doctor overrides, diagnostics only        |
 | `<url>` + `--kill-browser` | **Error**             | Conflicting operations                    |
 
 **Browser Mode:**
