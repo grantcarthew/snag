@@ -82,8 +82,8 @@ func TestDetectBrowserName(t *testing.T) {
 		// Fallback cases
 		{"unknown browser", "/usr/bin/firefox", "Firefox"},
 		{"custom browser", "/usr/bin/mybrowser", "Mybrowser"},
-		{"empty path", "", "."},      // filepath.Base("") returns "."
-		{"just slash", "/", "/"},      // filepath.Base("/") returns "/"
+		{"empty path", "", "."},  // filepath.Base("") returns "."
+		{"just slash", "/", "/"}, // filepath.Base("/") returns "/"
 
 		// Case sensitivity
 		{"uppercase chromium", "/usr/bin/CHROMIUM", "Chromium"},
@@ -111,9 +111,9 @@ func TestDetectBrowserName(t *testing.T) {
 func TestDetectBrowserName_OrderOfPrecedence(t *testing.T) {
 	// Test that more specific matches take precedence over generic ones
 	tests := []struct {
-		name     string
-		path     string
-		expected string
+		name        string
+		path        string
+		expected    string
 		notExpected string
 	}{
 		{"ungoogled before chromium", "/usr/bin/ungoogled-chromium", "Ungoogled-Chromium", "Chromium"},

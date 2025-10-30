@@ -88,15 +88,15 @@ var (
 	openBrowser bool
 	listTabs    bool
 	tab         string
-	allTabs       bool
-	killBrowser   bool
-	doctor        bool
-	showVersion   bool
-	verbose       bool
-	quiet         bool
-	debug         bool
-	userAgent     string
-	userDataDir   string
+	allTabs     bool
+	killBrowser bool
+	doctor      bool
+	showVersion bool
+	verbose     bool
+	quiet       bool
+	debug       bool
+	userAgent   string
+	userDataDir string
 )
 
 const helpTemplate = `USAGE:

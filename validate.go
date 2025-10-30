@@ -417,4 +417,3 @@ func validateUserDataDir(path string) (string, error) {
 
 	return path, nil
 }
-
