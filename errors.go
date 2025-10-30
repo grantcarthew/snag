@@ -46,6 +46,6 @@ var (
 	// ErrNoValidURLs indicates no valid URLs were provided or found in URL file
 	ErrNoValidURLs = errors.New("no valid URLs provided")
 
-	// ErrOutputFlagConflict indicates --output cannot be used with multiple URLs
-	ErrOutputFlagConflict = errors.New("--output cannot be used with multiple URLs, use --output-dir instead")
+	// ErrOutputFlagConflict indicates --output cannot be used with multiple content sources
+	ErrOutputFlagConflict = errors.New("--output cannot be used with multiple content sources, use --output-dir instead")
 )

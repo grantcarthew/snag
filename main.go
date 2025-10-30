@@ -293,13 +293,12 @@ func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs 
 	}
 
 	if hasMultipleURLs && outputFile != "" {
-		logger.Error("Cannot use --output with multiple URLs")
-		logger.Info("Use --output-dir for auto-generated filenames OR provide single URL")
-		return fmt.Errorf("--output incompatible with multiple URLs")
+		logger.Error("Cannot use --output with multiple content sources. Use --output-dir instead")
+		return ErrOutputFlagConflict
 	}
 
 	if allTabs && outputFile != "" {
-		logger.Error("Cannot use --output with --all-tabs (multiple outputs). Use --output-dir instead")
+		logger.Error("Cannot use --output with multiple content sources. Use --output-dir instead")
 		return ErrOutputFlagConflict
 	}
 
