@@ -63,12 +63,13 @@ snag -d output/ https://example.com https://google.com
 
 **Content Source Conflicts:**
 
-| Combination             | Behavior                | Rationale                                 |
-| ----------------------- | ----------------------- | ----------------------------------------- |
-| `<url>` + `--url-file`  | **Merge** both sources  | Allow combining CLI URLs with file URLs   |
-| `<url>` + `--tab`       | **Error**               | Mutually exclusive content sources        |
-| `<url>` + `--all-tabs`  | **Error**               | Mutually exclusive content sources        |
-| `<url>` + `--list-tabs` | `--list-tabs` overrides | `--list-tabs` overrides all other options |
+| Combination              | Behavior                | Rationale                                 |
+| ------------------------ | ----------------------- | ----------------------------------------- |
+| `<url>` + `--url-file`   | **Merge** both sources  | Allow combining CLI URLs with file URLs   |
+| `<url>` + `--tab`        | **Error**               | Mutually exclusive content sources        |
+| `<url>` + `--all-tabs`   | **Error**               | Mutually exclusive content sources        |
+| `<url>` + `--list-tabs`  | `--list-tabs` overrides | `--list-tabs` overrides all other options |
+| `<url>` + `--kill-browser` | **Error**             | Conflicting operations                    |
 
 **Browser Mode:**
 
