@@ -295,7 +295,7 @@ func TestCLI_InvalidURL(t *testing.T) {
 			output := stdout + stderr
 			// Should contain error message
 			if !strings.Contains(output, "Invalid") && !strings.Contains(output, "invalid") &&
-			   !strings.Contains(output, "error") && !strings.Contains(output, "Error") {
+				!strings.Contains(output, "error") && !strings.Contains(output, "Error") {
 				t.Errorf("expected error message for %s, got: %s", tt.desc, output)
 			}
 		})
@@ -335,7 +335,7 @@ func TestCLI_InvalidTimeout(t *testing.T) {
 			output := stdout + stderr
 			// Should contain error about timeout or invalid value
 			if !strings.Contains(output, "timeout") && !strings.Contains(output, "invalid") &&
-			   !strings.Contains(output, "error") && !strings.Contains(output, "Error") {
+				!strings.Contains(output, "error") && !strings.Contains(output, "Error") {
 				t.Errorf("expected error message about timeout or invalid value for %s, got: %s", tt.desc, output)
 			}
 		})
@@ -364,7 +364,7 @@ func TestCLI_InvalidPort(t *testing.T) {
 			output := stdout + stderr
 			// Should contain error about port or invalid value
 			if !strings.Contains(output, "port") && !strings.Contains(output, "invalid") &&
-			   !strings.Contains(output, "error") && !strings.Contains(output, "Error") {
+				!strings.Contains(output, "error") && !strings.Contains(output, "Error") {
 				t.Errorf("expected error message about port or invalid value for %s, got: %s", tt.desc, output)
 			}
 		})
@@ -840,7 +840,7 @@ func TestBrowser_WaitForTimeout(t *testing.T) {
 	output := stdout + stderr
 	// Should indicate timeout or element not found
 	if !strings.Contains(output, "timeout") && !strings.Contains(output, "not found") &&
-	   !strings.Contains(output, "Timeout") {
+		!strings.Contains(output, "Timeout") {
 		t.Errorf("Expected timeout error message, got: %s", output)
 	}
 }

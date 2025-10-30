@@ -124,4 +124,3 @@ func (l *Logger) ErrorWithSuggestion(errMsg string, suggestion string) {
 	}
 	fmt.Fprintf(l.writer, "%s %s\n%s\n", prefix, errMsg, suggestion)
 }
-
