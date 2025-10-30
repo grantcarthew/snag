@@ -370,11 +370,20 @@ func validateUserDataDir(path string) (string, error) {
 		}
 	}
 
-	// Validate only if directory exists - let Chrome create it if it doesn't
+	// Check if directory exists, create if it doesn't
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		// Directory doesn't exist - Chrome will create it
-		logger.Verbose("User data directory will be created by browser: %s", path)
+		// Directory doesn't exist - create it (mkdir -p style)
+		logger.Verbose("Creating user data directory: %s", path)
+		if err := os.MkdirAll(path, 0755); err != nil {
+			logger.Error("Failed to create user data directory: %s", path)
+			logger.ErrorWithSuggestion(
+				"Cannot create user data directory",
+				fmt.Sprintf("mkdir -p %s", path),
+			)
+			return "", fmt.Errorf("failed to create directory: %w", err)
+		}
+		logger.Verbose("User data directory created: %s", path)
 		return path, nil
 	}
 	if err != nil {

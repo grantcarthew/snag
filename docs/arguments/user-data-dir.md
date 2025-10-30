@@ -26,9 +26,10 @@
 
 **Directory doesn't exist:**
 
-- Behavior: **Works normally** - Chrome/Chromium will create the directory automatically
-- Verbose message: "User data directory will be created by browser: {path}"
+- Behavior: **Works normally** - Snag will create the directory automatically (like `mkdir -p`)
+- Verbose messages: "Creating user data directory: {path}" → "User data directory created: {path}"
 - No need to create directory manually before using it
+- Creates full path including parent directories if needed
 
 **Path exists but is a file (not directory):**
 
@@ -262,9 +263,9 @@ snag --user-data-dir ~/.snag/profile --list-tabs           # Flag ignored (list-
 3. If empty after trim → Warn, use browser default
 4. Expand tilde (`~`) to home directory
 5. If directory exists → Validate it's a directory and has permissions
-6. If directory doesn't exist → Allow it (Chrome will create)
+6. If directory doesn't exist → Create it with `os.MkdirAll()` (like `mkdir -p`)
 7. Pass to rod launcher as `--user-data-dir={path}` browser flag
-8. Browser loads/creates profile in specified directory
+8. Browser loads profile from specified directory
 
 **Validation order:**
 
@@ -272,7 +273,7 @@ snag --user-data-dir ~/.snag/profile --list-tabs           # Flag ignored (list-
 2. Check if empty → Warn if empty
 3. Expand tilde
 4. Check if path exists:
-   - If doesn't exist → Return path (Chrome will create it)
+   - If doesn't exist → Create it with `os.MkdirAll(path, 0755)` (like `mkdir -p`)
    - If exists → Validate it's a directory and check permissions
 
 **Browser default profiles:**

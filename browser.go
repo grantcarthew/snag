@@ -287,6 +287,16 @@ func (bm *BrowserManager) OpenBrowserOnly() error {
 		Set("disable-blink-features", "AutomationControlled").
 		Set("remote-debugging-port", fmt.Sprintf("%d", bm.port))
 
+	if bm.userAgent != "" {
+		l = l.Set("user-agent", bm.userAgent)
+		logger.Verbose("Using custom user agent: %s", bm.userAgent)
+	}
+
+	if bm.userDataDir != "" {
+		l = l.Set("user-data-dir", bm.userDataDir)
+		logger.Verbose("Using custom user data directory: %s", bm.userDataDir)
+	}
+
 	controlURL, err := l.Launch()
 	if err != nil {
 		return fmt.Errorf("failed to launch browser: %w", err)
