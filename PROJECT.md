@@ -2,6 +2,78 @@
 
 Add a `--doctor` flag to display comprehensive diagnostic information about snag's environment, browser detection, and system status.
 
+## Current Progress
+
+**Status:** Phases 1-4 Complete ✅ | Phase 5 Ready to Start ⏳
+
+**Last Updated:** 2025-10-30
+
+**Completed:**
+- ✅ Phase 1: Core Diagnostic Collection (2025-10-30)
+  - Flag definition and priority handling
+  - Basic infrastructure (handler, doctor.go file)
+  - Initial output sections (version, working dir, env vars)
+  - Build verification passed
+
+- ✅ Phase 2: Browser Detection & Profile Status (2025-10-30)
+  - Extended browserDetectionRule with profile path fields
+  - Updated all 13 browser rules with macOS/Linux profile paths
+  - Implemented GetBrowserVersion() method (raw --version output)
+  - Implemented GetProfilePath() method with existence checking
+  - Browser Detection section in output (name, path, version)
+  - Profile Location section with checkmarks (✓/✗)
+
+- ✅ Phase 2.5: Connection Status (2025-10-30)
+  - Implemented checkPortConnection() with 3-second timeout
+  - Default port 9222 connection checking
+  - Custom port support via --port flag
+  - Tab counting when connected
+  - Connection Status section with checkmarks (✓/✗)
+  - Graceful handling of timeouts and connection failures
+
+- ✅ Phase 3: Enhanced Information & Polish (2025-10-30)
+  - Implemented checkLatestVersion() with 10-second timeout
+  - GitHub API integration for latest release checking
+  - Version comparison with update notifications
+  - Graceful network error handling
+  - Complete formatted output with all sections
+  - Checkmarks (✓/✗) throughout for status indicators
+
+- ✅ Phase 4: Documentation (2025-10-30)
+  - Created docs/arguments/doctor.md following established pattern
+  - Updated docs/design-record.md with Design Decision #32
+  - Reviewed and updated ALL 22 docs/arguments/*.md files with doctor interactions
+  - Updated README.md troubleshooting section with diagnostic information
+  - Updated AGENTS.md with doctor command examples
+
+**Next Steps (Phase 5):**
+1. Manual testing on macOS (current platform)
+2. Manual testing on Linux (if available)
+3. Test with various browser configurations
+4. Write automated test cases
+5. Verify no regressions in existing functionality
+
+**Implementation Progress:**
+- ✅ Core Implementation: 100% complete (23/23 items)
+  - Phase 1: 6/6 ✅
+  - Phase 2: 5/5 ✅
+  - Phase 2.5: 5/5 ✅
+  - Phase 3: 7/7 ✅
+- ✅ Documentation: 100% complete (5/5 items)
+- ⏳ Testing: 0% complete (0/4 items)
+- **Overall: 28/32 items (88%)**
+
+**Files Modified/Created:**
+- ✏️ `main.go` - Added `--doctor` flag, updated priority logic, added to help template (Phase 1)
+- ✏️ `handlers.go` - Added `handleDoctor()` function (Phase 1)
+- ✨ `doctor.go` - New file with DoctorReport, checkPortConnection(), checkLatestVersion(), Print() (Phase 1-3)
+- ✏️ `browser.go` - Added GetBrowserVersion(), GetProfilePath() methods; extended detection rules (Phase 2)
+- ✨ `docs/arguments/doctor.md` - New comprehensive argument documentation (Phase 4)
+- ✏️ `docs/design-record.md` - Added Design Decision #32 for doctor flag (Phase 4)
+- ✏️ `docs/arguments/*.md` - Updated 22 argument files with doctor interactions (Phase 4)
+- ✏️ `README.md` - Added diagnostic information section to troubleshooting (Phase 4)
+- ✏️ `AGENTS.md` - Added doctor command examples to troubleshooting (Phase 4)
+
 ## Overview
 
 Provide a diagnostic command that helps users troubleshoot issues and provides maintainers with essential information when debugging user problems. Similar to `brew doctor`, `npm doctor`, etc.
@@ -617,22 +689,49 @@ Verify output contains:
 
 ## Success Criteria
 
-- [ ] CLI flag `--doctor` defined and working
-- [ ] Overrides all flags except `--help`
-- [ ] Works with `--port` to check custom ports
-- [ ] Displays all required information sections
-- [ ] Formatted output with sections, checkmarks, alignment
-- [ ] Works on Linux and macOS
-- [ ] Handles missing browser gracefully
-- [ ] Handles no browser running gracefully
-- [ ] `docs/arguments/doctor.md` created
-- [ ] `docs/design-record.md` updated with design decision
-- [ ] ALL `docs/arguments/*.md` files reviewed and updated
-- [ ] README.md updated with troubleshooting section
-- [ ] AGENTS.md updated with diagnostic examples
+**Phase 1: Core Diagnostic Collection** ✅ COMPLETE
+- [x] CLI flag `--doctor` defined and working
+- [x] Flag priority logic implemented: `help > doctor > version > kill-browser > ...`
+- [x] Basic `handleDoctor()` function created in handlers.go
+- [x] `doctor.go` file created with DoctorReport struct
+- [x] Basic formatted output (header, sections, version info, working dir, env vars)
+- [x] Build verification (code compiles without errors)
+
+**Phase 2: Connection & Profile Status** ✅ COMPLETE
+- [x] Browser detection info collection
+- [x] Browser version detection
+- [x] Profile path detection and existence checking
+- [x] Extended browserDetectionRule struct with profile paths
+- [x] Updated all browser rules with macOS/Linux paths
+
+**Phase 2.5: Connection Status** ✅ COMPLETE
+- [x] Default port connection status (9222)
+- [x] Works with `--port` to check custom ports
+- [x] Tab counting when connected
+- [x] Implemented checkPortConnection() with timeout
+- [x] Connection Status section in output
+
+**Phase 3: Enhanced Information & Polish** ✅ COMPLETE
+- [x] GitHub latest version check (10s timeout)
+- [x] Formatted output with checkmarks (✓/✗) for status
+- [x] Handles missing browser gracefully
+- [x] Handles no browser running gracefully
+- [x] Works on macOS (Linux testing pending)
+- [x] Version comparison with update notifications
+- [x] Graceful network error handling
+
+**Phase 4: Documentation** ✅ COMPLETE
+- [x] `docs/arguments/doctor.md` created
+- [x] `docs/design-record.md` updated with design decision
+- [x] ALL `docs/arguments/*.md` files reviewed and updated (22 files)
+- [x] README.md updated with troubleshooting section
+- [x] AGENTS.md updated with diagnostic examples
+
+**Phase 5: Testing & Validation**
 - [ ] Manual testing completed on both platforms
-- [ ] Automated tests passing
+- [ ] Automated tests written and passing
 - [ ] No regressions in existing functionality
+- [ ] Overrides all flags except `--help` verified
 
 ## Implementation Decisions
 

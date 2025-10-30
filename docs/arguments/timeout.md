@@ -84,6 +84,7 @@ snag --url-file urls.txt --timeout 60
 | Combination                             | Behavior                  | Notes                                                                    |
 | --------------------------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `--timeout` + `--list-tabs`             | `--list-tabs` overrides   | `--list-tabs` overrides all other options                                |
+| `--timeout` + `--doctor`                | **Flag ignored**          | Doctor overrides, diagnostics only                                       |
 | `--timeout` + `--open-browser` (no URL) | **Warning**, flag ignored | `"Warning: --timeout ignored with --open-browser (no content fetching)"` |
 | `--timeout` + `--kill-browser`          | **Flag ignored**          | No navigation performed                                                  |
 

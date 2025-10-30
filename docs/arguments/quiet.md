@@ -58,6 +58,7 @@ snag https://example.com --quiet
 
 **Examples with Other Flags:**
 
+- `--quiet` + `--doctor` - Works normally (minimal logging during diagnostic operations)
 - `--quiet` + `--kill-browser` - Works normally (silent on success, errors to stderr)
 - `--quiet` + `--user-data-dir` - Works normally (quiet mode with custom profile)
 - `--quiet` + `--user-agent` - Works normally (quiet mode with custom UA)
