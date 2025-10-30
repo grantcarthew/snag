@@ -402,6 +402,61 @@ snag https://authenticated-site3.com
 
 All three commands share authentication state - no repeated logins required!
 
+### Method 4: Using Your Default Chrome Profile
+
+You can use your existing Chrome profile with all its saved logins and cookies:
+
+**Option A: Daily workflow - Use snag as your Chrome launcher**
+
+If you use snag regularly, you can make it your primary way to launch Chrome:
+
+```bash
+# Close your regular Chrome first, then launch via snag:
+snag --open-browser --user-data-dir ~/.config/google-chrome                       # Linux
+snag --open-browser --user-data-dir ~/.config/chromium                            # Linux Chromium
+snag --open-browser --user-data-dir ~/Library/Application\ Support/Google/Chrome  # macOS
+
+# Now browse normally AND use snag for tab fetching:
+snag --list-tabs
+snag -t 1                                    # Fetch from any tab
+snag https://example.com                     # Open new tabs
+```
+
+This gives you your full Chrome experience (bookmarks, extensions, history, passwords) PLUS snag's tab management capabilities!
+
+**Option B: One-off fetches with your profile**
+
+```bash
+# Must close Chrome first!
+snag --user-data-dir ~/.config/google-chrome \
+  https://private.example.com
+```
+
+**Important caveats:**
+
+1. **Chrome must be closed** - You cannot run both Chrome and snag with the same profile simultaneously. Chrome locks profile directories to prevent corruption.
+
+2. **Risk of corruption** - If something goes wrong, you could corrupt your primary profile data. Consider using a separate profile for automation.
+
+3. **Profile structure** - Chrome's `--user-data-dir` points to the parent directory containing multiple profiles (Default, Profile 1, etc.). Chrome will use the Default profile unless you specify otherwise.
+
+**Option C: Safer alternative - Use a dedicated profile for snag**
+
+```bash
+# Create and use a dedicated profile for snag
+snag --user-data-dir ~/.config/google-chrome/snag-profile \
+  --open-browser
+
+# Authenticate once in the browser window
+# Profile persists between runs - no need to re-authenticate!
+
+# Subsequent fetches reuse the same profile
+snag --user-data-dir ~/.config/google-chrome/snag-profile \
+  https://private.example.com
+```
+
+The dedicated profile approach gives you persistence without risking your main Chrome profile.
+
 ## Advanced Usage
 
 ### Custom User Agent
