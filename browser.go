@@ -28,7 +28,6 @@ const (
 	StabilizeTimeout = 3 * time.Second
 )
 
-// BrowserManager handles browser lifecycle and connection
 type BrowserManager struct {
 	browser          *rod.Browser
 	launcher         *launcher.Launcher
@@ -58,9 +57,6 @@ type TabInfo struct {
 }
 
 func (bm *BrowserManager) findBrowserPath() (string, error) {
-	// SECURITY: We trust the system-installed browser binary found by launcher.LookPath().
-	// Binary integrity is the responsibility of the OS package manager. If an attacker
-	// can replace the browser binary, they already have system-level access.
 	path, exists := launcher.LookPath()
 	if !exists {
 		return "", ErrBrowserNotFound
@@ -73,22 +69,17 @@ func (bm *BrowserManager) findBrowserPath() (string, error) {
 	return path, nil
 }
 
-// browserDetectionRule defines a pattern-based browser detection rule.
 type browserDetectionRule struct {
-	pattern        string // Pattern to search for in the browser executable name
-	name           string // Display name to return if pattern matches
-	exclude        string // Optional: if set, skip this rule if exclude pattern is also found
-	profilePathMac string // Profile path subdirectory on macOS (relative to ~/Library/Application Support/)
-	profilePathLinux string // Profile path subdirectory on Linux (relative to ~/.config/)
+	pattern          string
+	name             string
+	exclude          string
+	profilePathMac   string
+	profilePathLinux string
 }
 
-// browserDetectionRules defines browser detection rules in priority order.
-// Earlier entries take precedence over later ones.
-// Order matters: check specific names before generic ones
-// (e.g., "ungoogled" before "chromium", "chrome" before "chromium")
 var browserDetectionRules = []browserDetectionRule{
 	{"ungoogled", "Ungoogled-Chromium", "", "Chromium", "chromium"},
-	{"chrome", "Chrome", "chromium", "Google/Chrome", "google-chrome"}, // Chrome but not Chromium
+	{"chrome", "Chrome", "chromium", "Google/Chrome", "google-chrome"},
 	{"chromium", "Chromium", "", "Chromium", "chromium"},
 	{"msedge", "Edge", "", "Microsoft Edge", "microsoft-edge"},
 	{"edge", "Edge", "", "Microsoft Edge", "microsoft-edge"},
@@ -102,19 +93,14 @@ var browserDetectionRules = []browserDetectionRule{
 	{"cent", "Cent", "", "CentBrowser", "cent-browser"},
 }
 
-// detectBrowserName extracts a human-readable browser name from the executable path.
-// Uses table-driven pattern matching against known browser identifiers.
-// Falls back to capitalizing the base filename if no pattern matches.
 func detectBrowserName(path string) string {
 	base := filepath.Base(path)
 	baseName := strings.TrimSuffix(base, ".exe")
 	baseName = strings.TrimSuffix(baseName, ".app")
 	lowerName := strings.ToLower(baseName)
 
-	// Check patterns in priority order
 	for _, rule := range browserDetectionRules {
 		if strings.Contains(lowerName, rule.pattern) {
-			// If exclude pattern specified, skip if it's present
 			if rule.exclude != "" && strings.Contains(lowerName, rule.exclude) {
 				continue
 			}
@@ -122,7 +108,6 @@ func detectBrowserName(path string) string {
 		}
 	}
 
-	// Fallback: capitalize first letter of base name
 	if len(baseName) > 0 {
 		return strings.ToUpper(baseName[:1]) + baseName[1:]
 	}
@@ -141,7 +126,6 @@ func NewBrowserManager(opts BrowserOptions) *BrowserManager {
 }
 
 func (bm *BrowserManager) Connect() (*rod.Browser, error) {
-	// Always check for existing browser first (unless forcing headless mode)
 	if !bm.forceHeadless {
 		logger.Verbose("Checking for existing browser instance on port %d...", bm.port)
 		if browser, err := bm.connectToExisting(); err == nil {
@@ -163,7 +147,6 @@ func (bm *BrowserManager) Connect() (*rod.Browser, error) {
 		logger.Verbose("No existing browser instance found")
 	}
 
-	// Priority: forceHeadless takes precedence over openBrowser
 	headless := bm.forceHeadless || !bm.openBrowser
 
 	if headless {
@@ -199,19 +182,14 @@ func (bm *BrowserManager) connectToExisting() (*rod.Browser, error) {
 	}
 	logger.Debug("Resolved WebSocket URL: %s", wsURL)
 
-	// Create browser instance and connect with timeout
-	// We need to assign the result because Timeout() creates a new instance
 	browser := rod.New().ControlURL(wsURL).Timeout(ConnectTimeout)
 
-	// Try to connect
 	if err := browser.Connect(); err != nil {
 		logger.Debug("Connection failed: %v", err)
 		return nil, fmt.Errorf("%w: %w", ErrBrowserConnection, err)
 	}
 	logger.Debug("Successfully connected to browser")
 
-	// Return the browser but without timeout for future operations
-	// CancelTimeout() removes the timeout context from subsequent operations
 	return browser.CancelTimeout(), nil
 }
 
@@ -237,7 +215,6 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 		logger.Verbose("Using custom user data directory: %s", bm.userDataDir)
 	}
 
-	// Always set remote debugging port explicitly (don't rely on launcher's default)
 	l = l.Set("remote-debugging-port", fmt.Sprintf("%d", bm.port))
 
 	controlURL, err := l.Launch()
@@ -248,19 +225,14 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 
 	bm.launcher = l
 
-	// Create browser instance and connect with timeout
-	// We need to assign the result because Timeout() creates a new instance
 	browser := rod.New().ControlURL(controlURL).Timeout(ConnectTimeout)
 
-	// Try to connect
 	if err := browser.Connect(); err != nil {
 		logger.Debug("Failed to connect to launched browser: %v", err)
 		return nil, fmt.Errorf("%w: %w", ErrBrowserConnection, err)
 	}
 	logger.Debug("Successfully connected to launched browser")
 
-	// Return the browser but without timeout for future operations
-	// CancelTimeout() removes the timeout context from subsequent operations
 	return browser.CancelTimeout(), nil
 }
 
@@ -285,7 +257,6 @@ func (bm *BrowserManager) OpenBrowserOnly() error {
 		return err
 	}
 
-	// Leakless(false) allows the browser to persist after this process exits
 	l := launcher.New().
 		Bin(path).
 		Leakless(false).
@@ -339,13 +310,11 @@ func (bm *BrowserManager) NewPage() (*rod.Page, error) {
 	return page, nil
 }
 
-// Close closes the browser if it was launched by us in headless mode
 func (bm *BrowserManager) Close() {
 	if bm.browser == nil {
 		return
 	}
 
-	// Only close browser if we launched it AND it's headless
 	if bm.wasLaunched && bm.launchedHeadless {
 		logger.Verbose("Closing headless browser...")
 		if err := bm.browser.Close(); err != nil {
@@ -353,8 +322,8 @@ func (bm *BrowserManager) Close() {
 		}
 
 		if bm.launcher != nil {
-			bm.launcher.Kill()    // Force kill the process (fixes Linux zombie processes)
-			bm.launcher.Cleanup() // Clean up temp dirs (respects KeepUserDataDir flag)
+			bm.launcher.Kill()
+			bm.launcher.Cleanup()
 		}
 	} else if bm.wasLaunched && !bm.launchedHeadless {
 		logger.Verbose("Leaving visible browser running")
@@ -385,9 +354,6 @@ type pageWithInfo struct {
 	id    string
 }
 
-// getSortedPagesWithInfo returns all pages sorted by URL→Title→ID with info cached
-// This fetches page.Info() exactly once per page, then sorts in-memory
-// Sorting provides predictable, stable ordering (CDP's internal order is unpredictable)
 func (bm *BrowserManager) getSortedPagesWithInfo() ([]pageWithInfo, error) {
 	if bm.browser == nil {
 		return nil, ErrNoBrowserRunning
@@ -398,7 +364,6 @@ func (bm *BrowserManager) getSortedPagesWithInfo() ([]pageWithInfo, error) {
 		return nil, fmt.Errorf("failed to get pages: %w", err)
 	}
 
-	// Build list with cached info (single page.Info() call per page)
 	pagesWithInfo := make([]pageWithInfo, 0, len(pages))
 	for i, page := range pages {
 		info, err := page.Info()
@@ -415,7 +380,6 @@ func (bm *BrowserManager) getSortedPagesWithInfo() ([]pageWithInfo, error) {
 		})
 	}
 
-	// Warn if some tabs were excluded
 	if len(pagesWithInfo) < len(pages) {
 		excluded := len(pages) - len(pagesWithInfo)
 		logger.Warning("Excluded %d tab(s) due to inaccessible page info", excluded)
@@ -434,9 +398,6 @@ func (bm *BrowserManager) getSortedPagesWithInfo() ([]pageWithInfo, error) {
 	return pagesWithInfo, nil
 }
 
-// ListTabs returns information about all open tabs in the browser
-// Tabs are sorted by URL (primary), Title (secondary), and ID (tertiary) for predictable ordering
-// This requires an existing browser connection and will not launch a new browser
 func (bm *BrowserManager) ListTabs() ([]TabInfo, error) {
 	pagesWithInfo, err := bm.getSortedPagesWithInfo()
 	if err != nil {
@@ -456,9 +417,6 @@ func (bm *BrowserManager) ListTabs() ([]TabInfo, error) {
 	return tabs, nil
 }
 
-// GetTabByIndex returns a specific tab by its index (1-based) from the sorted tab list
-// Index 1 = first tab (by URL sort order), Index 2 = second tab, etc.
-// Returns ErrTabIndexInvalid if index is out of range
 func (bm *BrowserManager) GetTabByIndex(index int) (*rod.Page, error) {
 	pagesWithInfo, err := bm.getSortedPagesWithInfo()
 	if err != nil {
@@ -476,13 +434,6 @@ func (bm *BrowserManager) GetTabByIndex(index int) (*rod.Page, error) {
 	return pagesWithInfo[arrayIndex].page, nil
 }
 
-// GetTabByPattern returns the first tab matching the given pattern
-// Pattern matching uses progressive fallthrough:
-// 1. Try exact URL match (case-insensitive)
-// 2. Try substring/contains match (case-insensitive)
-// 3. Try regex match (case-insensitive)
-// 4. Return error if no matches
-// Returns ErrNoTabMatch if no tab matches the pattern
 func (bm *BrowserManager) GetTabByPattern(pattern string) (*rod.Page, error) {
 	pages, err := bm.GetTabsByPattern(pattern)
 	if err != nil {
@@ -491,13 +442,6 @@ func (bm *BrowserManager) GetTabByPattern(pattern string) (*rod.Page, error) {
 	return pages[0], nil
 }
 
-// GetTabsByPattern returns all tabs matching the given pattern
-// Pattern matching uses progressive fallthrough:
-// 1. Try exact URL match (case-insensitive) - returns ALL exact matches
-// 2. Try substring/contains match (case-insensitive) - returns ALL substring matches
-// 3. Try regex match (case-insensitive) - returns ALL regex matches
-// 4. Return error if no matches
-// Returns ErrNoTabMatch if no tab matches the pattern
 func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) {
 	if bm.browser == nil {
 		return nil, ErrNoBrowserRunning
@@ -582,10 +526,6 @@ func (bm *BrowserManager) GetTabsByPattern(pattern string) ([]*rod.Page, error) 
 	return nil, fmt.Errorf("%w: '%s'", ErrNoTabMatch, pattern)
 }
 
-// GetTabsByRange returns tabs within the specified 1-based index range (inclusive) from the sorted tab list
-// Range format: "N-M" where N and M are positive integers >= 1
-// Examples: "1-3" returns tabs 1, 2, and 3 (by URL sort order)
-// Returns error if range is invalid or indices are out of bounds
 func (bm *BrowserManager) GetTabsByRange(start, end int) ([]*rod.Page, error) {
 	pagesWithInfo, err := bm.getSortedPagesWithInfo()
 	if err != nil {
@@ -617,27 +557,17 @@ func (bm *BrowserManager) GetTabsByRange(start, end int) ([]*rod.Page, error) {
 	return rangeTabs, nil
 }
 
-// KillBrowser kills browser processes with remote debugging enabled.
-// If port > 0, kills only the browser on that specific port.
-// If port is 0, kills all browsers with --remote-debugging-port flag enabled.
-// Returns count of killed processes and any error.
 func (bm *BrowserManager) KillBrowser(port int) (int, error) {
-	// Handle specific port case first (exit early)
 	if port > 0 {
 		return bm.killBrowserOnPort(port)
 	}
 
-	// Default case: kill all browsers with remote debugging
 	return bm.killAllBrowsers()
 }
 
-// killBrowserOnPort kills the browser running on a specific port.
-// Uses lsof to find the PID listening on the port, then kills it.
-// Returns 1 if killed, 0 if no browser found, error on failure.
 func (bm *BrowserManager) killBrowserOnPort(port int) (int, error) {
 	logger.Verbose("Checking port %d...", port)
 
-	// Find browser process by port using lsof
 	cmd := exec.Command("lsof", "-ti", fmt.Sprintf(":%d", port))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -652,7 +582,6 @@ func (bm *BrowserManager) killBrowserOnPort(port int) (int, error) {
 		return 0, nil
 	}
 
-	// Parse PID (may be multiple PIDs, take first one - parent process)
 	pidLines := strings.Split(pidStr, "\n")
 	pid, err := strconv.Atoi(strings.TrimSpace(pidLines[0]))
 	if err != nil {
@@ -661,7 +590,6 @@ func (bm *BrowserManager) killBrowserOnPort(port int) (int, error) {
 
 	logger.Verbose("Found browser process (PID %d) on port %d", pid, port)
 
-	// Kill the process
 	killCmd := exec.Command("kill", "-9", fmt.Sprintf("%d", pid))
 	if err := killCmd.Run(); err != nil {
 		return 0, fmt.Errorf("failed to kill browser process (PID %d): %w", pid, err)
@@ -671,8 +599,6 @@ func (bm *BrowserManager) killBrowserOnPort(port int) (int, error) {
 	return 1, nil
 }
 
-// killAllBrowsers kills all browser processes with --remote-debugging-port flag enabled.
-// Returns count of killed processes and any error.
 func (bm *BrowserManager) killAllBrowsers() (int, error) {
 	logger.Verbose("Killing all browser processes with remote debugging...")
 
@@ -682,15 +608,11 @@ func (bm *BrowserManager) killAllBrowsers() (int, error) {
 		return 0, err
 	}
 
-	// Get browser executable base name (e.g., "Google Chrome", "Chromium", "Brave Browser")
 	browserExe := filepath.Base(path)
-	// Strip .app extension on macOS
 	browserExe = strings.TrimSuffix(browserExe, ".app")
 
 	logger.Debug("Searching for processes matching: %s with --remote-debugging-port", browserExe)
 
-	// Find all processes with browser name AND --remote-debugging-port flag
-	// Use ps aux to get full command lines
 	cmd := exec.Command("ps", "aux")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -700,22 +622,17 @@ func (bm *BrowserManager) killAllBrowsers() (int, error) {
 	lines := strings.Split(string(output), "\n")
 	var pids []string
 
-	// Parse ps output for matching processes
 	for _, line := range lines {
-		// Skip if doesn't contain browser name
 		if !strings.Contains(line, browserExe) {
 			continue
 		}
-		// Skip if doesn't contain remote debugging flag
 		if !strings.Contains(line, "--remote-debugging-port") {
 			continue
 		}
-		// Skip grep processes
 		if strings.Contains(line, "grep") {
 			continue
 		}
 
-		// Extract PID (second column in ps aux output)
 		fields := strings.Fields(line)
 		if len(fields) < 2 {
 			continue
@@ -732,7 +649,6 @@ func (bm *BrowserManager) killAllBrowsers() (int, error) {
 
 	logger.Verbose("Killing %d process(es)...", len(pids))
 
-	// Kill each process
 	killedCount := 0
 	for _, pid := range pids {
 		killCmd := exec.Command("kill", "-9", pid)
@@ -751,8 +667,6 @@ func (bm *BrowserManager) killAllBrowsers() (int, error) {
 	return killedCount, nil
 }
 
-// GetBrowserVersion returns the raw version string from the browser's --version flag.
-// Returns the raw output directly without parsing.
 func (bm *BrowserManager) GetBrowserVersion() (string, error) {
 	path, err := bm.findBrowserPath()
 	if err != nil {
@@ -768,15 +682,12 @@ func (bm *BrowserManager) GetBrowserVersion() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-// GetProfilePath returns the profile path for the detected browser and whether it exists.
-// Returns empty string if browser not found or profile path not known.
 func (bm *BrowserManager) GetProfilePath() (string, bool) {
 	path, err := bm.findBrowserPath()
 	if err != nil {
 		return "", false
 	}
 
-	// Find the rule that matches this browser
 	baseName := strings.ToLower(filepath.Base(path))
 	baseName = strings.TrimSuffix(baseName, ".exe")
 	baseName = strings.TrimSuffix(baseName, ".app")
@@ -796,7 +707,6 @@ func (bm *BrowserManager) GetProfilePath() (string, bool) {
 		return "", false
 	}
 
-	// Get home directory
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", false
@@ -815,14 +725,12 @@ func (bm *BrowserManager) GetProfilePath() (string, bool) {
 		profilePath = filepath.Join(home, ".config", matchedRule.profilePathLinux)
 	}
 
-	// Check if path exists
 	_, err = os.Stat(profilePath)
 	exists := err == nil
 
 	return profilePath, exists
 }
 
-// truncateCommandLine truncates a command line for display
 func truncateCommandLine(line string, maxLen int) string {
 	if len(line) <= maxLen {
 		return line
