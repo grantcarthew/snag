@@ -114,6 +114,7 @@ snag -t "(github|gitlab)\.com"                  # Regex: github.com or gitlab.co
 | Combination                  | Behavior                  | Error Message                                                                           |
 | ---------------------------- | ------------------------- | --------------------------------------------------------------------------------------- |
 | `--tab` + `--force-headless` | **Error**                 | `"Cannot use --force-headless with --tab (--tab requires existing browser connection)"` |
+| `--tab` + `--kill-browser`   | **Error**                 | `"Cannot use --kill-browser with --tab (conflicting operations)"`                       |
 | `--tab` + `--open-browser`   | **Warning**, flag ignored | `"Warning: --tab ignored with --open-browser (no content fetching)"`                    |
 
 **Output Control:**
