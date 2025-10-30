@@ -227,7 +227,7 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 	}
 
 	if bm.userDataDir != "" {
-		l = l.Set("user-data-dir", bm.userDataDir)
+		l = l.Set("user-data-dir", bm.userDataDir).KeepUserDataDir()
 		logger.Verbose("Using custom user data directory: %s", bm.userDataDir)
 	}
 
@@ -293,7 +293,7 @@ func (bm *BrowserManager) OpenBrowserOnly() error {
 	}
 
 	if bm.userDataDir != "" {
-		l = l.Set("user-data-dir", bm.userDataDir)
+		l = l.Set("user-data-dir", bm.userDataDir).KeepUserDataDir()
 		logger.Verbose("Using custom user data directory: %s", bm.userDataDir)
 	}
 
@@ -347,7 +347,8 @@ func (bm *BrowserManager) Close() {
 		}
 
 		if bm.launcher != nil {
-			bm.launcher.Cleanup()
+			bm.launcher.Kill()    // Force kill the process (fixes Linux zombie processes)
+			bm.launcher.Cleanup() // Clean up temp dirs (respects KeepUserDataDir flag)
 		}
 	} else if bm.wasLaunched && !bm.launchedHeadless {
 		logger.Verbose("Leaving visible browser running")
