@@ -1124,7 +1124,7 @@ func TestCLI_TabWithURL(t *testing.T) {
 	assertExitCode(t, err, 1)
 
 	// Error should explain the conflict
-	assertContains(t, stderr, "Cannot use --tab with URL argument")
+	assertContains(t, stderr, "Cannot use both --tab and URL arguments")
 
 	_ = stdout
 }
@@ -1500,7 +1500,7 @@ func TestCLI_MultipleURLs_WithTab(t *testing.T) {
 	assertExitCode(t, err, 1)
 
 	output := stdout + stderr
-	assertContains(t, output, "Cannot use --tab with URL argument")
+	assertContains(t, output, "Cannot use both --tab and URL arguments")
 
 	_ = stdout
 }
