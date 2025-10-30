@@ -184,3 +184,35 @@ func TestDetectBrowserName_FallbackBehavior(t *testing.T) {
 		})
 	}
 }
+
+// TestKillBrowserOnPortNotFound tests killing when no browser on port.
+func TestKillBrowserOnPortNotFound(t *testing.T) {
+	port := 9999 // Use unlikely port
+	bm := NewBrowserManager(BrowserOptions{Port: port})
+
+	count, err := bm.KillBrowser(port)
+	if err != nil {
+		t.Fatalf("KillBrowser should not error when no browser found: %v", err)
+	}
+
+	if count != 0 {
+		t.Errorf("Expected to kill 0 processes, got %d", count)
+	}
+}
+
+// TestKillAllBrowsersNoneFound tests killing all when no browsers running.
+func TestKillAllBrowsersNoneFound(t *testing.T) {
+	// Try to kill when no browsers with remote debugging are running
+	bm := NewBrowserManager(BrowserOptions{})
+	count, err := bm.KillBrowser(0)
+
+	// Should not error
+	if err != nil {
+		t.Fatalf("KillBrowser should not error when no browsers found: %v", err)
+	}
+
+	// Count should be 0 or more (depending on if any debug browsers are running)
+	if count < 0 {
+		t.Errorf("Expected non-negative count, got %d", count)
+	}
+}

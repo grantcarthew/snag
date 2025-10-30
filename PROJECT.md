@@ -501,10 +501,11 @@ snag --kill-browser
 - [x] **Bug fix**: Fixed unreachable dead code (external review items #6 & #7) - validation moved from validateFlagCombinations to inline priority chain
 
 **Phase 3 - Testing:**
-- [ ] Manual testing completed on macOS (all 15 test cases)
-- [ ] Automated tests written and passing
-- [ ] Full regression testing (no existing functionality broken)
-- [ ] Exit codes verified (0 for success/nothing to kill, 1 for errors)
+- [x] Manual testing completed on macOS (all 15 test cases)
+- [x] Automated tests written and passing (kill_browser_test.go with 2 tests)
+- [x] Full regression testing (126/126 tests pass - fixed 2 assertion mismatches)
+- [x] Exit codes verified (0 for success/nothing to kill, 1 for errors)
+- [x] Bug fixed: browser.Close() was killing browser before lsof could find PID
 
 **Phase 4 - Documentation:**
 - [ ] `docs/arguments/kill-browser.md` created

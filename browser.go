@@ -628,41 +628,12 @@ func (bm *BrowserManager) KillBrowser(port int) (int, error) {
 }
 
 // killBrowserOnPort kills the browser running on a specific port.
-// Connects via rod to verify it's a browser, extracts PID, kills parent + children.
+// Uses lsof to find the PID listening on the port, then kills it.
 // Returns 1 if killed, 0 if no browser found, error on failure.
 func (bm *BrowserManager) killBrowserOnPort(port int) (int, error) {
 	logger.Verbose("Checking port %d...", port)
 
-	// Try to connect to browser on specified port
-	baseURL := fmt.Sprintf("http://127.0.0.1:%d", port)
-	wsURL, err := launcher.ResolveURL(baseURL)
-	if err != nil {
-		// No browser on this port - not an error
-		logger.Info("No browser running on port %d", port)
-		return 0, nil
-	}
-
-	browser := rod.New().ControlURL(wsURL).Timeout(ConnectTimeout)
-	if err := browser.Connect(); err != nil {
-		// Connection failed - no browser on this port
-		logger.Info("No browser running on port %d", port)
-		return 0, nil
-	}
-
-	// Get browser version info which contains process info
-	version, err := browser.Version()
-	if err != nil {
-		browser.Close()
-		logger.Warning("Connected to port %d but failed to get browser info: %v", port, err)
-		return 0, fmt.Errorf("failed to get browser info on port %d: %w", port, err)
-	}
-
-	// Parse PID from WebSocket debugger URL
-	// Format: ws://127.0.0.1:9222/devtools/browser/<uuid>
-	// We need to find the browser process differently on macOS
-	browser.Close()
-
-	// Find browser process by port
+	// Find browser process by port using lsof
 	cmd := exec.Command("lsof", "-ti", fmt.Sprintf(":%d", port))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -677,14 +648,14 @@ func (bm *BrowserManager) killBrowserOnPort(port int) (int, error) {
 		return 0, nil
 	}
 
-	// Parse PID
-	pid, err := strconv.Atoi(pidStr)
+	// Parse PID (may be multiple PIDs, take first one - parent process)
+	pidLines := strings.Split(pidStr, "\n")
+	pid, err := strconv.Atoi(strings.TrimSpace(pidLines[0]))
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse PID '%s': %w", pidStr, err)
+		return 0, fmt.Errorf("failed to parse PID '%s': %w", pidLines[0], err)
 	}
 
 	logger.Verbose("Found browser process (PID %d) on port %d", pid, port)
-	logger.Debug("Browser version: %s", version.Product)
 
 	// Kill the process
 	killCmd := exec.Command("kill", "-9", fmt.Sprintf("%d", pid))
