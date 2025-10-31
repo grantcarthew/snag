@@ -1,11 +1,12 @@
 # Test Coverage Enhancement Project
 
-**Project Goal**: Enhance test coverage for the snag CLI tool by adding 45-50 new unit tests without modifying any production `.go` code.
+**Project Goal**: Enhance test coverage for the snag CLI tool by adding ~26 new unit tests without modifying any production `.go` code.
 
-**Status**: Planning Complete - Ready for Implementation
-**Estimated Effort**: 8-12 hours
+**Status**: In Progress
+**Estimated Effort**: 4-6 hours
 **Priority**: High
 **Created**: 2025-10-31
+**Updated**: 2025-10-31
 
 ---
 
@@ -30,15 +31,13 @@ The snag CLI tool is a Go application that fetches web content via Chrome DevToo
 
 ### Objectives
 
-1. **Create 2 new test files** for untested modules (`fetch_test.go`, `errors_test.go`)
-2. **Add ~26 tests** to existing test files to cover edge cases and security scenarios
-3. **Achieve this without modifying any production `.go` code** - only pure function testing
-4. **Maintain Go testing best practices** - clear test names, table-driven tests, proper assertions
+1. **Add ~26 tests** to existing test files to cover edge cases and security scenarios
+2. **Achieve this without modifying any production `.go` code** - only pure function testing
+3. **Maintain Go testing best practices** - clear test names, table-driven tests, proper assertions
 
 ### Key Metrics
 
-- **Target**: 45-50 new tests
-- **New files**: 2 (`fetch_test.go`, `errors_test.go`)
+- **Target**: ~26 new tests
 - **Enhanced files**: 4 (`formats_test.go`, `handlers_test.go`, `validate_test.go`, `output_test.go`)
 - **Code changes**: 0 production files modified
 
@@ -52,21 +51,18 @@ The snag CLI tool is a Go application that fetches web content via Chrome DevToo
 |------|-----------|--------|---------------|
 | `main.go` | `cli_test.go` | ✅ Good (integration) | N/A (requires DI) |
 | `browser.go` | `browser_test.go` | ✅ Good | N/A (requires mocking) |
-| **`fetch.go`** | ❌ **NONE** | ⚠️ Critical Gap | **~18 tests** |
+| `fetch.go` | N/A | ✅ Good | N/A (requires mocking) |
 | `formats.go` | `formats_test.go` | ⚠️ Partial | **~16 tests** |
 | `handlers.go` | `handlers_test.go` | ✅ Good | **~3 tests** |
 | `output.go` | `output_test.go` | ✅ Excellent | **~3 tests** |
 | `logger.go` | `logger_test.go` | ✅ Excellent | 0 |
 | `doctor.go` | `doctor_test.go` | ✅ Excellent | 0 |
 | `validate.go` | `validate_test.go` | ✅ Very Good | **~4 tests** |
-| **`errors.go`** | ❌ **NONE** | ⚠️ Critical Gap | **~7 tests** |
+| `errors.go` | N/A | ✅ N/A | 0 (defines constants only) |
 
 ### Testable vs Non-Testable Functions
 
 **Testable (Pure Functions)**:
-- `hasLoginIndicators()` in fetch.go
-- `hasPasswordField()` in fetch.go
-- `wrapError()` in errors.go
 - `convertToMarkdown()` in formats.go (with mock HTML)
 - `extractPlainText()` in formats.go (with mock HTML)
 - All validation functions in validate.go
@@ -103,58 +99,42 @@ The snag CLI tool is a Go application that fetches web content via Chrome DevToo
 
 ## Project Phases
 
-### Phase 1: Create Missing Test Files (High Priority)
-
-**Estimated Time**: 3-4 hours
-
-#### Task 1.1: Create `fetch_test.go`
-- Create new test file with package header and copyright
-- Add ~18 tests for pure functions
-- Focus on `hasLoginIndicators()`, `hasPasswordField()`
-
-#### Task 1.2: Create `errors_test.go`
-- Create new test file with package header and copyright
-- Add ~7 tests for error handling
-- Focus on `wrapError()` and error type checking
-
----
-
-### Phase 2: Enhance formats_test.go (Medium Priority)
+### Phase 1: Enhance formats_test.go (High Priority)
 
 **Estimated Time**: 2-3 hours
 
-#### Task 2.1: Add Markdown Conversion Edge Cases
+#### Task 1.1: Add Markdown Conversion Edge Cases
 - Add 16 new test cases for complex HTML scenarios
 - Cover nested lists, tables, images, blockquotes, definition lists
 - Test malformed HTML and special characters
 
 ---
 
-### Phase 3: Enhance Other Test Files (Medium Priority)
+### Phase 2: Enhance Other Test Files (Medium Priority)
 
-**Estimated Time**: 2-3 hours
+**Estimated Time**: 1-2 hours
 
-#### Task 3.1: Enhance `handlers_test.go`
+#### Task 2.1: Enhance `handlers_test.go`
 - Add 3 tests for large lists and Unicode handling
 
-#### Task 3.2: Enhance `validate_test.go`
+#### Task 2.2: Enhance `validate_test.go`
 - Add 4 security-focused tests (IDN attacks, extremely long URLs)
 
-#### Task 3.3: Enhance `output_test.go`
+#### Task 2.3: Enhance `output_test.go`
 - Add 3 tests for Unicode normalization and high conflict counts
 
 ---
 
-### Phase 4: Verification and Cleanup (Low Priority)
+### Phase 3: Verification and Cleanup (Low Priority)
 
 **Estimated Time**: 1 hour
 
-#### Task 4.1: Run Complete Test Suite
+#### Task 3.1: Run Complete Test Suite
 - Execute `go test ./...`
 - Verify all tests pass
 - Check test coverage with `go test -cover ./...`
 
-#### Task 4.2: Code Review and Formatting
+#### Task 3.2: Code Review and Formatting
 - Run `gofmt` on all test files
 - Verify consistent style
 - Add any missing documentation
@@ -163,268 +143,13 @@ The snag CLI tool is a Go application that fetches web content via Chrome DevToo
 
 ## Detailed Task Specifications
 
-### Phase 1, Task 1.1: Create fetch_test.go
-
-**Location**: `/Users/gcarthew/Projects/snag/fetch_test.go`
-
-**Required Tests**:
-
-#### Test 1.1.1: `TestHasLoginIndicators`
-Test the `hasLoginIndicators()` function which detects login-related keywords in HTML.
-
-**Test Cases** (10 tests):
-1. HTML with "sign in" (lowercase)
-2. HTML with "Sign In" (title case)
-3. HTML with "LOG IN" (uppercase)
-4. HTML with "login" (single word)
-5. HTML with "signin" (no space)
-6. HTML with "authentication"
-7. HTML with "Log In to Your Account" (in context)
-8. HTML without login keywords - should return false
-9. Empty HTML string - should return false
-10. Very long HTML with login keyword at end - should return true
-
-**Example Test Structure**:
-```go
-func TestHasLoginIndicators(t *testing.T) {
-    tests := []struct {
-        name     string
-        html     string
-        expected bool
-    }{
-        {
-            name:     "lowercase sign in",
-            html:     "<html><body><h1>sign in</h1></body></html>",
-            expected: true,
-        },
-        {
-            name:     "no login keywords",
-            html:     "<html><body><h1>Welcome to Example</h1></body></html>",
-            expected: false,
-        },
-        // ... more test cases
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            result := hasLoginIndicators(tt.html)
-            if result != tt.expected {
-                t.Errorf("hasLoginIndicators() = %v, expected %v", result, tt.expected)
-            }
-        })
-    }
-}
-```
-
-#### Test 1.1.2: `TestHasPasswordField`
-Test the `hasPasswordField()` function which detects password input fields in HTML.
-
-**Test Cases** (8 tests):
-1. HTML with `<input type="password">`
-2. HTML with `<input type="PASSWORD">` (uppercase)
-3. HTML with `<input TYPE="password">` (uppercase attribute)
-4. HTML with multiple password fields
-5. HTML with `<input type="text">` only - should return false
-6. HTML with "password" in text but no input field - should return false
-7. Empty HTML - should return false
-8. Malformed HTML with unclosed tags but valid password input
-
-**Example Test Structure**:
-```go
-func TestHasPasswordField(t *testing.T) {
-    tests := []struct {
-        name     string
-        html     string
-        expected bool
-    }{
-        {
-            name:     "standard password input",
-            html:     `<input type="password" name="pwd">`,
-            expected: true,
-        },
-        {
-            name:     "uppercase type attribute",
-            html:     `<input type="PASSWORD">`,
-            expected: true,
-        },
-        {
-            name:     "multiple password fields",
-            html:     `<input type="password"><input type="password">`,
-            expected: true,
-        },
-        {
-            name:     "no password field",
-            html:     `<input type="text" name="username">`,
-            expected: false,
-        },
-        {
-            name:     "password in text only",
-            html:     `<p>Please enter your password</p>`,
-            expected: false,
-        },
-        {
-            name:     "empty html",
-            html:     "",
-            expected: false,
-        },
-        // ... more test cases
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            result := hasPasswordField(tt.html)
-            if result != tt.expected {
-                t.Errorf("hasPasswordField() = %v, expected %v for HTML: %s", result, tt.expected, tt.html)
-            }
-        })
-    }
-}
-```
-
-**Note**: The function `detectLoginForm()` requires CDP mocking, so skip it for this project.
-
----
-
-### Phase 1, Task 1.2: Create errors_test.go
-
-**Location**: `/Users/gcarthew/Projects/snag/errors_test.go`
-
-**Required Tests**:
-
-#### Test 1.2.1: `TestWrapError`
-Test the `wrapError()` function which wraps errors with additional context.
-
-**Test Cases** (5 tests):
-1. Wrap a standard error with context message
-2. Wrap a nil error (should still create error with context)
-3. Wrap an already-wrapped error (nested wrapping)
-4. Wrap with empty context message
-5. Wrap complex error chain and verify full message
-
-**Example Test Structure**:
-```go
-func TestWrapError(t *testing.T) {
-    tests := []struct {
-        name        string
-        err         error
-        msg         string
-        shouldBeNil bool
-        contains    []string
-    }{
-        {
-            name:        "wrap standard error",
-            err:         errors.New("original error"),
-            msg:         "context message",
-            shouldBeNil: false,
-            contains:    []string{"context message", "original error"},
-        },
-        {
-            name:        "wrap nil error",
-            err:         nil,
-            msg:         "context message",
-            shouldBeNil: false,
-            contains:    []string{"context message"},
-        },
-        {
-            name:        "wrap wrapped error",
-            err:         wrapError(errors.New("base"), "first wrap"),
-            msg:         "second wrap",
-            shouldBeNil: false,
-            contains:    []string{"second wrap", "first wrap", "base"},
-        },
-        // ... more test cases
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            result := wrapError(tt.err, tt.msg)
-
-            if tt.shouldBeNil && result != nil {
-                t.Errorf("expected nil error, got: %v", result)
-            }
-
-            if !tt.shouldBeNil && result == nil {
-                t.Error("expected non-nil error, got nil")
-            }
-
-            if result != nil {
-                errStr := result.Error()
-                for _, substr := range tt.contains {
-                    if !strings.Contains(errStr, substr) {
-                        t.Errorf("error message %q should contain %q", errStr, substr)
-                    }
-                }
-            }
-        })
-    }
-}
-```
-
-#### Test 1.2.2: `TestErrorConstants`
-Test that all error constants are properly defined.
-
-**Test Cases** (1 test with 8 checks):
-```go
-func TestErrorConstants(t *testing.T) {
-    errors := []struct {
-        name string
-        err  error
-    }{
-        {"ErrBrowserNotFound", ErrBrowserNotFound},
-        {"ErrBrowserNotRunning", ErrBrowserNotRunning},
-        {"ErrPortInUse", ErrPortInUse},
-        {"ErrTimeout", ErrTimeout},
-        {"ErrInvalidURL", ErrInvalidURL},
-        {"ErrInvalidFormat", ErrInvalidFormat},
-        {"ErrConnectionFailed", ErrConnectionFailed},
-        {"ErrAuthRequired", ErrAuthRequired},
-    }
-
-    for _, tc := range errors {
-        t.Run(tc.name, func(t *testing.T) {
-            if tc.err == nil {
-                t.Errorf("%s is nil", tc.name)
-            }
-            if tc.err.Error() == "" {
-                t.Errorf("%s has empty error message", tc.name)
-            }
-        })
-    }
-}
-```
-
-#### Test 1.2.3: `TestErrorTypeChecking`
-Test that error type checking works with `errors.Is()`.
-
-**Test Cases** (1 test):
-```go
-func TestErrorTypeChecking(t *testing.T) {
-    // Test that errors.Is works correctly
-    if !errors.Is(ErrBrowserNotFound, ErrBrowserNotFound) {
-        t.Error("errors.Is should return true for same error")
-    }
-
-    if errors.Is(ErrBrowserNotFound, ErrBrowserNotRunning) {
-        t.Error("errors.Is should return false for different errors")
-    }
-
-    // Test wrapped error
-    wrapped := wrapError(ErrTimeout, "additional context")
-    if !errors.Is(wrapped, ErrTimeout) {
-        t.Error("errors.Is should work with wrapped errors")
-    }
-}
-```
-
----
-
-### Phase 2, Task 2.1: Enhance formats_test.go
+### Phase 1, Task 1.1: Enhance formats_test.go
 
 **Location**: `/Users/gcarthew/Projects/snag/formats_test.go`
 
 **Required Tests** (16 new tests):
 
-#### Test 2.1.1: `TestConvertToMarkdown_NestedLists`
+#### Test 1.1.1: `TestConvertToMarkdown_NestedLists`
 **Test Cases** (2 tests):
 1. Nested unordered lists (ul > li > ul)
 2. Nested ordered lists (ol > li > ol)
@@ -459,7 +184,7 @@ func TestConvertToMarkdown_NestedLists(t *testing.T) {
 }
 ```
 
-#### Test 2.1.2: `TestConvertToMarkdown_ComplexTables`
+#### Test 1.1.2: `TestConvertToMarkdown_ComplexTables`
 **Test Cases** (2 tests):
 1. Table with colspan/rowspan
 2. Table with header and footer
@@ -496,7 +221,7 @@ func TestConvertToMarkdown_ComplexTables(t *testing.T) {
 }
 ```
 
-#### Test 2.1.3: `TestConvertToMarkdown_Images`
+#### Test 1.1.3: `TestConvertToMarkdown_Images`
 **Test Cases** (2 tests):
 1. Image with alt text
 2. Multiple images
@@ -525,7 +250,7 @@ func TestConvertToMarkdown_Images(t *testing.T) {
 }
 ```
 
-#### Test 2.1.4: `TestConvertToMarkdown_Blockquotes`
+#### Test 1.1.4: `TestConvertToMarkdown_Blockquotes`
 **Test Cases** (2 tests):
 1. Simple blockquote
 2. Nested blockquotes
@@ -555,7 +280,7 @@ func TestConvertToMarkdown_Blockquotes(t *testing.T) {
 }
 ```
 
-#### Test 2.1.5: `TestConvertToMarkdown_DefinitionLists`
+#### Test 1.1.5: `TestConvertToMarkdown_DefinitionLists`
 **Test Cases** (2 tests):
 1. Simple definition list
 2. Multiple definitions per term
@@ -588,7 +313,7 @@ func TestConvertToMarkdown_DefinitionLists(t *testing.T) {
 }
 ```
 
-#### Test 2.1.6: `TestConvertToMarkdown_MalformedHTML`
+#### Test 1.1.6: `TestConvertToMarkdown_MalformedHTML`
 **Test Cases** (3 tests):
 1. Unclosed tags
 2. Mismatched tags
@@ -633,7 +358,7 @@ func TestConvertToMarkdown_MalformedHTML(t *testing.T) {
 }
 ```
 
-#### Test 2.1.7: `TestConvertToMarkdown_SpecialCharacters`
+#### Test 1.1.7: `TestConvertToMarkdown_SpecialCharacters`
 **Test Cases** (3 tests):
 1. HTML entities (`&nbsp;`, `&copy;`, `&trade;`)
 2. Unicode characters
@@ -664,7 +389,7 @@ func TestConvertToMarkdown_SpecialCharacters(t *testing.T) {
 }
 ```
 
-#### Test 2.1.8: `TestExtractPlainText_HiddenElements`
+#### Test 1.1.8: `TestExtractPlainText_HiddenElements`
 **Test Cases** (1 test):
 ```go
 func TestExtractPlainText_HiddenElements(t *testing.T) {
@@ -696,11 +421,11 @@ func TestExtractPlainText_HiddenElements(t *testing.T) {
 
 ---
 
-### Phase 3, Task 3.1: Enhance handlers_test.go
+### Phase 2, Task 2.1: Enhance handlers_test.go
 
 **Required Tests** (3 tests):
 
-#### Test 3.1.1: `TestDisplayTabList_LargeLists`
+#### Test 2.1.1: `TestDisplayTabList_LargeLists`
 ```go
 func TestDisplayTabList_LargeLists(t *testing.T) {
     // Create 100 tabs
@@ -732,7 +457,7 @@ func TestDisplayTabList_LargeLists(t *testing.T) {
 }
 ```
 
-#### Test 3.1.2: `TestFormatTabLine_Unicode`
+#### Test 2.1.2: `TestFormatTabLine_Unicode`
 ```go
 func TestFormatTabLine_Unicode(t *testing.T) {
     tests := []struct {
@@ -773,7 +498,7 @@ func TestFormatTabLine_Unicode(t *testing.T) {
 }
 ```
 
-#### Test 3.1.3: `TestStripURLParams_EdgeCases`
+#### Test 2.1.3: `TestStripURLParams_EdgeCases`
 ```go
 func TestStripURLParams_EdgeCases(t *testing.T) {
     tests := []struct {
@@ -816,11 +541,11 @@ func TestStripURLParams_EdgeCases(t *testing.T) {
 
 ---
 
-### Phase 3, Task 3.2: Enhance validate_test.go
+### Phase 2, Task 2.2: Enhance validate_test.go
 
 **Required Tests** (4 tests):
 
-#### Test 3.2.1: `TestValidateURL_IDNHomograph`
+#### Test 2.2.1: `TestValidateURL_IDNHomograph`
 ```go
 func TestValidateURL_IDNHomograph(t *testing.T) {
     // IDN (Internationalized Domain Names) homograph attack tests
@@ -862,7 +587,7 @@ func TestValidateURL_IDNHomograph(t *testing.T) {
 }
 ```
 
-#### Test 3.2.2: `TestValidateURL_ExtremelyLong`
+#### Test 2.2.2: `TestValidateURL_ExtremelyLong`
 ```go
 func TestValidateURL_ExtremelyLong(t *testing.T) {
     tests := []struct {
@@ -894,7 +619,7 @@ func TestValidateURL_ExtremelyLong(t *testing.T) {
 }
 ```
 
-#### Test 3.2.3: `TestValidateUserAgent_ExtremeLength`
+#### Test 2.2.3: `TestValidateUserAgent_ExtremeLength`
 ```go
 func TestValidateUserAgent_ExtremeLength(t *testing.T) {
     tests := []struct {
@@ -920,7 +645,7 @@ func TestValidateUserAgent_ExtremeLength(t *testing.T) {
 }
 ```
 
-#### Test 3.2.4: `TestValidateWaitFor_Injection`
+#### Test 2.2.4: `TestValidateWaitFor_Injection`
 ```go
 func TestValidateWaitFor_Injection(t *testing.T) {
     // Test that CSS selectors don't allow script injection
@@ -961,11 +686,11 @@ func TestValidateWaitFor_Injection(t *testing.T) {
 
 ---
 
-### Phase 3, Task 3.3: Enhance output_test.go
+### Phase 2, Task 2.3: Enhance output_test.go
 
 **Required Tests** (3 tests):
 
-#### Test 3.3.1: `TestSlugifyTitle_UnicodeNormalization`
+#### Test 2.3.1: `TestSlugifyTitle_UnicodeNormalization`
 ```go
 func TestSlugifyTitle_UnicodeNormalization(t *testing.T) {
     tests := []struct {
@@ -1006,7 +731,7 @@ func TestSlugifyTitle_UnicodeNormalization(t *testing.T) {
 }
 ```
 
-#### Test 3.3.2: `TestGenerateFilename_InvalidChars`
+#### Test 2.3.2: `TestGenerateFilename_InvalidChars`
 ```go
 func TestGenerateFilename_InvalidChars(t *testing.T) {
     // Test filesystem-restricted characters
@@ -1041,7 +766,7 @@ func TestGenerateFilename_InvalidChars(t *testing.T) {
 }
 ```
 
-#### Test 3.3.3: `TestResolveConflict_HighCount`
+#### Test 2.3.3: `TestResolveConflict_HighCount`
 ```go
 func TestResolveConflict_HighCount(t *testing.T) {
     tmpDir := t.TempDir()
@@ -1149,23 +874,17 @@ func assertContains(t *testing.T, output, expected string) {
 ### Phase Completion Criteria
 
 **Phase 1 Complete When**:
-- ✅ `fetch_test.go` created with ~18 tests
-- ✅ `errors_test.go` created with ~7 tests
-- ✅ All tests pass: `go test ./... -v`
-- ✅ Code formatted: `gofmt -w *_test.go`
-
-**Phase 2 Complete When**:
 - ✅ `formats_test.go` has 16 new tests
 - ✅ All edge cases covered (nested lists, tables, images, blockquotes, etc.)
 - ✅ All tests pass
 
-**Phase 3 Complete When**:
+**Phase 2 Complete When**:
 - ✅ `handlers_test.go` has 3 new tests
 - ✅ `validate_test.go` has 4 new tests
 - ✅ `output_test.go` has 3 new tests
 - ✅ All tests pass
 
-**Phase 4 Complete When**:
+**Phase 3 Complete When**:
 - ✅ `go test ./...` passes with 0 failures
 - ✅ `go test -cover ./...` shows improved coverage
 - ✅ All test files properly formatted
@@ -1173,8 +892,7 @@ func assertContains(t *testing.T, output, expected string) {
 
 ### Overall Project Success
 
-✅ **45-50 new tests added**
-✅ **2 new test files created**
+✅ **~26 new tests added**
 ✅ **0 production code changes**
 ✅ **All tests passing**
 ✅ **Code follows existing patterns and style**
@@ -1195,8 +913,8 @@ go test ./... -v
 # Run tests with coverage
 go test -cover ./...
 
-# Run specific test file
-go test -v -run TestHasLoginIndicators
+# Run specific test
+go test -v -run TestConvertToMarkdown
 
 # Run tests in specific package
 go test -v ./
@@ -1240,11 +958,10 @@ go tool cover -html=coverage.out
 
 | Phase | Tasks | Estimated Time | Priority |
 |-------|-------|----------------|----------|
-| Phase 1 | Create fetch_test.go, errors_test.go | 3-4 hours | High |
-| Phase 2 | Enhance formats_test.go | 2-3 hours | Medium |
-| Phase 3 | Enhance handlers/validate/output tests | 2-3 hours | Medium |
-| Phase 4 | Verification and cleanup | 1 hour | Low |
-| **Total** | | **8-12 hours** | |
+| Phase 1 | Enhance formats_test.go | 2-3 hours | High |
+| Phase 2 | Enhance handlers/validate/output tests | 1-2 hours | Medium |
+| Phase 3 | Verification and cleanup | 1 hour | Low |
+| **Total** | | **4-6 hours** | |
 
 ---
 
