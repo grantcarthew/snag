@@ -349,3 +349,192 @@ func TestStripURLParams_EdgeCases(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadURLsFromReader(t *testing.T) {
+	// Setup logger for tests
+	logger = NewLogger(LevelQuiet)
+
+	tests := []struct {
+		name        string
+		input       string
+		source      string
+		expected    []string
+		expectError bool
+	}{
+		{
+			name:   "single URL",
+			input:  "https://example.com\n",
+			source: "stdin",
+			expected: []string{
+				"https://example.com",
+			},
+			expectError: false,
+		},
+		{
+			name: "multiple URLs",
+			input: `https://example.com
+https://github.com
+https://golang.org
+`,
+			source: "stdin",
+			expected: []string{
+				"https://example.com",
+				"https://github.com",
+				"https://golang.org",
+			},
+			expectError: false,
+		},
+		{
+			name: "URLs with comments",
+			input: `# This is a comment
+https://example.com
+// Another comment
+https://github.com # inline comment
+https://golang.org // inline comment
+`,
+			source: "stdin",
+			expected: []string{
+				"https://example.com",
+				"https://github.com",
+				"https://golang.org",
+			},
+			expectError: false,
+		},
+		{
+			name: "URLs with blank lines",
+			input: `
+https://example.com
+
+https://github.com
+
+
+https://golang.org
+
+`,
+			source: "stdin",
+			expected: []string{
+				"https://example.com",
+				"https://github.com",
+				"https://golang.org",
+			},
+			expectError: false,
+		},
+		{
+			name: "auto-prepend https",
+			input: `example.com
+github.com/user/repo
+`,
+			source: "stdin",
+			expected: []string{
+				"https://example.com",
+				"https://github.com/user/repo",
+			},
+			expectError: false,
+		},
+		{
+			name: "mixed schemes",
+			input: `https://example.com
+http://insecure.com
+example.org
+`,
+			source: "stdin",
+			expected: []string{
+				"https://example.com",
+				"http://insecure.com",
+				"https://example.org",
+			},
+			expectError: false,
+		},
+		{
+			name:        "empty input",
+			input:       "",
+			source:      "stdin",
+			expected:    nil,
+			expectError: true, // ErrNoValidURLs
+		},
+		{
+			name: "only comments",
+			input: `# Comment 1
+// Comment 2
+# Comment 3
+`,
+			source:      "stdin",
+			expected:    nil,
+			expectError: true, // ErrNoValidURLs
+		},
+		{
+			name: "only blank lines",
+			input: `
+
+
+`,
+			source:      "stdin",
+			expected:    nil,
+			expectError: true, // ErrNoValidURLs
+		},
+		{
+			name: "invalid URLs skipped",
+			input: `https://example.com
+not a valid url with spaces
+https://github.com
+`,
+			source: "stdin",
+			expected: []string{
+				"https://example.com",
+				"https://github.com",
+			},
+			expectError: false,
+		},
+		{
+			name: "complex real-world example",
+			input: `# My favorite sites
+https://example.com
+github.com/user/repo # My project
+
+// Work URLs
+https://internal.company.com
+docs.company.com/api  // API docs
+
+# End of list
+`,
+			source: "stdin",
+			expected: []string{
+				"https://example.com",
+				"https://github.com/user/repo",
+				"https://internal.company.com",
+				"https://docs.company.com/api",
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader := strings.NewReader(tt.input)
+			urls, err := loadURLsFromReader(reader, tt.source)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+
+				if len(urls) != len(tt.expected) {
+					t.Errorf("got %d URLs, expected %d", len(urls), len(tt.expected))
+				}
+
+				for i, url := range urls {
+					if i >= len(tt.expected) {
+						break
+					}
+					if url != tt.expected[i] {
+						t.Errorf("URL[%d] = %q, expected %q", i, url, tt.expected[i])
+					}
+				}
+			}
+		})
+	}
+}

@@ -901,23 +901,18 @@ func plural(n int) string {
 	return "s"
 }
 
-// loadURLsFromFile reads and parses a URL file, returning a list of valid URLs.
-// File format supports:
+// loadURLsFromReader reads and parses URLs from an io.Reader, returning a list of valid URLs.
+// Format supports:
 //   - Full-line comments starting with # or //
 //   - Inline comments with " #" or " //"
 //   - Blank lines (ignored)
 //   - Auto-prepends https:// if no scheme present
 //   - Invalid URLs are logged as warnings and skipped
-func loadURLsFromFile(filename string) ([]string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		logger.Error("Failed to open URL file: %s", filename)
-		return nil, fmt.Errorf("failed to open URL file: %w", err)
-	}
-	defer file.Close()
-
+//
+// The source parameter is used for logging (e.g., "stdin", "urls.txt").
+func loadURLsFromReader(reader io.Reader, source string) ([]string, error) {
 	var urls []string
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(reader)
 	lineNum := 0
 
 	for scanner.Scan() {
@@ -960,15 +955,38 @@ func loadURLsFromFile(filename string) ([]string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading file: %w", err)
+		return nil, fmt.Errorf("error reading from %s: %w", source, err)
 	}
 
 	if len(urls) == 0 {
 		return nil, ErrNoValidURLs
 	}
 
-	logger.Verbose("Loaded %d URLs from %s", len(urls), filename)
+	logger.Verbose("Loaded %d URLs from %s", len(urls), source)
 	return urls, nil
+}
+
+// loadURLsFromFile reads and parses a URL file, returning a list of valid URLs.
+// Supports file path or "-" for stdin.
+// File format supports:
+//   - Full-line comments starting with # or //
+//   - Inline comments with " #" or " //"
+//   - Blank lines (ignored)
+//   - Auto-prepends https:// if no scheme present
+//   - Invalid URLs are logged as warnings and skipped
+func loadURLsFromFile(filename string) ([]string, error) {
+	if filename == "-" {
+		return loadURLsFromReader(os.Stdin, "stdin")
+	}
+
+	file, err := os.Open(filename)
+	if err != nil {
+		logger.Error("Failed to open URL file: %s", filename)
+		return nil, fmt.Errorf("failed to open URL file: %w", err)
+	}
+	defer file.Close()
+
+	return loadURLsFromReader(file, filename)
 }
 
 // handleKillBrowser kills browser processes with remote debugging enabled.

@@ -1,13 +1,14 @@
 # `--url-file FILE`
 
-**Status:** Complete (2025-10-22)
+**Status:** Complete (2025-10-22, stdin support added 2025-10-31)
 
 #### Validation Rules
 
 **File Access:**
 
-- File must exist and be readable
+- File must exist and be readable (or use `-` for stdin)
 - File path can be relative or absolute
+- Special value `-` reads from stdin (standard Unix convention)
 - Permission denied → Error: `"failed to open URL file: {error}"`
 - File not found → Error: `"Failed to open URL file: {filename}"`
 - Path is directory → Error: `"failed to open URL file: {error}"`
@@ -59,6 +60,31 @@ snag --url-file urls.txt
 - Loads all valid URLs from file
 - Auto-saves to current directory with auto-generated names (never stdout)
 - Processes as batch operation
+
+**Reading from stdin:**
+
+```bash
+# Pipe from echo
+echo "example.com" | snag --url-file -
+
+# Pipe from file
+cat urls.txt | snag --url-file -
+
+# Pipe from command
+grep "^https" urls.txt | snag --url-file - -d output/
+
+# Heredoc
+snag --url-file - <<EOF
+# My URLs
+example.com
+github.com
+EOF
+```
+
+- Use `-` as the filename to read from stdin
+- Follows standard Unix convention (like `tar -xzf -`, `kubectl apply -f -`)
+- Same format rules apply (comments, blank lines, auto-https, etc.)
+- Source logged as "stdin" in verbose mode
 
 **File Format Example:**
 
@@ -158,6 +184,12 @@ snag --url-file urls.txt --timeout 60              # 60s timeout per URL
 snag --url-file urls.txt --wait-for ".content"     # Wait on every page
 snag --url-file urls.txt --open-browser            # Open in tabs, no fetch
 snag --url-file f1.txt --url-file f2.txt           # Uses f2.txt (last wins)
+
+# Stdin examples
+echo "example.com" | snag --url-file -             # Single URL from stdin
+cat urls.txt | snag --url-file -                   # Pipe file to stdin
+printf "example.com\ngithub.com\n" | snag --url-file - -d output/
+cat urls.txt | snag --url-file - --format html     # HTML format from stdin
 ```
 
 **Invalid:**
@@ -219,23 +251,31 @@ Batch complete: 2 succeeded, 0 failed
 
 - Flag definition: `main.go:init()`
 - Handler logic: `main.go:runCobra()`
-- URL loading: `validate.go:loadURLsFromFile()`
+- URL loading: `handlers.go:loadURLsFromFile()` and `handlers.go:loadURLsFromReader()`
 
 **Processing Order:**
 
-1. Load URLs from file (if `--url-file` provided)
+1. Load URLs from file or stdin (if `--url-file` provided)
 2. Append command-line URL arguments
 3. Validate all URLs in merged list
 4. Process as batch operation with auto-generated filenames
 
 **Key Functions:**
 
-- `validate.go:loadURLsFromFile()` - Reads and validates URL file
+- `handlers.go:loadURLsFromFile()` - Entry point, handles `-` for stdin
+- `handlers.go:loadURLsFromReader()` - Core parsing logic (used by both file and stdin)
 - File validation happens before CLI URL validation
 - Invalid URLs logged with line numbers for debugging
+
+**Stdin Support:**
+
+- `--url-file -` detects stdin and delegates to `loadURLsFromReader(os.Stdin, "stdin")`
+- No auto-detection of piped stdin (explicit `-` required)
+- Prevents hanging on terminal input
+- Source name "stdin" used in log messages
 
 **Output Behavior:**
 
 - URLs from `--url-file` always trigger batch mode (auto-save, never stdout)
-- Even single URL from file gets auto-generated filename
+- Even single URL from file/stdin gets auto-generated filename
 - Combines with inline URLs for total count

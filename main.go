@@ -130,6 +130,8 @@ EXAMPLES:
   snag example.com github.com          # Auto-generated filenames to pwd
   snag -d output/ url1 url2 url3
   snag --url-file urls.txt -d ./pages/
+  cat urls.txt | snag --url-file -     # Read from stdin
+  echo "example.com" | snag --url-file -
 
   # Work with browser tabs (index and listed in alphabetical order)
   snag --list-tabs                     # List all open tabs
@@ -151,7 +153,7 @@ OPTIONS:
   -l, --list-tabs              List all open tabs in the browser
   -t, --tab int|string         Fetch from existing tab by pattern (tab number or string)
   -a, --all-tabs               Process all open browser tabs (saves with auto-generated filenames)
-      --url-file string        Read URLs from file (one per line, supports comments)
+      --url-file string        Read URLs from file or stdin with "-" (one per line, supports comments)
 
   -f, --format string          Output format: md | html | text | pdf | png (default md)
   -o, --output string          Save output to file instead of stdout
