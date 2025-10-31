@@ -26,9 +26,6 @@ const (
 	BytesPerKB      = 1024.0 // Bytes in a kilobyte
 )
 
-// markdownConverter is a reusable HTML-to-Markdown converter.
-// Created once at package initialization with all necessary plugins.
-// The converter is stateless and safe for concurrent use.
 var markdownConverter = converter.NewConverter(
 	converter.WithPlugins(
 		base.NewBasePlugin(),
@@ -38,7 +35,6 @@ var markdownConverter = converter.NewConverter(
 	),
 )
 
-// ContentConverter handles content format conversion and output
 type ContentConverter struct {
 	format string
 }
@@ -49,7 +45,6 @@ func NewContentConverter(format string) *ContentConverter {
 	}
 }
 
-// Process processes the HTML content based on format and outputs it
 func (cc *ContentConverter) Process(html string, outputFile string) error {
 	var content string
 	var err error
@@ -84,7 +79,6 @@ func (cc *ContentConverter) Process(html string, outputFile string) error {
 }
 
 func (cc *ContentConverter) convertToMarkdown(html string) (string, error) {
-	// Reuse package-level converter (stateless, thread-safe)
 	markdown, err := markdownConverter.ConvertString(html)
 	if err != nil {
 		return "", err
@@ -110,7 +104,6 @@ func (cc *ContentConverter) writeToStdout(content string) error {
 		return fmt.Errorf("failed to write to stdout: %w", err)
 	}
 
-	// Log success to stderr (so it doesn't mix with content)
 	logger.Debug("Wrote %d bytes to stdout", len(content))
 
 	return nil
@@ -134,7 +127,6 @@ func (cc *ContentConverter) writeToFile(content string, filename string) error {
 	return nil
 }
 
-// ProcessPage processes content from a Rod page for binary formats (PDF, PNG)
 func (cc *ContentConverter) ProcessPage(page *rod.Page, outputFile string) error {
 	var data []byte
 	var err error
@@ -168,9 +160,8 @@ func (cc *ContentConverter) ProcessPage(page *rod.Page, outputFile string) error
 }
 
 func (cc *ContentConverter) generatePDF(page *rod.Page) ([]byte, error) {
-	// Use Chrome's print-to-PDF with default settings (locale-aware paper size)
 	stream, err := page.PDF(&proto.PagePrintToPDF{
-		PrintBackground: true, // Include background graphics
+		PrintBackground: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("PDF generation failed: %w", err)
@@ -203,7 +194,6 @@ func (cc *ContentConverter) writeBinaryToStdout(data []byte) error {
 		return fmt.Errorf("failed to write to stdout: %w", err)
 	}
 
-	// Log success to stderr (so it doesn't mix with content)
 	logger.Debug("Wrote %d bytes to stdout", len(data))
 
 	return nil

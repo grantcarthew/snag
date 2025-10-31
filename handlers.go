@@ -28,7 +28,6 @@ func snag(config *Config) error {
 	browserManager = bm
 	browserMutex.Unlock()
 
-	// Ensure browser cleanup on all exit paths
 	defer func() {
 		if config.CloseTab {
 			logger.Verbose("Cleanup: closing tab and browser if needed")
@@ -107,7 +106,6 @@ func snag(config *Config) error {
 	return processPageContent(page, config.Format, config.OutputFile)
 }
 
-// processPageContent handles format conversion for all output types
 func processPageContent(page *rod.Page, format string, outputFile string) error {
 	converter := NewContentConverter(format)
 
@@ -171,9 +169,6 @@ func stripURLParams(url string) string {
 	return url
 }
 
-// formatTabLine formats a single tab line for display with optional truncation
-// Normal mode: "  [N] URL (Title)" with 120 char limit
-// Verbose mode: "  [N] full-url - Title" with no truncation
 func formatTabLine(index int, title, url string, maxLength int, verbose bool) string {
 	if verbose {
 		if title == "" {
@@ -221,8 +216,6 @@ func displayTabList(tabs []TabInfo, w io.Writer, verbose bool) {
 		fmt.Fprintf(w, "%s\n", line)
 	}
 }
-
-// Handler functions for CLI commands
 
 func handleListTabs(cmd *cobra.Command) error {
 	bm, err := connectToExistingBrowser(port)
@@ -508,7 +501,6 @@ func handleTabFetch(cmd *cobra.Command) error {
 	return processPageContent(page, outputFormat, outputFile)
 }
 
-// processBatchTabs processes multiple tabs with common batch logic
 func processBatchTabs(pages []*rod.Page, config *Config) error {
 	timestamp := time.Now()
 
@@ -737,8 +729,6 @@ func handleMultipleURLs(cmd *cobra.Command, urls []string) error {
 	outputFile := strings.TrimSpace(output)
 	outDir := strings.TrimSpace(outputDir)
 
-	// Note: --output + multiple URLs conflict is validated in validateFlagCombinations()
-
 	outputFormat := normalizeFormat(format)
 	if err := validateFormat(outputFormat); err != nil {
 		return err
@@ -814,7 +804,6 @@ func handleMultipleURLs(cmd *cobra.Command, urls []string) error {
 		return err
 	}
 
-	// Warn if --close-tab is used with --force-headless (tabs close automatically)
 	if closeTab && forceHead {
 		logger.Warning("--close-tab is ignored in headless mode (tabs close automatically)")
 	}
@@ -901,15 +890,6 @@ func plural(n int) string {
 	return "s"
 }
 
-// loadURLsFromReader reads and parses URLs from an io.Reader, returning a list of valid URLs.
-// Format supports:
-//   - Full-line comments starting with # or //
-//   - Inline comments with " #" or " //"
-//   - Blank lines (ignored)
-//   - Auto-prepends https:// if no scheme present
-//   - Invalid URLs are logged as warnings and skipped
-//
-// The source parameter is used for logging (e.g., "stdin", "urls.txt").
 func loadURLsFromReader(reader io.Reader, source string) ([]string, error) {
 	var urls []string
 	scanner := bufio.NewScanner(reader)
@@ -936,7 +916,6 @@ func loadURLsFromReader(reader io.Reader, source string) ([]string, error) {
 			}
 		}
 
-		// Check for space without comment marker (formatting error)
 		if !hasComment && strings.Contains(line, " ") {
 			logger.Warning("Line %d: URL contains space without comment marker - skipping: %s", lineNum, line)
 			continue
@@ -966,14 +945,6 @@ func loadURLsFromReader(reader io.Reader, source string) ([]string, error) {
 	return urls, nil
 }
 
-// loadURLsFromFile reads and parses a URL file, returning a list of valid URLs.
-// Supports file path or "-" for stdin.
-// File format supports:
-//   - Full-line comments starting with # or //
-//   - Inline comments with " #" or " //"
-//   - Blank lines (ignored)
-//   - Auto-prepends https:// if no scheme present
-//   - Invalid URLs are logged as warnings and skipped
 func loadURLsFromFile(filename string) ([]string, error) {
 	if filename == "-" {
 		return loadURLsFromReader(os.Stdin, "stdin")
@@ -989,9 +960,6 @@ func loadURLsFromFile(filename string) ([]string, error) {
 	return loadURLsFromReader(file, filename)
 }
 
-// handleKillBrowser kills browser processes with remote debugging enabled.
-// If --port is specified, kills only the browser on that port.
-// Otherwise, kills all browsers with --remote-debugging-port flag.
 func handleKillBrowser(cmd *cobra.Command) error {
 	portChanged := cmd.Flags().Changed("port")
 
@@ -1010,13 +978,9 @@ func handleKillBrowser(cmd *cobra.Command) error {
 	return err
 }
 
-// handleDoctor displays comprehensive diagnostic information.
-// This command overrides all other flags except --help.
-// Always returns nil (diagnostics always succeed).
 func handleDoctor(cmd *cobra.Command) error {
 	report, err := CollectDoctorInfo(port)
 	if err != nil {
-		// Even if collection fails partially, we still print what we have
 		logger.Verbose("Warning: Some diagnostic information could not be collected: %v", err)
 	}
 

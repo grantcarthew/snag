@@ -14,8 +14,6 @@ import (
 	"strings"
 )
 
-// validateURL checks and normalizes the URL, adding https:// if no scheme is present.
-// Supported schemes: http, https, file
 func validateURL(urlStr string) (string, error) {
 	if !strings.Contains(urlStr, "://") {
 		urlStr = "https://" + urlStr
@@ -61,8 +59,6 @@ func validateURL(urlStr string) (string, error) {
 	return urlStr, nil
 }
 
-// isNonFetchableURL checks if a URL is a browser-internal URL that cannot be fetched.
-// These URLs (chrome://, about:, devtools://, etc.) should be skipped when processing tabs.
 func isNonFetchableURL(urlStr string) bool {
 	nonFetchablePrefixes := []string{
 		"chrome://",
@@ -82,7 +78,6 @@ func isNonFetchableURL(urlStr string) bool {
 	return false
 }
 
-// validateTimeout checks if timeout value is valid (must be positive)
 func validateTimeout(timeout int) error {
 	if timeout <= 0 {
 		logger.Error("Invalid timeout: %d", timeout)
@@ -95,8 +90,6 @@ func validateTimeout(timeout int) error {
 	return nil
 }
 
-// validatePort checks if port is in valid range (1024-65535)
-// Excludes privileged ports 1-1023 which require root/admin access
 func validatePort(port int) error {
 	if port < 1024 || port > 65535 {
 		logger.Error("Invalid port: %d", port)
@@ -109,7 +102,6 @@ func validatePort(port int) error {
 	return nil
 }
 
-// validateOutputPath checks if the output file path is writable
 func validateOutputPath(path string) error {
 	if path == "" {
 		logger.Error("Output file path cannot be empty")
@@ -167,13 +159,10 @@ func validateOutputPath(path string) error {
 	return nil
 }
 
-// normalizeFormat converts format to lowercase and handles aliases
-// Aliases: "markdown" → "md", "txt" → "text"
 func normalizeFormat(format string) string {
 	format = strings.TrimSpace(format)
 	format = strings.ToLower(format)
 
-	// Normalize common aliases
 	switch format {
 	case "markdown":
 		return FormatMarkdown
@@ -184,7 +173,6 @@ func normalizeFormat(format string) string {
 	}
 }
 
-// validateFormat checks if format is valid (md, html, text, pdf, or png)
 func validateFormat(format string) error {
 	if format == "" {
 		logger.Error("Format cannot be empty")
@@ -195,7 +183,6 @@ func validateFormat(format string) error {
 		return fmt.Errorf("format cannot be empty")
 	}
 
-	// Define valid formats locally for better testability and self-containment
 	validFormats := map[string]bool{
 		FormatMarkdown: true,
 		FormatHTML:     true,
@@ -216,8 +203,6 @@ func validateFormat(format string) error {
 	return nil
 }
 
-// checkExtensionMismatch warns if output file extension doesn't match format
-// Returns true if there's a mismatch (for testing), but doesn't return an error
 func checkExtensionMismatch(outputFile string, format string) bool {
 	if outputFile == "" {
 		return false
@@ -238,7 +223,6 @@ func checkExtensionMismatch(outputFile string, format string) bool {
 	return false
 }
 
-// validateDirectory checks if a directory exists and is writable
 func validateDirectory(dir string) error {
 	info, err := os.Stat(dir)
 	if os.IsNotExist(err) {
@@ -274,10 +258,7 @@ func validateDirectory(dir string) error {
 	return nil
 }
 
-// validateOutputPathEscape prevents directory escape attacks when combining -o and -d flags.
-// Ensures that the resulting path doesn't escape the output directory using .. or similar.
 func validateOutputPathEscape(outputDir, filename string) error {
-	// Skip validation if filename is an absolute path (it ignores outputDir)
 	if filepath.IsAbs(filename) {
 		return nil
 	}
@@ -296,8 +277,6 @@ func validateOutputPathEscape(outputDir, filename string) error {
 		return fmt.Errorf("failed to resolve output path: %w", err)
 	}
 
-	// Ensure the cleaned path starts with the cleaned directory
-	// Add separator to prevent partial matching (e.g., /tmp vs /tmp2)
 	if !strings.HasPrefix(absPath+string(filepath.Separator), absDir+string(filepath.Separator)) {
 		logger.Error("Output path escapes directory: %s", filename)
 		logger.ErrorWithSuggestion(
@@ -310,9 +289,6 @@ func validateOutputPathEscape(outputDir, filename string) error {
 	return nil
 }
 
-// validateWaitFor validates the wait-for CSS selector string.
-// Returns the trimmed selector, or empty string with warning if input is empty.
-// flagSet indicates whether the user explicitly provided the flag (prevents spurious warnings).
 func validateWaitFor(selector string, flagSet bool) string {
 	selector = strings.TrimSpace(selector)
 
@@ -326,10 +302,6 @@ func validateWaitFor(selector string, flagSet bool) string {
 	return selector
 }
 
-// validateUserAgent validates and sanitizes the user agent string.
-// Returns the sanitized user agent, or empty string with warning if input is empty.
-// Sanitizes newlines for security (prevents HTTP header injection).
-// flagSet indicates whether the user explicitly provided the flag (prevents spurious warnings).
 func validateUserAgent(ua string, flagSet bool) string {
 	ua = strings.TrimSpace(ua)
 
@@ -340,16 +312,12 @@ func validateUserAgent(ua string, flagSet bool) string {
 		return ""
 	}
 
-	// SECURITY: Sanitize newlines to prevent HTTP header injection
 	ua = strings.ReplaceAll(ua, "\n", " ")
 	ua = strings.ReplaceAll(ua, "\r", " ")
 
 	return ua
 }
 
-// validateUserDataDir validates and expands the user data directory path.
-// Returns the expanded path, or empty string with warning if input is empty.
-// Performs tilde expansion, directory existence check, and permission check.
 func validateUserDataDir(path string) (string, error) {
 	path = strings.TrimSpace(path)
 
@@ -370,10 +338,8 @@ func validateUserDataDir(path string) (string, error) {
 		}
 	}
 
-	// Check if directory exists, create if it doesn't
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		// Directory doesn't exist - create it (mkdir -p style)
 		logger.Verbose("Creating user data directory: %s", path)
 		if err := os.MkdirAll(path, 0755); err != nil {
 			logger.Error("Failed to create user data directory: %s", path)
@@ -391,7 +357,6 @@ func validateUserDataDir(path string) (string, error) {
 		return "", fmt.Errorf("error accessing directory: %w", err)
 	}
 
-	// Directory exists - validate it's actually a directory
 	if !info.IsDir() {
 		logger.Error("Path is not a directory: %s", path)
 		logger.ErrorWithSuggestion(
@@ -401,7 +366,6 @@ func validateUserDataDir(path string) (string, error) {
 		return "", fmt.Errorf("path is not a directory: %s", path)
 	}
 
-	// Test write permissions on existing directory
 	testFile, err := os.CreateTemp(path, ".snag-permission-test-*")
 	if err != nil {
 		logger.Error("Permission denied accessing user data directory: %s", path)
