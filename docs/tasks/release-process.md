@@ -48,6 +48,7 @@ Run validation checks:
 git checkout main
 git pull origin main
 
+# Skip test suite for this release? (if recently verified)
 # Verify all tests pass
 go test -v ./...
 
@@ -178,7 +179,10 @@ sleep 5
 
 # Get tarball SHA256 for Homebrew (will use in Step 7)
 TARBALL_URL="https://github.com/grantcarthew/snag/archive/refs/tags/v${VERSION}.tar.gz"
+# Linux:
 TARBALL_SHA256=$(curl -sL "$TARBALL_URL" | sha256sum | cut -d' ' -f1)
+# macOS:
+TARBALL_SHA256=$(curl -sL "$TARBALL_URL" | shasum -a 256 | cut -d' ' -f1)
 echo "Tarball SHA256: $TARBALL_SHA256"
 
 # Create GitHub Release using gh CLI
@@ -209,8 +213,8 @@ gh release view "v${VERSION}"
 Update the Homebrew formula with the new version:
 
 ```bash
-# Navigate to homebrew-tap directory (adjust path if needed)
-cd ~/reference/homebrew-tap  # or wherever you keep it
+# Navigate to homebrew-tap directory
+cd ~/Projects/homebrew-tap
 git pull origin main
 
 # Display tarball info from Step 6
@@ -283,7 +287,7 @@ Complete the release:
 gh release view "v${VERSION}"
 
 # Check Homebrew tap was updated
-cd ~/reference/homebrew-tap
+cd ~/Projects/homebrew-tap
 git log -1
 cd -
 
@@ -326,7 +330,7 @@ git push origin --delete "v${VERSION}"
 git tag -d "v${VERSION}"
 
 # Revert Homebrew tap
-cd ~/reference/homebrew-tap
+cd ~/Projects/homebrew-tap
 git revert HEAD
 git push origin main
 cd -
@@ -365,11 +369,12 @@ gh release create "v${VERSION}" --title "Release v${VERSION}" \
   --notes "$(git log ${PREV_VERSION}..v${VERSION} --pretty=format:'- %s')"
 
 # 5. Get tarball SHA256
-TARBALL_SHA256=$(curl -sL "https://github.com/grantcarthew/snag/archive/refs/tags/v${VERSION}.tar.gz" | sha256sum | cut -d' ' -f1)
+# Linux: sha256sum | macOS: shasum -a 256
+TARBALL_SHA256=$(curl -sL "https://github.com/grantcarthew/snag/archive/refs/tags/v${VERSION}.tar.gz" | shasum -a 256 | cut -d' ' -f1)
 echo "SHA256: $TARBALL_SHA256"
 
 # 6. Update Homebrew (edit Formula/snag.rb with VERSION and SHA256)
-cd ~/reference/homebrew-tap
+cd ~/Projects/homebrew-tap
 # Edit Formula/snag.rb
 git add Formula/snag.rb
 git commit -m "snag: update to ${VERSION}"
