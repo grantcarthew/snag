@@ -193,25 +193,25 @@ func TestFormatPortStatus(t *testing.T) {
 // TestDoctorReportString tests the full String() output.
 func TestDoctorReportString(t *testing.T) {
 	report := &DoctorReport{
-		SnagVersion:   "0.0.5",
-		LatestVersion: "0.0.6",
-		GoVersion:     "go1.25.3",
-		OS:            "darwin",
-		Arch:          "arm64",
-		WorkingDir:    "/Users/test/projects/snag",
-		BrowserName:   "Chrome",
-		BrowserPath:   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+		SnagVersion:    "0.0.5",
+		LatestVersion:  "0.0.6",
+		GoVersion:      "go1.25.3",
+		OS:             "darwin",
+		Arch:           "arm64",
+		WorkingDir:     "/Users/test/projects/snag",
+		BrowserName:    "Chrome",
+		BrowserPath:    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 		BrowserVersion: "Google Chrome 141.0.7390.123",
-		ProfilePath:   "/Users/test/Library/Application Support/Google/Chrome",
-		ProfileExists: true,
+		ProfilePath:    "/Users/test/Library/Application Support/Google/Chrome",
+		ProfileExists:  true,
 		DefaultPortStatus: &PortStatus{
 			Port:     9222,
 			Running:  true,
 			TabCount: 7,
 		},
 		EnvVars: map[string]string{
-			"CHROME_PATH":    "",
-			"CHROMIUM_PATH":  "",
+			"CHROME_PATH":   "",
+			"CHROMIUM_PATH": "",
 		},
 	}
 
@@ -309,11 +309,11 @@ func TestDoctorReportString_NoLatestVersion(t *testing.T) {
 // TestDoctorReportString_NoBrowser tests when no browser is detected.
 func TestDoctorReportString_NoBrowser(t *testing.T) {
 	report := &DoctorReport{
-		SnagVersion: "0.0.5",
-		GoVersion:   "go1.25.3",
-		OS:          "linux",
-		Arch:        "amd64",
-		WorkingDir:  "/home/user/snag",
+		SnagVersion:  "0.0.5",
+		GoVersion:    "go1.25.3",
+		OS:           "linux",
+		Arch:         "amd64",
+		WorkingDir:   "/home/user/snag",
 		BrowserError: ErrBrowserNotFound,
 		DefaultPortStatus: &PortStatus{
 			Port:    9222,
@@ -355,8 +355,8 @@ func TestDoctorReportString_CustomPort(t *testing.T) {
 		Arch:        "arm64",
 		WorkingDir:  "/Users/test/snag",
 		DefaultPortStatus: &PortStatus{
-			Port:     9222,
-			Running:  false,
+			Port:    9222,
+			Running: false,
 		},
 		CustomPortStatus: &PortStatus{
 			Port:     9223,

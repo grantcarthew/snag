@@ -302,7 +302,7 @@ func TestSlugifyTitle_Truncation(t *testing.T) {
 		expected string
 	}{
 		{"hello-world-test", 11, "hello-world"}, // Should truncate and remove trailing hyphen
-		{"test-", 10, "test"},                    // Trailing hyphen removed
+		{"test-", 10, "test"},                   // Trailing hyphen removed
 		{"a-b-c-d-e-f-g", 5, "a-b-c"},           // Multiple truncations
 	}
 
