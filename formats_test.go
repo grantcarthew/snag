@@ -8,6 +8,7 @@ package main
 
 import (
 	"io"
+	"os"
 	"strings"
 	"testing"
 )
@@ -208,6 +209,226 @@ func TestConvertToMarkdown_Minimal(t *testing.T) {
 	}
 }
 
+func TestConvertToMarkdown_NestedLists(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+	}{
+		{
+			name:     "nested unordered lists",
+			filename: "testdata/nested-lists-ul.html",
+		},
+		{
+			name:     "nested ordered lists",
+			filename: "testdata/nested-lists-ol.html",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			htmlBytes, err := os.ReadFile(tt.filename)
+			if err != nil {
+				t.Fatalf("failed to read test file: %v", err)
+			}
+
+			converter := NewContentConverter(FormatMarkdown)
+			md, err := converter.convertToMarkdown(string(htmlBytes))
+			if err != nil {
+				t.Fatalf("convertToMarkdown failed: %v", err)
+			}
+
+			// Verify nested structure is preserved
+			if !strings.Contains(md, "Item 1") {
+				t.Errorf("expected 'Item 1' in output, got:\n%s", md)
+			}
+			if !strings.Contains(md, "Nested 1.1") {
+				t.Errorf("expected nested items in output, got:\n%s", md)
+			}
+			if !strings.Contains(md, "Item 2") {
+				t.Errorf("expected 'Item 2' in output, got:\n%s", md)
+			}
+		})
+	}
+}
+
+func TestConvertToMarkdown_ComplexTables(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+	}{
+		{
+			name:     "table with colspan and footer",
+			filename: "testdata/table-complex.html",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			htmlBytes, err := os.ReadFile(tt.filename)
+			if err != nil {
+				t.Fatalf("failed to read test file: %v", err)
+			}
+
+			converter := NewContentConverter(FormatMarkdown)
+			md, err := converter.convertToMarkdown(string(htmlBytes))
+			if err != nil {
+				t.Fatalf("convertToMarkdown failed: %v", err)
+			}
+
+			// Verify table content is preserved
+			if !strings.Contains(md, "Header") {
+				t.Errorf("expected 'Header' in output, got:\n%s", md)
+			}
+			if !strings.Contains(md, "Cell 1") || !strings.Contains(md, "Cell 2") {
+				t.Errorf("expected cell content in output, got:\n%s", md)
+			}
+		})
+	}
+}
+
+func TestConvertToMarkdown_Images(t *testing.T) {
+	htmlBytes, err := os.ReadFile("testdata/images.html")
+	if err != nil {
+		t.Fatalf("failed to read test file: %v", err)
+	}
+
+	converter := NewContentConverter(FormatMarkdown)
+	md, err := converter.convertToMarkdown(string(htmlBytes))
+	if err != nil {
+		t.Fatalf("convertToMarkdown failed: %v", err)
+	}
+
+	// Check for markdown image syntax: ![alt](url)
+	if !strings.Contains(md, "![Example Image]") {
+		t.Errorf("expected markdown image syntax in output, got:\n%s", md)
+	}
+	if !strings.Contains(md, "example.com/image.png") {
+		t.Errorf("expected image URL in output, got:\n%s", md)
+	}
+}
+
+func TestConvertToMarkdown_Blockquotes(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+	}{
+		{
+			name:     "simple blockquote",
+			filename: "testdata/blockquotes.html",
+		},
+		{
+			name:     "nested blockquotes",
+			filename: "testdata/blockquotes-nested.html",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			htmlBytes, err := os.ReadFile(tt.filename)
+			if err != nil {
+				t.Fatalf("failed to read test file: %v", err)
+			}
+
+			converter := NewContentConverter(FormatMarkdown)
+			md, err := converter.convertToMarkdown(string(htmlBytes))
+			if err != nil {
+				t.Fatalf("convertToMarkdown failed: %v", err)
+			}
+
+			// Check for blockquote syntax (> )
+			if !strings.Contains(md, ">") {
+				t.Errorf("expected blockquote marker (>) in output, got:\n%s", md)
+			}
+			if !strings.Contains(md, "quote") {
+				t.Errorf("expected quote content in output, got:\n%s", md)
+			}
+		})
+	}
+}
+
+func TestConvertToMarkdown_DefinitionLists(t *testing.T) {
+	htmlBytes, err := os.ReadFile("testdata/definition-lists.html")
+	if err != nil {
+		t.Fatalf("failed to read test file: %v", err)
+	}
+
+	converter := NewContentConverter(FormatMarkdown)
+	md, err := converter.convertToMarkdown(string(htmlBytes))
+	if err != nil {
+		t.Fatalf("convertToMarkdown failed: %v", err)
+	}
+
+	// Verify terms and definitions are preserved
+	if !strings.Contains(md, "Term 1") {
+		t.Errorf("expected 'Term 1' in output, got:\n%s", md)
+	}
+	if !strings.Contains(md, "Definition 1") {
+		t.Errorf("expected 'Definition 1' in output, got:\n%s", md)
+	}
+}
+
+func TestConvertToMarkdown_MalformedHTML(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+	}{
+		{
+			name:     "unclosed tags",
+			filename: "testdata/malformed-unclosed.html",
+		},
+		{
+			name:     "mismatched tags",
+			filename: "testdata/malformed-mismatched.html",
+		},
+		{
+			name:     "wrong order",
+			filename: "testdata/malformed-wrong-order.html",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			htmlBytes, err := os.ReadFile(tt.filename)
+			if err != nil {
+				t.Fatalf("failed to read test file: %v", err)
+			}
+
+			converter := NewContentConverter(FormatMarkdown)
+			md, err := converter.convertToMarkdown(string(htmlBytes))
+
+			// Should not panic or error, just handle gracefully
+			if err != nil {
+				t.Logf("Warning: malformed HTML caused error: %v", err)
+			}
+
+			// Should still produce some output
+			if len(strings.TrimSpace(md)) == 0 && err == nil {
+				t.Error("expected some output even for malformed HTML")
+			}
+		})
+	}
+}
+
+func TestConvertToMarkdown_SpecialCharacters(t *testing.T) {
+	htmlBytes, err := os.ReadFile("testdata/special-characters.html")
+	if err != nil {
+		t.Fatalf("failed to read test file: %v", err)
+	}
+
+	converter := NewContentConverter(FormatMarkdown)
+	md, err := converter.convertToMarkdown(string(htmlBytes))
+	if err != nil {
+		t.Fatalf("convertToMarkdown failed: %v", err)
+	}
+
+	// Verify special characters are handled
+	if !strings.Contains(md, "Copyright") {
+		t.Errorf("expected 'Copyright' in output, got:\n%s", md)
+	}
+	// Note: HTML entities may be converted to actual symbols
+	// Just verify content is preserved in some form
+}
+
 // Phase 3: Text extraction tests
 
 func TestExtractPlainText_Headings(t *testing.T) {
@@ -386,5 +607,28 @@ func TestExtractPlainText_Empty(t *testing.T) {
 	trimmed := strings.TrimSpace(text)
 	if trimmed != "" {
 		t.Errorf("expected empty text output, got: %q", text)
+	}
+}
+
+func TestExtractPlainText_HiddenElements(t *testing.T) {
+	htmlBytes, err := os.ReadFile("testdata/hidden-elements.html")
+	if err != nil {
+		t.Fatalf("failed to read test file: %v", err)
+	}
+
+	converter := NewContentConverter(FormatText)
+	text := converter.extractPlainText(string(htmlBytes))
+
+	// Should contain visible content
+	if !strings.Contains(text, "Visible content") {
+		t.Errorf("expected 'Visible content', got:\n%s", text)
+	}
+
+	// Should NOT contain style, script, or noscript content
+	if strings.Contains(text, "color: red") {
+		t.Error("should not contain CSS")
+	}
+	if strings.Contains(text, "console.log") {
+		t.Error("should not contain JavaScript")
 	}
 }

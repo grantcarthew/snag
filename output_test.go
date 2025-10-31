@@ -7,6 +7,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -324,5 +325,99 @@ func TestSlugifyTitle_Truncation(t *testing.T) {
 			t.Errorf("SlugifyTitle(%q, %d) has leading hyphen: %q",
 				tt.title, tt.maxLen, result)
 		}
+	}
+}
+
+func TestSlugifyTitle_UnicodeNormalization(t *testing.T) {
+	tests := []struct {
+		name     string
+		title    string
+		expected string
+	}{
+		{
+			name:     "emoji",
+			title:    "Hello 🚀 World",
+			expected: "hello-world",
+		},
+		{
+			name:     "chinese characters",
+			title:    "中文标题 English",
+			expected: "english",
+		},
+		{
+			name:     "arabic text",
+			title:    "عربي Arabic Text",
+			expected: "arabic-text",
+		},
+		{
+			name:     "mixed unicode",
+			title:    "Café ☕ 2025",
+			expected: "caf-2025",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := SlugifyTitle(tt.title, 80)
+			if result != tt.expected {
+				t.Errorf("SlugifyTitle() = %q, expected %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGenerateFilename_InvalidChars(t *testing.T) {
+	// Test filesystem-restricted characters
+	tests := []struct {
+		name  string
+		title string
+	}{
+		{"less than", "File<Name"},
+		{"greater than", "File>Name"},
+		{"colon", "File:Name"},
+		{"quote", "File\"Name"},
+		{"pipe", "File|Name"},
+		{"question mark", "File?Name"},
+		{"asterisk", "File*Name"},
+	}
+
+	timestamp := time.Date(2025, 10, 21, 14, 30, 45, 0, time.UTC)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GenerateFilename(tt.title, FormatMarkdown, timestamp, "https://example.com")
+
+			// Result should not contain filesystem-restricted chars
+			restricted := []string{"<", ">", ":", "\"", "|", "?", "*"}
+			for _, char := range restricted {
+				if strings.Contains(result, char) {
+					t.Errorf("filename %q should not contain restricted char %q", result, char)
+				}
+			}
+		})
+	}
+}
+
+func TestResolveConflict_HighCount(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create test.md and test-1.md through test-50.md
+	baseFile := filepath.Join(tmpDir, "test.md")
+	os.WriteFile(baseFile, []byte("test"), 0644)
+
+	for i := 1; i <= 50; i++ {
+		conflictFile := filepath.Join(tmpDir, fmt.Sprintf("test-%d.md", i))
+		os.WriteFile(conflictFile, []byte("test"), 0644)
+	}
+
+	// Should return test-51.md
+	filename, err := ResolveConflict(tmpDir, "test.md")
+	if err != nil {
+		t.Fatalf("ResolveConflict failed: %v", err)
+	}
+
+	expected := "test-51.md"
+	if filename != expected {
+		t.Errorf("expected %q, got %q", expected, filename)
 	}
 }
