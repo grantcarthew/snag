@@ -7,6 +7,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -241,5 +242,110 @@ func TestDisplayTabList(t *testing.T) {
 	emptyOutput := buf.String()
 	if !strings.Contains(emptyOutput, "No tabs open in browser") {
 		t.Errorf("Expected 'No tabs' message for empty tab list")
+	}
+}
+
+func TestDisplayTabList_LargeLists(t *testing.T) {
+	// Create 100 tabs
+	tabs := make([]TabInfo, 100)
+	for i := 0; i < 100; i++ {
+		tabs[i] = TabInfo{
+			Index: i + 1,
+			URL:   fmt.Sprintf("https://example.com/page%d", i),
+			Title: fmt.Sprintf("Page %d", i),
+		}
+	}
+
+	var buf strings.Builder
+	displayTabList(tabs, &buf, false)
+	output := buf.String()
+
+	// Verify header shows correct count
+	if !strings.Contains(output, "100 tabs") {
+		t.Error("should show correct tab count")
+	}
+
+	// Verify first and last tab are included
+	if !strings.Contains(output, "[1]") {
+		t.Error("should show first tab")
+	}
+	if !strings.Contains(output, "[100]") {
+		t.Error("should show last tab")
+	}
+}
+
+func TestFormatTabLine_Unicode(t *testing.T) {
+	tests := []struct {
+		name  string
+		title string
+		url   string
+	}{
+		{
+			name:  "emoji in title",
+			title: "🚀 Rocket Launch 🌟",
+			url:   "https://example.com",
+		},
+		{
+			name:  "chinese characters",
+			title: "中文标题",
+			url:   "https://example.cn/页面",
+		},
+		{
+			name:  "arabic text",
+			title: "عنوان عربي",
+			url:   "https://example.sa",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatTabLine(1, tt.title, tt.url, 120, false)
+
+			// Should not crash with Unicode
+			if len(result) == 0 {
+				t.Error("should produce output for Unicode input")
+			}
+
+			// Should contain title (at least partially)
+			// Note: May be truncated, but should have some content
+		})
+	}
+}
+
+func TestStripURLParams_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "encoded characters",
+			input:    "https://example.com/path?q=%20space%20",
+			expected: "https://example.com/path",
+		},
+		{
+			name:     "multiple question marks",
+			input:    "https://example.com/path?query=value?extra",
+			expected: "https://example.com/path",
+		},
+		{
+			name:     "multiple hashes",
+			input:    "https://example.com/path#section#subsection",
+			expected: "https://example.com/path",
+		},
+		{
+			name:     "very long query string",
+			input:    "https://example.com/path?" + strings.Repeat("a=b&", 100),
+			expected: "https://example.com/path",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := stripURLParams(tt.input)
+			if result != tt.expected {
+				t.Errorf("stripURLParams() = %q, expected %q", result, tt.expected)
+			}
+		})
 	}
 }
