@@ -8,29 +8,17 @@ assignees: ''
 
 ## Description
 
-<!-- Please describe the bug you're experiencing -->
+<!-- Describe the bug you're experiencing. Include what you expected to happen and what actually happened. -->
 
 
 
 ## Steps to Reproduce
 
-1.
-2.
-3.
-
-## Expected Behavior
-
-<!-- What did you expect to happen? -->
+<!-- List the steps to reproduce the issue -->
 
 
 
-## Actual Behavior
-
-<!-- What actually happened? -->
-
-
-
-## Diagnostic Information
+## Doctor Output
 
 **Please run `snag --doctor` and paste the full output below:**
 
