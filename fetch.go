@@ -164,8 +164,6 @@ func (pf *PageFetcher) getURL() string {
 	return info.URL
 }
 
-// waitForSelector waits for a CSS selector to appear and be visible on the page
-// This is a shared helper function to avoid code duplication between Fetch and tab operations
 func waitForSelector(page *rod.Page, selector string, timeout time.Duration) error {
 	if page == nil {
 		return fmt.Errorf("cannot wait for selector: page is nil")

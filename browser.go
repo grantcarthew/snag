@@ -236,8 +236,6 @@ func (bm *BrowserManager) launchBrowser(headless bool) (*rod.Browser, error) {
 	return browser.CancelTimeout(), nil
 }
 
-// OpenBrowserOnly opens a browser without navigating to any page
-// The browser is left running with CDP debugging enabled, and snag exits
 func (bm *BrowserManager) OpenBrowserOnly() error {
 	logger.Verbose("Checking for existing browser instance on port %d...", bm.port)
 	if _, err := bm.connectToExisting(); err == nil {
@@ -323,7 +321,6 @@ func (bm *BrowserManager) Close() {
 
 		if bm.launcher != nil {
 			bm.launcher.Kill()
-			// Only cleanup temp directories, preserve user-specified directories
 			if bm.userDataDir == "" {
 				bm.launcher.Cleanup()
 			}
