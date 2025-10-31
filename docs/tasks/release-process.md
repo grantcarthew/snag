@@ -63,7 +63,7 @@ git status
 
 **Expected results**:
 
-- All tests pass (124 tests expected)
+- All tests pass
 - Build completes without errors
 - `git status` shows clean working tree
 - Documentation is current

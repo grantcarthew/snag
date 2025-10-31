@@ -322,7 +322,27 @@ snag --all-tabs --format png -d ~/screenshots
 ### Batch Processing URLs
 
 ```bash
+# Process multiple URLs inline
+snag -d output/ https://example.com https://github.com https://go.dev
+
 # Process URLs from a file
+snag --url-file urls.txt -d output/
+
+# Pipe URLs from stdin
+cat urls.txt | snag --url-file - -d output/
+
+# Pipe filtered URLs
+grep "^https://docs" urls.txt | snag --url-file - -d ./documentation/
+
+# Using heredoc
+snag --url-file - -d pages/ <<EOF
+# My URLs
+example.com
+github.com/grantcarthew/snag
+go.dev
+EOF
+
+# Process URLs from a file (shell loop alternative)
 while read url; do
   filename=$(echo "$url" | sed 's/[^a-zA-Z0-9]/_/g').md
   snag --quiet -o "$filename" "$url"

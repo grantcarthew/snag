@@ -34,7 +34,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 
 ## Design Decisions Summary
 
-**32 major design decisions documented below:**
+**33 major design decisions documented below:**
 
 | #   | Decision                  | Choice                                                          |
 | --- | ------------------------- | --------------------------------------------------------------- |
@@ -70,6 +70,7 @@ Rejected alternatives: `web2md` (misleading with --html), `grab` (too generic), 
 | 30  | Pattern Multi-Match       | All matching tabs processed (not just first match)              |
 | 31  | Kill Browser Flag         | Force-kill browsers with remote debugging (`--kill-browser`)    |
 | 32  | Doctor Diagnostic Flag    | Diagnostic information with `--doctor` (help, troubleshooting)  |
+| 33  | Stdin Support             | Explicit `--url-file -` (no auto-detection)                     |
 
 See detailed rationale in design decisions section below.
 
@@ -1510,6 +1511,84 @@ $ snag https://example.com
   ```
 
 **See Also**: For complete flag specification, see [arguments/doctor.md](arguments/doctor.md)
+
+### 33. Stdin Support for URL File
+
+- **Decision**: Support reading URLs from stdin using `--url-file -` (explicit flag required)
+- **Behavior**:
+  - Special value `-` for `--url-file` reads URLs from stdin
+  - Follows standard Unix convention (like `tar -xzf -`, `kubectl apply -f -`, `docker load -i -`)
+  - No auto-detection of piped stdin (explicit flag required)
+  - Same format rules as file input (comments, blank lines, auto-https prepending)
+  - Source logged as "stdin" in verbose mode
+- **Rationale**:
+  - **Explicit over implicit**: Prevents confusing UX where tool hangs waiting for stdin when no URLs provided
+  - **Standard Unix convention**: `-` as stdin indicator is universally understood
+  - **Predictable behavior**: Clear intent - `--url-file -` unambiguously means "read from stdin"
+  - **Prevents accidents**: Without explicit flag, piped empty stdin would cause indefinite hang
+  - **Composability**: Enables piping from other commands: `grep "^https" urls.txt | snag --url-file -`
+  - **No auto-detection downsides**: Avoids complex stdin detection logic and edge cases
+- **Design Choices**:
+  - **No automatic stdin detection**: Considered detecting piped stdin automatically but rejected due to:
+    - Potential for hanging on terminal input when no URLs provided
+    - Ambiguity in error messages
+    - Added complexity for minimal UX benefit
+    - Breaks principle of explicit over implicit
+  - **Reusable implementation**: Refactored existing `loadURLsFromFile()` to use `loadURLsFromReader(io.Reader, source)` internally
+  - **Zero code duplication**: File and stdin paths share same parsing/validation logic
+  - **Source tracking**: `source` parameter in `loadURLsFromReader()` enables context-aware logging
+- **Implementation Strategy**:
+  - Refactored URL loading into two functions:
+    - `loadURLsFromReader(io.Reader, source string)`: Core parsing logic accepting any reader
+    - `loadURLsFromFile(filename string)`: Wrapper that handles file open or stdin delegation
+  - Detection logic: `if filename == "-"` → use `os.Stdin`
+  - Same format support: Comments (`#`, `//`), blank lines, inline comments, auto-https
+  - Same validation: Invalid URLs skipped with warnings, line number reporting
+- **Testing**:
+  - Unit tests: 11 test cases for `loadURLsFromReader()` covering edge cases
+  - Integration tests: Stdin behavior tested via CLI integration tests
+  - Test coverage: Comments, blank lines, auto-https, mixed valid/invalid URLs, empty input
+- **Code Location**:
+  - URL parsing: `handlers.go:loadURLsFromReader()` (lines 904-967)
+  - Entry point: `handlers.go:loadURLsFromFile()` (lines 969-990)
+  - Stdin detection: `handlers.go:978-980`
+  - Tests: `handlers_test.go:TestLoadURLsFromReader()` (11 test cases)
+- **Examples**:
+
+  ```bash
+  # Basic stdin usage
+  echo "example.com" | snag --url-file -
+
+  # Pipe from file
+  cat urls.txt | snag --url-file -
+
+  # Pipe from grep
+  grep "^https://docs" urls.txt | snag --url-file - -d output/
+
+  # Heredoc
+  snag --url-file - <<EOF
+  # My URLs
+  example.com
+  github.com
+  EOF
+
+  # Combined with output directory
+  printf "example.com\ngithub.com\n" | snag --url-file - -d ./pages/
+
+  # With format specification
+  cat urls.txt | snag --url-file - --format html
+  ```
+
+- **Not Supported (by design)**:
+
+  ```bash
+  # Auto-detection NOT supported (requires explicit --url-file -)
+  echo "example.com" | snag  # ERROR: No URLs provided
+
+  # This is intentional to prevent hanging on terminal input
+  ```
+
+**See Also**: For complete flag specification, see [arguments/url-file.md](arguments/url-file.md)
 
 ## References
 
