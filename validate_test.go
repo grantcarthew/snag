@@ -533,3 +533,130 @@ func TestValidateUserAgent_SecuritySanitization(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateURL_IDNHomograph(t *testing.T) {
+	// IDN (Internationalized Domain Names) homograph attack tests
+	tests := []struct {
+		name        string
+		url         string
+		shouldAllow bool
+	}{
+		{
+			name:        "normal domain",
+			url:         "https://example.com",
+			shouldAllow: true,
+		},
+		{
+			name:        "punycode domain",
+			url:         "https://xn--e1afmkfd.xn--p1ai", // пример.рф
+			shouldAllow: true,
+		},
+		{
+			name:        "mixed script (potential homograph)",
+			url:         "https://раypal.com", // Note: contains Cyrillic 'а'
+			shouldAllow: true,                 // validateURL doesn't block these
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := validateURL(tt.url)
+			hasError := err != nil
+
+			if tt.shouldAllow && hasError {
+				t.Errorf("should allow URL %q, got error: %v", tt.url, err)
+			}
+			if !tt.shouldAllow && !hasError {
+				t.Errorf("should reject URL %q", tt.url)
+			}
+		})
+	}
+}
+
+func TestValidateURL_ExtremelyLong(t *testing.T) {
+	tests := []struct {
+		name      string
+		urlLength int
+		shouldErr bool
+	}{
+		{"normal length", 100, false},
+		{"2000 chars", 2000, false},
+		{"10000 chars", 10000, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create URL of specified length
+			longPath := strings.Repeat("a", tt.urlLength-20)
+			url := "https://example.com/" + longPath
+
+			_, err := validateURL(url)
+
+			if tt.shouldErr && err == nil {
+				t.Errorf("expected error for %d char URL", tt.urlLength)
+			}
+			if !tt.shouldErr && err != nil {
+				t.Errorf("unexpected error for %d char URL: %v", tt.urlLength, err)
+			}
+		})
+	}
+}
+
+func TestValidateUserAgent_ExtremeLength(t *testing.T) {
+	tests := []struct {
+		name   string
+		length int
+	}{
+		{"normal length", 100},
+		{"very long", 1000},
+		{"extremely long", 10000},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			longUA := strings.Repeat("A", tt.length)
+			result := validateUserAgent(longUA, true)
+
+			// Should not panic, should return trimmed string
+			if len(result) == 0 {
+				t.Error("should return non-empty result")
+			}
+		})
+	}
+}
+
+func TestValidateWaitFor_Injection(t *testing.T) {
+	// Test that CSS selectors don't allow script injection
+	tests := []struct {
+		name     string
+		selector string
+		expected string
+	}{
+		{
+			name:     "normal selector",
+			selector: ".content",
+			expected: ".content",
+		},
+		{
+			name:     "selector with quotes",
+			selector: "div[data-test='value']",
+			expected: "div[data-test='value']",
+		},
+		// Note: validateWaitFor just trims, doesn't sanitize
+		// These tests document current behavior
+		{
+			name:     "selector with angle brackets",
+			selector: "<script>alert()</script>",
+			expected: "<script>alert()</script>", // Not sanitized
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := validateWaitFor(tt.selector, true)
+			if result != tt.expected {
+				t.Errorf("validateWaitFor() = %q, expected %q", result, tt.expected)
+			}
+		})
+	}
+}
