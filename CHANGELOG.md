@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-12-05
+
+### Changed
+
+- Update html-to-markdown to v2.5.0 (table cell padding option, cleaner ampersand handling)
+- Update cobra to v1.10.2
+- Update pflag to v1.0.10
+- Update golang.org/x/net to v0.47.0
+
+### Fixed
+
+- Remove unused contentSources variable in flag validation (ineffassign warning)
+
+### Added
+
+- Add License, Go Report Card, Go Reference, and GitHub Release badges to README
+
 ## [1.0.0] - 2025-11-01
 
 ### Added
@@ -44,5 +61,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Single binary distribution with no runtime dependencies
 - Comprehensive documentation and examples
 
-[unreleased]: https://github.com/grantcarthew/snag/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/grantcarthew/snag/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/grantcarthew/snag/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/grantcarthew/snag/releases/tag/v1.0.0
