@@ -359,7 +359,7 @@ func runCobra(cmd *cobra.Command, args []string) error {
 	if showVersion {
 		fmt.Printf("snag version %s\n", version)
 		fmt.Println("Repository: https://github.com/grantcarthew/snag")
-        fmt.Println("Report issues: https://github.com/grantcarthew/snag/issues/new")
+		fmt.Println("Report issues: https://github.com/grantcarthew/snag/issues/new")
 		return nil
 	}
 

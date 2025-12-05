@@ -1,5 +1,10 @@
 # snag
 
+[![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
+[![Go Report Card](https://goreportcard.com/badge/github.com/grantcarthew/snag)](https://goreportcard.com/report/github.com/grantcarthew/snag)
+[![Go Reference](https://pkg.go.dev/badge/github.com/grantcarthew/snag.svg)](https://pkg.go.dev/github.com/grantcarthew/snag)
+[![GitHub Release](https://img.shields.io/github/v/release/grantcarthew/snag)](https://github.com/grantcarthew/snag/releases)
+
 Intelligently fetch web page content using a browser engine.
 
 ## Why snag?
