@@ -244,17 +244,6 @@ func main() {
 }
 
 func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs bool) error {
-	contentSources := 0
-	if hasURLs {
-		contentSources++
-	}
-	if cmd.Flags().Changed("tab") {
-		contentSources++
-	}
-	if allTabs {
-		contentSources++
-	}
-
 	if cmd.Flags().Changed("tab") && hasURLs {
 		logger.Error("Cannot use both --tab and URL arguments (mutually exclusive content sources)")
 		return ErrTabURLConflict
