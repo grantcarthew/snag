@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/devices"
 	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/proto"
 )
@@ -303,6 +304,11 @@ func (bm *BrowserManager) NewPage() (*rod.Page, error) {
 	page, err := bm.browser.Page(proto.TargetCreateTarget{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create page: %w", err)
+	}
+
+	// Clear default viewport emulation so page fills the browser window
+	if err := page.Emulate(devices.Clear); err != nil {
+		logger.Debug("Failed to clear viewport emulation: %v", err)
 	}
 
 	return page, nil
