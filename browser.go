@@ -306,9 +306,22 @@ func (bm *BrowserManager) NewPage() (*rod.Page, error) {
 		return nil, fmt.Errorf("failed to create page: %w", err)
 	}
 
-	// Clear default viewport emulation so page fills the browser window
-	if err := page.Emulate(devices.Clear); err != nil {
-		logger.Debug("Failed to clear viewport emulation: %v", err)
+	if bm.launchedHeadless {
+		// Set a sensible default viewport for headless mode (1920x1080 Full HD)
+		err := page.SetViewport(&proto.EmulationSetDeviceMetricsOverride{
+			Width:             1920,
+			Height:            1080,
+			DeviceScaleFactor: 1,
+			Mobile:            false,
+		})
+		if err != nil {
+			logger.Debug("Failed to set headless viewport: %v", err)
+		}
+	} else {
+		// Clear default viewport emulation so page fills the browser window
+		if err := page.Emulate(devices.Clear); err != nil {
+			logger.Debug("Failed to clear viewport emulation: %v", err)
+		}
 	}
 
 	return page, nil
