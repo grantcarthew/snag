@@ -2,7 +2,7 @@
 
 Read the following documents:
 
-- docs/design-record.md
+- .ai/design/design-records/dr-001-snag-design.md
 - docs/arguments/README.md
 - docs/arguments/\*.md (read all the argument documents)
 - README.md

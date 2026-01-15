@@ -6,7 +6,7 @@ Workflow:
 
 - Read all the following documents:
   - README.md
-  - docs/design-record.md
+  - .ai/design/design-records/dr-001-snag-design.md
   - docs/arguments/README.md
   - docs/arguments/\*.md
 - Read all the \*.go files (ignore the ./reference/ directory)

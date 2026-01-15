@@ -420,7 +420,7 @@ snag --version
 
 - `AGENTS.md` - Repository context for AI agents
 - `CHANGELOG.md` - Version history
-- `docs/design-record.md` - Design decisions and rationale
+- `.ai/design/design-records/dr-001-snag-design.md` - Design decisions and rationale
 - `README.md` - User-facing documentation
 
 ---

@@ -488,9 +488,9 @@ Third-party licenses in `LICENSES/` directory.
 
 - **README.md**: User-facing documentation and usage examples
 - **PROJECT.md**: Current project status and work tracking
-- **docs/design-record.md**: Comprehensive design decisions and rationale (32 design decisions documented)
+- **.ai/design/design-records/dr-001-snag-design.md**: Comprehensive design decisions and rationale (33 design decisions documented)
+- **.ai/tasks/**: Task documents (code-review, release-process, etc.)
 - **docs/arguments/**: Complete argument compatibility matrix
-- **docs/release-process.md**: Step-by-step release guide for AI agents
 - **docs/testing.md**: Testing documentation and strategies
 - **Repository**: https://github.com/grantcarthew/snag
 - **Issues**: https://github.com/grantcarthew/snag/issues
