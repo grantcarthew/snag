@@ -258,37 +258,6 @@ func validateDirectory(dir string) error {
 	return nil
 }
 
-func validateOutputPathEscape(outputDir, filename string) error {
-	if filepath.IsAbs(filename) {
-		return nil
-	}
-
-	fullPath := filepath.Join(outputDir, filename)
-	cleanPath := filepath.Clean(fullPath)
-	cleanDir := filepath.Clean(outputDir)
-
-	absDir, err := filepath.Abs(cleanDir)
-	if err != nil {
-		return fmt.Errorf("failed to resolve directory path: %w", err)
-	}
-
-	absPath, err := filepath.Abs(cleanPath)
-	if err != nil {
-		return fmt.Errorf("failed to resolve output path: %w", err)
-	}
-
-	if !strings.HasPrefix(absPath+string(filepath.Separator), absDir+string(filepath.Separator)) {
-		logger.Error("Output path escapes directory: %s", filename)
-		logger.ErrorWithSuggestion(
-			"Path contains '..' or similar that escapes the output directory",
-			"snag <url> -o output.md -d /path/to/dir",
-		)
-		return fmt.Errorf("output path escapes directory: %s", filename)
-	}
-
-	return nil
-}
-
 func validateWaitFor(selector string, flagSet bool) string {
 	selector = strings.TrimSpace(selector)
 

@@ -314,51 +314,6 @@ func TestValidateDirectory_ReadOnly(t *testing.T) {
 	}
 }
 
-func TestValidateOutputPathEscape_Safe(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	safeTests := []struct {
-		outputDir string
-		filename  string
-		desc      string
-	}{
-		{tmpDir, "output.md", "simple filename"},
-		{tmpDir, "subdir/output.md", "subdirectory"},
-		{tmpDir, "./output.md", "current directory"},
-		{"/tmp", "/absolute/path.md", "absolute path (ignores outputDir)"},
-	}
-
-	for _, tt := range safeTests {
-		err := validateOutputPathEscape(tt.outputDir, tt.filename)
-		if err != nil {
-			t.Errorf("validateOutputPathEscape(%q, %q) [%s] should be safe, got error: %v",
-				tt.outputDir, tt.filename, tt.desc, err)
-		}
-	}
-}
-
-func TestValidateOutputPathEscape_Dangerous(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	dangerousTests := []struct {
-		outputDir string
-		filename  string
-		desc      string
-	}{
-		{tmpDir, "../etc/passwd", "parent directory escape"},
-		{tmpDir, "../../etc/passwd", "multiple parent escapes"},
-		{tmpDir, "subdir/../../etc/passwd", "escape via subdirectory"},
-	}
-
-	for _, tt := range dangerousTests {
-		err := validateOutputPathEscape(tt.outputDir, tt.filename)
-		if err == nil {
-			t.Errorf("validateOutputPathEscape(%q, %q) [%s] should be dangerous and fail validation",
-				tt.outputDir, tt.filename, tt.desc)
-		}
-	}
-}
-
 func TestIsNonFetchableURL(t *testing.T) {
 	tests := []struct {
 		name     string

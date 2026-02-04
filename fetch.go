@@ -54,7 +54,7 @@ func (pf *PageFetcher) Fetch(opts FetchOptions) (string, error) {
 		if errors.Is(err, context.DeadlineExceeded) {
 			logger.Error("Page load timeout exceeded (%ds)", opts.Timeout)
 			logger.ErrorWithSuggestion(
-				fmt.Sprintf("The page took too long to load"),
+				"The page took too long to load",
 				fmt.Sprintf("snag %s --timeout 60", opts.URL),
 			)
 			return "", ErrPageLoadTimeout
