@@ -92,6 +92,7 @@ var (
 	killBrowser bool
 	doctor      bool
 	showVersion bool
+	info        bool
 	verbose     bool
 	quiet       bool
 	debug       bool
@@ -121,6 +122,10 @@ EXAMPLES:
   snag -f html example.com
   snag -f text example.com > page.txt
   snag -f pdf -o doc.pdf example.com
+
+  # Get page metadata as JSON
+  snag --info example.com
+  snag -i -t 1                         # Info from existing tab
 
   # Save to file
   snag -o page.md example.com
@@ -156,6 +161,7 @@ OPTIONS:
       --url-file string        Read URLs from file or stdin with "-" (one per line, supports comments)
 
   -f, --format string          Output format: md | html | text | pdf | png (default md)
+  -i, --info                   Output page metadata as JSON (title, URL, domain, slug, timestamp)
   -o, --output string          Save output to file instead of stdout
   -d, --output-dir string      Save files with auto-generated names to directory
 
@@ -209,6 +215,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&killBrowser, "kill-browser", "k", false, "Kill browser processes with remote debugging enabled")
 	rootCmd.Flags().BoolVar(&doctor, "doctor", false, "Display comprehensive diagnostic information")
 	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "Display version information")
+	rootCmd.Flags().BoolVarP(&info, "info", "i", false, "Output page metadata as JSON (title, URL, domain, slug, timestamp)")
 	rootCmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose logging output")
 	rootCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress all output except errors and content")
 	rootCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug output")
@@ -305,6 +312,26 @@ func validateFlagCombinations(cmd *cobra.Command, hasURLs bool, hasMultipleURLs 
 		logger.Warning("--all-tabs ignored with --open-browser (no content fetching)")
 	}
 
+	if info && cmd.Flags().Changed("format") {
+		logger.Error("Cannot use both --info and --format (--info always outputs JSON)")
+		return fmt.Errorf("conflicting flags: --info and --format")
+	}
+
+	if info && outDir != "" {
+		logger.Error("Cannot use --output-dir with --info (use --output for single file)")
+		return fmt.Errorf("conflicting flags: --info and --output-dir")
+	}
+
+	if info && hasMultipleURLs {
+		logger.Error("Cannot use --info with multiple URLs (single URL only)")
+		return fmt.Errorf("conflicting flags: --info and multiple URLs")
+	}
+
+	if info && allTabs {
+		logger.Error("Cannot use --info with --all-tabs (single content source only)")
+		return fmt.Errorf("conflicting flags: --info and --all-tabs")
+	}
+
 	return nil
 }
 
@@ -314,7 +341,7 @@ func runCobra(cmd *cobra.Command, args []string) error {
 		level = LevelDebug
 	} else if verbose {
 		level = LevelVerbose
-	} else if quiet {
+	} else if quiet || info {
 		level = LevelQuiet
 	}
 
@@ -391,6 +418,17 @@ func runCobra(cmd *cobra.Command, args []string) error {
 	hasMultipleURLs := len(urls) > 1
 	if err := validateFlagCombinations(cmd, hasURLs, hasMultipleURLs); err != nil {
 		return err
+	}
+
+	if info {
+		if cmd.Flags().Changed("tab") {
+			return handleInfoFromTab(cmd)
+		}
+		if len(urls) == 1 {
+			return handleInfoFromURL(cmd, urls[0])
+		}
+		logger.Error("--info requires exactly one URL or --tab")
+		return fmt.Errorf("--info requires exactly one URL or --tab")
 	}
 
 	if allTabs {

@@ -124,6 +124,9 @@ snag --format text https://example.com
 # Quiet mode (content only, no logs)
 snag --quiet https://example.com
 
+# Get page metadata as JSON
+snag --info https://example.com
+
 # Wait for dynamic content to load
 snag --wait-for ".content-loaded" https://dynamic-site.com
 
@@ -240,6 +243,53 @@ Binary formats (PDF, PNG) cannot output to stdout because binary data corrupts t
 yyyy-mm-dd-hhmmss-{page-title-slug}.{ext}
 Example: 2025-10-22-142033-github-snag-repo.png
 ```
+
+### Page Info (JSON Metadata)
+
+Get page metadata as JSON for automation scripts. Useful for extracting page titles, generating directory names, or building indexes.
+
+```bash
+# Get page metadata as JSON
+snag --info https://example.com
+snag -i https://example.com
+
+# Output:
+# {
+#   "title": "Example Domain",
+#   "url": "https://example.com/",
+#   "domain": "example.com",
+#   "slug": "example-domain",
+#   "timestamp": "2025-02-04T14:30:22+10:00"
+# }
+
+# Save info to file
+snag --info -o page-info.json https://example.com
+
+# Get info from existing tab
+snag --info --tab 1
+snag -i -t "github"
+
+# Use with jq for scripting
+title=$(snag -i example.com | jq -r '.title')
+slug=$(snag -i example.com | jq -r '.slug')
+```
+
+**JSON fields:**
+
+| Field | Description |
+|-------|-------------|
+| title | Page title from `<title>` tag |
+| url | Final URL after redirects |
+| domain | Domain name (without www. prefix) |
+| slug | URL-safe slug from title (for filenames) |
+| timestamp | ISO 8601 timestamp of fetch |
+
+**Notes:**
+
+- `--info` is mutually exclusive with `--format` (always outputs JSON)
+- Output is quiet by default (no log messages, only JSON)
+- Use `--verbose` to see log messages alongside JSON output
+- Only supports single URL or `--tab` (not multiple URLs or `--all-tabs`)
 
 ## Common Scenarios
 
@@ -632,6 +682,9 @@ snag --port 9223 https://example.com
 -f, --format <FORMAT>      Output format: md (default) | html | text | pdf | png
                            Format aliases: markdown→md, txt→text
                            Case-insensitive: MD, MARKDOWN, Html, PDF, etc.
+-i, --info                 Output page metadata as JSON (title, URL, domain, slug, timestamp)
+                           Mutually exclusive with --format (always outputs JSON)
+                           Output is quiet by default (no log messages)
 ```
 
 ### Page Loading
