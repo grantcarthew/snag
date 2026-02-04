@@ -7,14 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.2] - 2025-12-11
+## [1.1.0] - 2026-02-04
 
-### Fixed
+### Added
 
-- Fix page content not filling browser window in visible mode (clear Rod's default viewport emulation)
-- Set 1920x1080 viewport for headless mode for better quality screenshots and PDFs
-
-## [1.0.1] - 2025-12-05
+- New `--info` flag for page metadata export (JSON output with title, URL, domain, slug, timestamp)
+- Repository and issue links in version output (`snag --version`)
+- License, Go Report Card, Go Reference, and GitHub Release badges to README
 
 ### Changed
 
@@ -25,11 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Remove unused contentSources variable in flag validation (ineffassign warning)
-
-### Added
-
-- Add License, Go Report Card, Go Reference, and GitHub Release badges to README
+- Page content not filling browser window in visible mode (clear Rod's default viewport emulation)
+- Set 1920x1080 viewport for headless mode for better quality screenshots and PDFs
+- Remove unused validation code and lint warnings
 
 ## [1.0.0] - 2025-11-01
 
@@ -68,7 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Single binary distribution with no runtime dependencies
 - Comprehensive documentation and examples
 
-[unreleased]: https://github.com/grantcarthew/snag/compare/v1.0.2...HEAD
-[1.0.2]: https://github.com/grantcarthew/snag/compare/v1.0.1...v1.0.2
-[1.0.1]: https://github.com/grantcarthew/snag/compare/v1.0.0...v1.0.1
+[unreleased]: https://github.com/grantcarthew/snag/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/grantcarthew/snag/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/grantcarthew/snag/releases/tag/v1.0.0
