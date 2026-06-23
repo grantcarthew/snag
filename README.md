@@ -33,6 +33,7 @@ Modern AI agents need web content in clean, token-efficient formats. snag solves
 ```bash
 # Install via Homebrew
 brew tap grantcarthew/tap
+brew trust grantcarthew/tap
 brew install grantcarthew/tap/snag
 
 # Fetch a page as Markdown (default format)
@@ -84,6 +85,7 @@ Note: There's a name conflict with an older deprecated tool. Use the full tap na
 
 ```bash
 brew tap grantcarthew/tap
+brew trust grantcarthew/tap
 brew install grantcarthew/tap/snag
 ```
 
